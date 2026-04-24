@@ -1,0 +1,34 @@
+export default function About() {
+  return (
+    <section style={{ padding: '120px 52px 100px', maxWidth: '1000px', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <div className="gold-rule" style={{ justifyContent: 'center' }}>
+          <div className="grl" style={{ background: 'linear-gradient(90deg, transparent, #D4AF37)' }} />
+          <span className="grt">Our Story</span>
+          <div className="grl" style={{ background: 'linear-gradient(90deg, #D4AF37, transparent)' }} />
+        </div>
+        <h2 className="section-heading">
+          <span className="bold-white">About</span> <em>Aureum</em>
+        </h2>
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(212,175,55,0.1)', borderRadius: '16px', padding: '48px', marginBottom: '48px' }}>
+        <p style={{ fontFamily: "'Raleway', sans-serif", fontSize: '16px', lineHeight: 1.8, color: 'rgba(200,191,160,0.85)', marginBottom: '24px' }}>
+          Founded in 2020, Aureum Digital Museum bridges the gap between classical artistry and contemporary digital collecting. 
+          We curate exceptional works from visionaries across painting, sculpture, photography, and digital mediums.
+        </p>
+        <p style={{ fontFamily: "'Raleway', sans-serif", fontSize: '16px', lineHeight: 1.8, color: 'rgba(200,191,160,0.85)', marginBottom: '24px' }}>
+          Our mission is to democratize access to high-fidelity art collecting while preserving museum-grade provenance. 
+          Each artwork in our collection undergoes rigorous authentication and is presented with immersive AR technology.
+        </p>
+        <p style={{ fontFamily: "'Raleway', sans-serif", fontSize: '16px', lineHeight: 1.8, color: 'rgba(200,191,160,0.85)' }}>
+          With collectors in over 50 countries, we are redefining how the world experiences and acquires timeless art.
+        </p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', textAlign: 'center' }}>
+        <div><div style={{ fontFamily: "'Cinzel', serif", fontSize: '36px', color: '#D4AF37' }}>50+</div><div style={{ fontFamily: "'Raleway', sans-serif", fontSize: '12px', color: '#8B7A45' }}>Countries</div></div>
+        <div><div style={{ fontFamily: "'Cinzel', serif", fontSize: '36px', color: '#D4AF37' }}>2,500+</div><div style={{ fontFamily: "'Raleway', sans-serif", fontSize: '12px', color: '#8B7A45' }}>Artists</div></div>
+        <div><div style={{ fontFamily: "'Cinzel', serif", fontSize: '36px', color: '#D4AF37' }}>10,000+</div><div style={{ fontFamily: "'Raleway', sans-serif", fontSize: '12px', color: '#8B7A45' }}>Artworks</div></div>
+      </div>
+    </section>
+  );
+}

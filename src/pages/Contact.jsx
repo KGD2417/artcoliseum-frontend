@@ -1,0 +1,47 @@
+import { useState } from 'react';
+
+export default function Contact() {
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert('Message sent! We will get back to you soon.');
+    setFormData({ name: '', email: '', message: '' });
+  };
+
+  return (
+    <section style={{ padding: '120px 52px 100px', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <div className="gold-rule" style={{ justifyContent: 'center' }}>
+          <div className="grl" style={{ background: 'linear-gradient(90deg, transparent, #D4AF37)' }} />
+          <span className="grt">Get in Touch</span>
+          <div className="grl" style={{ background: 'linear-gradient(90deg, #D4AF37, transparent)' }} />
+        </div>
+        <h2 className="section-heading">
+          <span className="bold-white">Contact</span> <em>Us</em>
+        </h2>
+        <p style={{ fontFamily: "'Raleway', sans-serif", fontSize: '14px', color: 'rgba(138,128,112,0.7)', marginTop: '16px' }}>
+          For inquiries about acquisitions, partnerships, or press.
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(212,175,55,0.1)', borderRadius: '16px', padding: '48px' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', fontFamily: "'Raleway', sans-serif", fontSize: '12px', letterSpacing: '0.1em', color: '#D4AF37', marginBottom: '8px' }}>NAME</label>
+          <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.2)', padding: '14px', color: '#e8e0d0', fontFamily: "'Raleway', sans-serif", outline: 'none' }} />
+        </div>
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', fontFamily: "'Raleway', sans-serif", fontSize: '12px', letterSpacing: '0.1em', color: '#D4AF37', marginBottom: '8px' }}>EMAIL</label>
+          <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.2)', padding: '14px', color: '#e8e0d0', fontFamily: "'Raleway', sans-serif", outline: 'none' }} />
+        </div>
+        <div style={{ marginBottom: '32px' }}>
+          <label style={{ display: 'block', fontFamily: "'Raleway', sans-serif", fontSize: '12px', letterSpacing: '0.1em', color: '#D4AF37', marginBottom: '8px' }}>MESSAGE</label>
+          <textarea rows={5} value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} required
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.2)', padding: '14px', color: '#e8e0d0', fontFamily: "'Raleway', sans-serif", outline: 'none', resize: 'vertical' }} />
+        </div>
+        <button type="submit" className="btn-gold" style={{ width: '100%' }}>Send Message</button>
+      </form>
+    </section>
+  );
+}

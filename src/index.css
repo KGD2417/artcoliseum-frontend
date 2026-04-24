@@ -1,0 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Cinzel:wght@400;600;700&family=Raleway:wght@200;300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #080808;
+  color: #e8e0d0;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+::selection {
+  background: rgba(212, 175, 55, 0.3);
+}
+
+::-webkit-scrollbar {
+  width: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080808;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #8B7A45;
+  border-radius: 2px;
+}
+
+.glass-nav {
+  background: rgba(8, 8, 8, 0.35) !important;
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.12) !important;
+  box-shadow: 0 2px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.btn-gold {
+  background: #D4AF37;
+  color: #0e0c00;
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 15px 36px;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-gold::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 55%);
+  border-radius: 60px;
+}
+
+.btn-gold:hover {
+  background: #E8C53A;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 36px rgba(212, 175, 55, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn-glass {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f0e8d8;
+  border: 1px solid rgba(212, 175, 55, 0.38);
+  border-radius: 60px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 14px 36px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.btn-glass:hover {
+  background: rgba(212, 175, 55, 0.13);
+  border-color: rgba(212, 175, 55, 0.75);
+  color: #D4AF37;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.nav-link {
+  color: rgba(200, 191, 160, 0.82);
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: color 0.3s;
+  cursor: pointer;
+  padding: 4px 0;
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 100%;
+  height: 1px;
+  background: #D4AF37;
+  transition: right 0.3s;
+}
+
+.nav-link:hover::after,
+.nav-active::after {
+  right: 0;
+}
+
+.nav-link:hover,
+.nav-active {
+  color: #D4AF37;
+}
+
+.section-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(44px, 5.5vw, 72px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.section-heading em {
+  font-style: italic;
+  color: #D4AF37;
+  font-weight: 300;
+}
+
+.bold-white {
+  color: #ffffff;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.gold-rule {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.grl {
+  height: 1px;
+  background: linear-gradient(90deg, #D4AF37, transparent);
+  flex: 1;
+  max-width: 56px;
+}
+
+.grt {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: #D4AF37;
+  text-transform: uppercase;
+}
+
+.email-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: #e8e0d0;
+  padding: 15px 22px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  outline: none;
+  width: 300px;
+  transition: all 0.3s;
+  backdrop-filter: blur(8px);
+}
+
+.email-input:focus {
+  border-color: #D4AF37;
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.email-input::placeholder {
+  color: rgba(138, 128, 112, 0.5);
+}
+
+.footer-link {
+  color: rgba(100, 96, 88, 0.75);
+  font-family: 'Raleway', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.3s;
+  cursor: pointer;
+}
+
+.footer-link:hover {
+  color: #D4AF37;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeInUp 0.8s ease forwards;
+}
