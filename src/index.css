@@ -1797,6 +1797,28 @@ input[type="email"] {
 /* ═══════════════════════════════════════════════
    AR CENTERED VARIANT (Home page)
 ═══════════════════════════════════════════════ */
+.ar-section {
+  display: flex;
+  justify-content: center;
+  padding: 100px 20px;
+}
+
+.ar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+
+  max-width: 1100px;
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .ar-inner {
+    flex-direction: column;
+    gap: 40px;
+    text-align: center;
+  }
+}
 .ar-section-center {
   align-items: center;
 }

@@ -106,7 +106,7 @@ const MEDIUMS = [
     sub: "Fine Art & Documentary",
     count: "1,200+ works",
     Icon: CameraIcon,
-    img: "https://images.unsplash.com/photo-1452587925148-ce289d3eba0a?w=900&q=80&auto=format&fit=crop",
+    img: "src/assets/flower.png",
   },
   {
     slug: "digital",
@@ -287,110 +287,106 @@ function SectionHeader({ tag, title, italic, sub }) {
 /* ── Premium 3D cylinder carousel (Highlights — heading + sub + 3D + glass morph) ── */
 function CylinderCarousel({ items, navigate }) {
   const { formatPrice } = useLocale();
+
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [radius, setRadius] = useState(520);
-  const [size, setSize] = useState({ w: 240, h: 320 });
+
   const startX = useRef(0);
   const startRot = useRef(0);
 
+  // Auto rotate
   useEffect(() => {
-    const onResize = () => {
-      const w = window.innerWidth;
-      if (w < 520) {
-        setRadius(280);
-        setSize({ w: 170, h: 240 });
-      } else if (w < 800) {
-        setRadius(360);
-        setSize({ w: 200, h: 280 });
-      } else if (w < 1200) {
-        setRadius(460);
-        setSize({ w: 230, h: 320 });
-      } else {
-        setRadius(540);
-        setSize({ w: 240, h: 320 });
-      }
-    };
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+    let raf;
+    let lastTime = performance.now();
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (!isDragging) setRotation((r) => r - 0.18);
-    }, 16);
-    return () => clearInterval(id);
+    const animate = (time) => {
+      const delta = time - lastTime;
+      lastTime = time;
+
+      if (!isDragging) {
+        setRotation((r) => r - delta * 0.02); // speed control
+      }
+
+      raf = requestAnimationFrame(animate);
+    };
+
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
   }, [isDragging]);
 
-  const onDown = (e) => {
+  // Drag handlers
+  const handleDown = (e) => {
     setIsDragging(true);
     startX.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     startRot.current = rotation;
   };
-  const onMove = (e) => {
+
+  const handleMove = (e) => {
     if (!isDragging) return;
     const x = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     setRotation(startRot.current + (x - startX.current) * 0.4);
   };
-  const onUp = () => setIsDragging(false);
 
-  const total = items.length;
-  const step = 360 / total;
+  const handleUp = () => setIsDragging(false);
 
   return (
-    <div
-      className="cyl-stage"
+    <motion.div
+      initial={{ opacity: 0, y: 70 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+      className="carousel-wrap"
       style={{ cursor: isDragging ? "grabbing" : "grab" }}
-      onMouseDown={onDown}
-      onMouseMove={onMove}
-      onMouseUp={onUp}
-      onMouseLeave={onUp}
-      onTouchStart={onDown}
-      onTouchMove={onMove}
-      onTouchEnd={onUp}>
-      <div className="cyl-floor" />
+      onMouseDown={handleDown}
+      onMouseMove={handleMove}
+      onMouseUp={handleUp}
+      onMouseLeave={handleUp}
+      onTouchStart={handleDown}
+      onTouchMove={handleMove}
+      onTouchEnd={handleUp}>
       <div
-        className="cyl-rotor"
         style={{
-          width: size.w,
-          height: size.h,
+          position: "relative",
+          width: 240,
+          height: 320,
+          transformStyle: "preserve-3d",
           transform: `rotateY(${rotation}deg)`,
           transition: isDragging ? "none" : "transform 0.1s linear",
         }}>
-        {items.map((it, i) => {
-          const angle = step * i;
-          const facing = (((angle + rotation) % 360) + 360) % 360;
-          const dist = Math.min(facing, 360 - facing);
-          const opacity =
-            dist > 90 ? Math.max(0.08, 1 - ((dist - 90) / 90) * 0.92) : 1;
+        {items.map((item, i) => {
+          const angle = (360 / items.length) * i;
+
           return (
             <div
               key={i}
-              className="cyl-card"
+              className="carousel-card"
               style={{
-                width: size.w,
-                height: size.h,
-                transform: `rotateY(${angle}deg) translateZ(${radius}px)`,
-                opacity,
+                transform: `rotateY(${angle}deg) translateZ(420px)`,
               }}>
-              <SafeImage src={it.img} alt={it.title} fallbackIndex={i} />
-              <div className="cyl-card-shine" />
-              <div className="cyl-card-info">
-                <div className="cyl-card-title">{it.title}</div>
-                <div className="cyl-card-medium">{it.medium}</div>
-                <div className="cyl-card-price num-value">
-                  {formatPrice(it.price)}
-                </div>
+              {/* IMAGE */}
+              <img
+                src={item.img}
+                alt={item.title}
+                className="carousel-card-img"
+              />
+
+              {/* DEFAULT VIEW */}
+              <div className="carousel-default-info">
+                <span className="carousel-price-tag num-value">
+                  {formatPrice(item.price)}
+                </span>
               </div>
-              <div className="cyl-card-glass">
-                <div className="cyl-card-glass-title">{it.title}</div>
-                <div className="cyl-card-glass-sub">{it.medium}</div>
-                <div className="cyl-card-glass-price num-value">
-                  {formatPrice(it.price)}
+
+              {/* GLASS HOVER */}
+              <div className="carousel-glass">
+                <div className="carousel-glass-title">{item.title}</div>
+                <div className="carousel-glass-medium">{item.medium}</div>
+                <div className="carousel-glass-price num-value">
+                  {formatPrice(item.price)}
                 </div>
+
                 <button
-                  className="cyl-card-glass-btn"
+                  className="carousel-glass-btn"
                   onClick={() => navigate("/gallery")}>
                   View Artwork ›
                 </button>
@@ -399,7 +395,7 @@ function CylinderCarousel({ items, navigate }) {
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -653,7 +649,7 @@ export default function Home() {
           </div>
         </motion.div>
 
-        <motion.div
+        {/* <motion.div
           className="stats-bar"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -665,23 +661,7 @@ export default function Home() {
               <div className="stat-label">{label}</div>
             </div>
           ))}
-        </motion.div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          MEDIUMS (kept)
-      ═══════════════════════════════════════════════ */}
-      <section className="section-pad">
-        <SectionHeader
-          tag="Browse by Medium"
-          title="The"
-          italic="Mediums"
-          sub="Click a medium to expand it — double-click or tap EXPLORE to enter the collection."
-        />
-        <InteractiveMediums
-          items={MEDIUMS}
-          onPick={(m) => navigate(`/categories/${m.slug}`)}
-        />
+        </motion.div> */}
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -703,80 +683,104 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════
+          MEDIUMS (kept)
+      ═══════════════════════════════════════════════ */}
+      <section className="section-pad">
+        <SectionHeader
+          tag="Browse by Medium"
+          title="The"
+          italic="Mediums"
+          sub="Click a medium to expand it — double-click or tap EXPLORE to enter the collection."
+        />
+        <InteractiveMediums
+          items={MEDIUMS}
+          onPick={(m) => navigate(`/categories/${m.slug}`)}
+        />
+      </section>
+      {/* ═══════════════════════════════════════════════
           ART IN YOUR SPACE — circular rotator animation
       ═══════════════════════════════════════════════ */}
       <section className="ar-section">
-        <motion.div
-          initial={{ opacity: 0, x: -40 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="ar-rotator-col">
-          <CircularRotator items={AR_ROTATOR} autoplay interval={4000} />
-        </motion.div>
+        <div className="ar-inner">
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="ar-rotator-col">
+            <CircularRotator items={AR_ROTATOR} autoplay interval={4000} />
+          </motion.div>
 
-        <motion.div
-          className="ar-content-col"
-          initial={{ opacity: 0, x: 40 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}>
-          <div className="gold-rule" style={{ marginBottom: 18 }}>
-            <div
-              className="grl"
-              style={{
-                background: "linear-gradient(90deg,transparent,#D4AF37)",
-                maxWidth: 60,
-              }}
-            />
-            <span className="grt">Augmented Reality</span>
-            <div
-              className="grl"
-              style={{
-                background: "linear-gradient(90deg,#D4AF37,transparent)",
-                maxWidth: 60,
-              }}
-            />
-          </div>
+          <motion.div
+            className="ar-content-col"
+            initial={{ opacity: 0, x: 40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{
+              duration: 0.8,
+              delay: 0.15,
+              ease: [0.22, 1, 0.36, 1],
+            }}>
+            <div className="gold-rule" style={{ marginBottom: 18 }}>
+              <div
+                className="grl"
+                style={{
+                  background: "linear-gradient(90deg,transparent,#D4AF37)",
+                  maxWidth: 60,
+                }}
+              />
+              <span className="grt">Augmented Reality</span>
+              <div
+                className="grl"
+                style={{
+                  background: "linear-gradient(90deg,#D4AF37,transparent)",
+                  maxWidth: 60,
+                }}
+              />
+            </div>
 
-          <h2 className="ar-heading">
-            Art in Your <em>Space</em>
-          </h2>
-          <p className="ar-desc">
-            Bridge the gap between digital and physical. Our immersive AR
-            preview allows you to visualise any masterpiece in your own
-            environment with perfect scale and lighting fidelity.
-          </p>
+            <h2 className="ar-heading">
+              Art in Your <em>Space</em>
+            </h2>
 
-          <div className="ar-features">
-            {AR_FEATURES.map(({ Icon, label, desc }, i) => (
-              <motion.div
-                key={label}
-                className="ar-feature-item"
-                initial={{ opacity: 0, x: 24 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.55, delay: 0.3 + i * 0.14 }}>
-                <div className="ar-feature-icon">
-                  <Icon size={20} />
-                </div>
-                <div>
-                  <div className="ar-feature-label">{label.toUpperCase()}</div>
-                  <div className="ar-feature-desc">{desc}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+            <p className="ar-desc">
+              Bridge the gap between digital and physical. Our immersive AR
+              preview allows you to visualise any masterpiece in your own
+              environment with perfect scale and lighting fidelity.
+            </p>
 
-          <motion.button
-            className="btn-secondary"
-            style={{ marginTop: 36 }}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate("/ar")}>
-            LAUNCH AR PREVIEW
-          </motion.button>
-        </motion.div>
+            <div className="ar-features">
+              {AR_FEATURES.map(({ Icon, label, desc }, i) => (
+                <motion.div
+                  key={label}
+                  className="ar-feature-item"
+                  initial={{ opacity: 0, x: 24 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.55, delay: 0.3 + i * 0.14 }}>
+                  <div className="ar-feature-icon">
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <div className="ar-feature-label">
+                      {label.toUpperCase()}
+                    </div>
+                    <div className="ar-feature-desc">{desc}</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.button
+              className="btn-secondary"
+              style={{ marginTop: 36 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/ar")}>
+              LAUNCH AR PREVIEW
+            </motion.button>
+          </motion.div>
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════
