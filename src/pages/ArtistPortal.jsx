@@ -18,11 +18,44 @@ export default function ArtistPortal() {
   const formRef = useRef(null);
   const titleRef = useRef(null);
 
-  const [form, setForm] = useState({
-    title: "", price: "", category: "Digital Painting", materials: "",
-  });
+  const SUB_CATEGORIES = {
+    "Digital Painting": ["Generative", "AI Assisted", "AR Ready", "NFT"],
+    "Sculpture":        ["Bronze", "Marble", "Kinetic", "Ceramic"],
+    "Photography":      ["Fine Art", "Documentary", "Landscape", "Abstract"],
+    "Generative Art":   ["Procedural", "Algorithmic", "Code-driven"],
+    "Mixed Media":      ["Collage", "Assemblage", "Found Object"],
+    "Painting":         ["Oil", "Acrylic", "Watercolor", "Mixed Media"],
+  };
+
+  const initialForm = {
+    title: "",
+    artistName: "",
+    artistBio: "",
+    price: "",
+    category: "Digital Painting",
+    subCategory: "Generative",
+    materials: "",
+    aboutArt: "",
+    origin: "",
+    purpose: "",
+    storyBehind: "",
+    spreadAccepted: "",
+    specifications: "",
+  };
+
+  const [form, setForm] = useState(initialForm);
   const [fileName, setFileName] = useState("");
   const [assetName, setAssetName] = useState("");
+
+  const updateField = (key, value) => {
+    setForm(prev => {
+      const next = { ...prev, [key]: value };
+      if (key === "category") {
+        next.subCategory = SUB_CATEGORIES[value]?.[0] || "";
+      }
+      return next;
+    });
+  };
 
   const STATS = [
     { label: "TOTAL REVENUE",   value: formatPrice(124500),  sub: "+12.4% THIS MONTH",  highlight: true },
@@ -38,9 +71,11 @@ export default function ArtistPortal() {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!form.title || !form.price) return alert("Title and price are required.");
-    alert(`"${form.title}" submitted for curation. Our team will review within 48h.`);
-    setForm({ title: "", price: "", category: "Digital Painting", materials: "" });
+    if (!form.title || !form.price || !form.artistName) {
+      return alert("Name of art, artist name, and price are required.");
+    }
+    alert(`"${form.title}" by ${form.artistName} submitted for curation. Our team will review within 48h.`);
+    setForm(initialForm);
     setFileName("");
     setAssetName("");
   };
@@ -134,40 +169,112 @@ export default function ArtistPortal() {
             <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>TIFF, PNG or WEBP up to 100MB</div>
           </label>
 
-          <Field label="ARTWORK TITLE">
-            <input
-              ref={titleRef}
-              value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-              placeholder="E.g., The Golden Zenith" style={inp}
-            />
-          </Field>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
-            <Field label="PRICE (USD)">
+          <FieldGroup title="WORK BASICS">
+            <Field label="NAME OF ART *">
               <input
-                value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
-                placeholder="0.00" type="number" style={inp}
+                ref={titleRef}
+                value={form.title} onChange={e => updateField("title", e.target.value)}
+                placeholder="E.g., The Golden Zenith" style={inp}
               />
             </Field>
-            <Field label="CATEGORY">
-              <select
-                value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
-                style={{ ...inp, appearance: "none" }}>
-                <option>Digital Painting</option>
-                <option>Sculpture</option>
-                <option>Photography</option>
-                <option>Generative Art</option>
-                <option>Mixed Media</option>
-              </select>
-            </Field>
-          </div>
 
-          <Field label="MATERIALS / MEDIUM">
-            <input
-              value={form.materials} onChange={e => setForm({ ...form, materials: e.target.value })}
-              placeholder="Procedural shaders, Ray-tracing, NFT" style={inp}
-            />
-          </Field>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Field label="NAME OF ARTIST *">
+                <input
+                  value={form.artistName} onChange={e => updateField("artistName", e.target.value)}
+                  placeholder="E.g., Elena Vance" style={inp}
+                />
+              </Field>
+              <Field label="PRICE (USD) *">
+                <input
+                  value={form.price} onChange={e => updateField("price", e.target.value)}
+                  placeholder="0.00" type="number" style={inp}
+                />
+              </Field>
+            </div>
+
+            <Field label="SHORT DESCRIPTION OF ARTIST">
+              <textarea
+                value={form.artistBio} onChange={e => updateField("artistBio", e.target.value)}
+                placeholder="Florence-based painter exploring the intersection of digital abstraction and classical renaissance techniques."
+                rows={3} style={{ ...inp, resize: "vertical" }}
+              />
+            </Field>
+          </FieldGroup>
+
+          <FieldGroup title="MEDIUM & CATEGORISATION">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Field label="TYPE OF MEDIUM">
+                <select
+                  value={form.category} onChange={e => updateField("category", e.target.value)}
+                  style={{ ...inp, appearance: "none" }}>
+                  {Object.keys(SUB_CATEGORIES).map(c => <option key={c}>{c}</option>)}
+                </select>
+              </Field>
+              <Field label="MEDIUM SUB-CATEGORY">
+                <select
+                  value={form.subCategory} onChange={e => updateField("subCategory", e.target.value)}
+                  style={{ ...inp, appearance: "none" }}>
+                  {(SUB_CATEGORIES[form.category] || []).map(s => <option key={s}>{s}</option>)}
+                </select>
+              </Field>
+            </div>
+
+            <Field label="SPECIFICATIONS & MATERIALS">
+              <textarea
+                value={form.specifications} onChange={e => updateField("specifications", e.target.value)}
+                placeholder="24k gold leaf, oil, gesso with bone-ash and ground basalt, on Belgian linen. 180 × 140 cm. Float-mounted in walnut frame, museum-grade UV glass."
+                rows={3} style={{ ...inp, resize: "vertical" }}
+              />
+            </Field>
+
+            <Field label="MATERIALS / MEDIUM (SHORT)">
+              <input
+                value={form.materials} onChange={e => updateField("materials", e.target.value)}
+                placeholder="Oil & 24k Gold on Linen" style={inp}
+              />
+            </Field>
+          </FieldGroup>
+
+          <FieldGroup title="THE STORY">
+            <Field label="ABOUT THE ART">
+              <textarea
+                value={form.aboutArt} onChange={e => updateField("aboutArt", e.target.value)}
+                placeholder="Marries the patience of classical gold-leaf gilding with the bold flatness of post-minimalist abstraction…"
+                rows={4} style={{ ...inp, resize: "vertical" }}
+              />
+            </Field>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Field label="ORIGIN">
+                <textarea
+                  value={form.origin} onChange={e => updateField("origin", e.target.value)}
+                  placeholder="Berlin, Germany — completed at Mitte studio…"
+                  rows={3} style={{ ...inp, resize: "vertical" }}
+                />
+              </Field>
+              <Field label="PURPOSE">
+                <textarea
+                  value={form.purpose} onChange={e => updateField("purpose", e.target.value)}
+                  placeholder="Created as the centrepiece of a private 2024 commission…"
+                  rows={3} style={{ ...inp, resize: "vertical" }}
+                />
+              </Field>
+            </div>
+            <Field label="STORY BEHIND">
+              <textarea
+                value={form.storyBehind} onChange={e => updateField("storyBehind", e.target.value)}
+                placeholder="Begun on the winter solstice. One hour of natural daylight per day to apply gold leaf…"
+                rows={4} style={{ ...inp, resize: "vertical" }}
+              />
+            </Field>
+            <Field label="SPREAD & ACCEPTED">
+              <textarea
+                value={form.spreadAccepted} onChange={e => updateField("spreadAccepted", e.target.value)}
+                placeholder="Held in 12 private collections across Berlin, London, NY and HK. Featured in the 2024 monograph…"
+                rows={3} style={{ ...inp, resize: "vertical" }}
+              />
+            </Field>
+          </FieldGroup>
 
           <label style={{
             display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -183,14 +290,9 @@ export default function ArtistPortal() {
             <span style={{ color: "#D4AF37", display: "flex" }}><UploadIcon size={16} /></span>
           </label>
 
-          <button type="submit" style={{
-            width: "100%", padding: "16px",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(212,175,55,0.25)",
-            color: "#e8e0d0", fontFamily: "'Cinzel',serif",
-            fontSize: 12, letterSpacing: "0.18em",
-            borderRadius: 6, cursor: "pointer",
-          }}>INITIALIZE MINT &amp; LIST</button>
+          <button type="submit" className="btn-primary" style={{ width: "100%" }}>
+            INITIALIZE MINT &amp; LIST
+          </button>
         </motion.form>
 
         <motion.div
@@ -258,6 +360,27 @@ function Field({ label, children }) {
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "rgba(200,191,160,0.65)", marginBottom: 8 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function FieldGroup({ title, children }) {
+  return (
+    <div style={{
+      padding: "20px 22px 6px",
+      marginBottom: 22,
+      border: "1px solid rgba(212,175,55,0.12)",
+      borderRadius: 10,
+      background: "rgba(255,255,255,0.015)",
+    }}>
+      <div style={{
+        fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.22em",
+        color: "#D4AF37",
+        marginBottom: 18,
+        paddingBottom: 10,
+        borderBottom: "1px solid rgba(212,175,55,0.15)",
+      }}>{title}</div>
       {children}
     </div>
   );
