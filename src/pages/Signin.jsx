@@ -1,0 +1,110 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
+export default function SignIn() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert(isLogin ? `Welcome back!` : `Account created for ${name}`);
+    navigate('/profile');
+  };
+
+  const inputStyle = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(212,175,55,0.2)',
+    padding: '12px 14px',
+    color: '#e8e0d0',
+    fontFamily: "'Raleway', sans-serif",
+    fontSize: 14,
+    outline: 'none',
+    borderRadius: 6,
+  };
+
+  return (
+    <section style={{ padding: '120px 24px 100px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+        style={{
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(212,175,55,0.15)',
+          borderRadius: 24, padding: 44,
+          width: '100%', maxWidth: 440,
+          backdropFilter: 'blur(10px)',
+        }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: 26, color: '#D4AF37', letterSpacing: '0.1em' }}>
+            {isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}
+          </h2>
+          <div style={{ width: 60, height: 1, background: '#D4AF37', margin: '14px auto' }} />
+          <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: 'rgba(200,191,160,0.55)' }}>
+            {isLogin ? 'Welcome back to Aureum.' : 'Join the private collector circle.'}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            required
+            style={inputStyle}
+          />
+          <input
+            type="tel"
+            placeholder="Phone Number"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            required
+            style={inputStyle}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            style={inputStyle}
+          />
+
+          <motion.button
+            type="submit"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            style={{
+              marginTop: 10,
+              height: 44,
+              padding: '0 28px',
+              background: 'linear-gradient(135deg,#D4AF37,#e8c53a)',
+              color: '#111',
+              fontFamily: "'Cinzel',serif",
+              fontSize: 12,
+              letterSpacing: '0.16em',
+              border: 'none',
+              borderRadius: 999,
+              cursor: 'pointer',
+              boxShadow: '0 8px 24px rgba(212,175,55,0.25)',
+            }}>
+            {isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}
+          </motion.button>
+        </form>
+
+        <p style={{ textAlign: 'center', fontFamily: "'Raleway',sans-serif", fontSize: 12, color: 'rgba(200,191,160,0.6)', marginTop: 22 }}>
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          <span
+            onClick={() => setIsLogin(!isLogin)}
+            style={{ color: '#D4AF37', cursor: 'pointer', textDecoration: 'underline' }}>
+            {isLogin ? 'Create one' : 'Sign In'}
+          </span>
+        </p>
+      </motion.div>
+    </section>
+  );
+}
