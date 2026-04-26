@@ -1,18 +1,23 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import SafeImage from "../components/SafeImage";
+import { useLocale } from "../context/Locale";
+import i1 from "../assets/i1.png";
+import i4 from "../assets/i4.png";
+import i6 from "../assets/i6.png";
 
 const INITIAL_CART = [
-  { id: "p-101", title: "Solstice in Obsidian",   artist: "Julian Voss",     desc: "Oil & 24k Gold on Linen, 180 x 140 cm", price: 42500, qty: 1, img: "src/assets/i4.png" },
-  { id: "p-102", title: "Echoes of Silence",      artist: "Elara Vance",     desc: "Mixed Media on Canvas, 120 x 150 cm",   price: 18400, qty: 1, img: "src/assets/i1.png" },
-  { id: "p-103", title: "Fragmented Memory",      artist: "Soren Klein",     desc: "Plaster and Light Installation",         price: 8400,  qty: 1, img: "src/assets/i6.png" },
+  { id: "p-101", title: "Solstice in Obsidian", artist: "Julian Voss",  desc: "Oil & 24k Gold on Linen, 180 x 140 cm", price: 42500, qty: 1, img: i4 },
+  { id: "p-102", title: "Echoes of Silence",    artist: "Elara Vance",  desc: "Mixed Media on Canvas, 120 x 150 cm",   price: 18400, qty: 1, img: i1 },
+  { id: "p-103", title: "Fragmented Memory",    artist: "Soren Klein",  desc: "Plaster and Light Installation",         price: 8400,  qty: 1, img: i6 },
 ];
-
-const fmt = (n) => `$${n.toLocaleString("en-US")}`;
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { formatPrice } = useLocale();
   const [cart, setCart] = useState(INITIAL_CART);
+  const fmt = (n) => formatPrice(n);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const shipping = subtotal === 0 ? 0 : 850;
@@ -69,7 +74,7 @@ export default function Cart() {
                     border: "1px solid rgba(212,175,55,0.12)",
                     borderRadius: 8,
                   }}>
-                  <img src={item.img} alt={item.title}
+                  <SafeImage src={item.img} alt={item.title}
                     style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)" }}>{item.artist.toUpperCase()}</div>
@@ -96,7 +101,7 @@ export default function Cart() {
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, fontWeight: 700, color: "#D4AF37" }}>{fmt(item.price * item.qty)}</div>
+                    <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 22, fontWeight: 700, color: "#D4AF37" }}>{fmt(item.price * item.qty)}</div>
                   </div>
                 </motion.div>
               ))}
@@ -121,7 +126,7 @@ export default function Cart() {
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
               <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#fff" }}>Total</span>
-              <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>{fmt(total)}</span>
+              <span className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 26, fontWeight: 700, color: "#D4AF37" }}>{fmt(total)}</span>
             </div>
 
             <motion.button

@@ -1,5 +1,6 @@
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import SafeImage from "../components/SafeImage";
 
 const SUBS = {
   paintings: {
@@ -106,7 +107,7 @@ export default function SubCategories() {
               borderRadius: 8, height: 260, cursor: "pointer",
               border: "1px solid rgba(212,175,55,0.15)",
             }}>
-            <img src={s.img} alt={s.label}
+            <SafeImage src={s.img} alt={s.label} fallbackIndex={i}
               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block",
                        transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)" }}
               onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.06)")}
@@ -118,7 +119,7 @@ export default function SubCategories() {
             }} />
             <div style={{ position: "absolute", bottom: 18, left: 20, right: 20 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, fontWeight: 700, color: "#fff" }}>{s.label}</div>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "#D4AF37", marginTop: 4 }}>{s.count} WORKS</div>
+              <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, letterSpacing: "0.12em", color: "#D4AF37", marginTop: 4 }}>{s.count} WORKS</div>
             </div>
           </motion.div>
         ))}

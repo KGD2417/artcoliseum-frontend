@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import SafeImage from "../components/SafeImage";
+import { useLocale, LANGS } from "../context/Locale";
+import { CheckIcon } from "../components/Icons";
+import i3 from "../assets/i3.png";
+import i6 from "../assets/i6.png";
 
 const TABS = [
   { id: "details",  label: "Account Details" },
@@ -20,14 +25,14 @@ const INITIAL_USER = {
 };
 
 const ORDERS = [
-  { id: "AU-99281", item: "Solstice in Obsidian — Julian Voss",   total: "$42,500", status: "OUT FOR DELIVERY",   eta: "Expected today 6 PM" },
-  { id: "AU-99244", item: "Echoes of Silence — Elara Vance",       total: "$18,400", status: "DELIVERED",          eta: "Mar 22, 2026" },
-  { id: "AU-99201", item: "Structural Gravity II — Julian Marx",   total: "$12,200", status: "IN TRANSIT",         eta: "Apr 3, 2026" },
+  { id: "AU-99281", item: "Solstice in Obsidian — Julian Voss",  total: 42500, status: "OUT FOR DELIVERY", eta: "Expected today 6 PM" },
+  { id: "AU-99244", item: "Echoes of Silence — Elara Vance",     total: 18400, status: "DELIVERED",        eta: "Mar 22, 2026" },
+  { id: "AU-99201", item: "Structural Gravity II — Julian Marx", total: 12200, status: "IN TRANSIT",       eta: "Apr 3, 2026" },
 ];
 
 const CART = [
-  { id: "p-101", title: "Fragmented Memory", artist: "Soren Klein", price: "$8,400", img: "src/assets/i6.png" },
-  { id: "p-102", title: "Architectural Echo", artist: "Elena Vance", price: "$4,200", img: "src/assets/i3.png" },
+  { id: "p-101", title: "Fragmented Memory",  artist: "Soren Klein", price: 8400, img: i6 },
+  { id: "p-102", title: "Architectural Echo", artist: "Elena Vance", price: 4200, img: i3 },
 ];
 
 const NOTIFS = [
@@ -37,22 +42,12 @@ const NOTIFS = [
   { type: "REVIEW",     msg: "Tell us about Echoes of Silence — your review helps fellow collectors.", time: "1w ago" },
 ];
 
-const LANGUAGES = [
-  { code: "EN", label: "English"   },
-  { code: "FR", label: "Français"  },
-  { code: "ES", label: "Español"   },
-  { code: "DE", label: "Deutsch"   },
-  { code: "IT", label: "Italiano"  },
-  { code: "JP", label: "日本語"    },
-  { code: "HI", label: "हिन्दी"   },
-];
-
 export default function Profile() {
+  const { lang, setLang, formatPrice } = useLocale();
   const [tab, setTab] = useState("details");
   const [editing, setEditing] = useState(false);
   const [user, setUser] = useState(INITIAL_USER);
   const [draft, setDraft] = useState(INITIAL_USER);
-  const [language, setLanguage] = useState("EN");
 
   const startEdit = () => { setDraft(user); setEditing(true); };
   const save = () => { setUser(draft); setEditing(false); };
@@ -143,7 +138,7 @@ export default function Profile() {
                             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{o.eta}</div>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#D4AF37" }}>{o.total}</div>
+                            <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 20, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(o.total)}</div>
                             <div style={{
                               display: "inline-block", marginTop: 8, padding: "5px 12px", borderRadius: 999,
                               fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em",
@@ -172,12 +167,12 @@ export default function Profile() {
                           display: "flex", gap: 16, alignItems: "center", padding: 14,
                           border: "1px solid rgba(212,175,55,0.1)", borderRadius: 8,
                         }}>
-                          <img src={c.img} alt={c.title} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 4 }} />
+                          <SafeImage src={c.img} alt={c.title} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 4 }} />
                           <div style={{ flex: 1 }}>
                             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#f0e8d8" }}>{c.title}</div>
                             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 2 }}>{c.artist}</div>
                           </div>
-                          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 700, color: "#D4AF37" }}>{c.price}</div>
+                          <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 18, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(c.price)}</div>
                         </div>
                       ))}
                     </div>
@@ -244,21 +239,24 @@ export default function Profile() {
                   <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.65)", marginBottom: 20 }}>
                     Choose how Aureum should appear across the site, in receipts, and in delivery communication.
                   </p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10 }}>
-                    {LANGUAGES.map(l => (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10 }}>
+                    {Object.entries(LANGS).map(([code, l]) => (
                       <button
-                        key={l.code}
-                        onClick={() => setLanguage(l.code)}
+                        key={code}
+                        onClick={() => setLang(code)}
                         style={{
                           padding: "14px 18px", borderRadius: 8, cursor: "pointer",
-                          background: language === l.code ? "rgba(212,175,55,0.12)" : "rgba(255,255,255,0.02)",
-                          border: language === l.code ? "1px solid #D4AF37" : "1px solid rgba(212,175,55,0.15)",
-                          color: language === l.code ? "#D4AF37" : "#e8e0d0",
+                          background: lang === code ? "rgba(212,175,55,0.12)" : "rgba(255,255,255,0.02)",
+                          border: lang === code ? "1px solid #D4AF37" : "1px solid rgba(212,175,55,0.15)",
+                          color: lang === code ? "#D4AF37" : "#e8e0d0",
                           fontFamily: "'Raleway',sans-serif", fontSize: 14,
-                          textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center",
+                          textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
                         }}>
                         <span>{l.label}</span>
-                        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", opacity: 0.6 }}>{l.code}</span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                          <span className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, letterSpacing: "0.08em", opacity: 0.7 }}>{l.currency}</span>
+                          {lang === code && <CheckIcon size={12} />}
+                        </span>
                       </button>
                     ))}
                   </div>

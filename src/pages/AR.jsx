@@ -1,16 +1,25 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CameraIcon } from "../components/Icons";
+import { useLocale } from "../context/Locale";
+import i1 from "../assets/i1.png";
+import i2 from "../assets/i2.png";
+import i4 from "../assets/i4.png";
+import i5 from "../assets/i5.png";
+import i6 from "../assets/i6.png";
+import i7 from "../assets/i7.png";
 
 const ARTWORKS = [
-  { img: "src/assets/i1.png", title: "Golden Horizon",    price: "$2,400" },
-  { img: "src/assets/i2.png", title: "Eternal Grace",     price: "$3,800" },
-  { img: "src/assets/i4.png", title: "The Golden Tree",   price: "$2,100" },
-  { img: "src/assets/i5.png", title: "Whispers of Silence", price: "$1,700" },
-  { img: "src/assets/i6.png", title: "Cosmic Flow",       price: "$1,950" },
-  { img: "src/assets/i7.png", title: "Azure Dreams",      price: "$2,800" },
+  { img: i1, title: "Golden Horizon",       price: 2400 },
+  { img: i2, title: "Eternal Grace",        price: 3800 },
+  { img: i4, title: "The Golden Tree",      price: 2100 },
+  { img: i5, title: "Whispers of Silence",  price: 1700 },
+  { img: i6, title: "Cosmic Flow",          price: 1950 },
+  { img: i7, title: "Azure Dreams",         price: 2800 },
 ];
 
 export default function AR() {
+  const { formatPrice } = useLocale();
   const [selected, setSelected] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [placement, setPlacement] = useState({ x: 50, y: 40 });
@@ -101,10 +110,10 @@ export default function AR() {
                     fontFamily: "'Cormorant Garamond',serif", fontSize: 16,
                     color: "#f0e8d8", fontWeight: 600,
                   }}>{art.title}</div>
-                  <div style={{
-                    fontFamily: "'Raleway',sans-serif", fontSize: 11,
+                  <div className="num-value" style={{
+                    fontFamily: "'Raleway',sans-serif", fontSize: 12,
                     color: "#D4AF37", marginTop: 2,
-                  }}>{art.price}</div>
+                  }}>{formatPrice(art.price)}</div>
                 </div>
               </motion.div>
             ))}
@@ -148,7 +157,7 @@ export default function AR() {
                   alignItems: "center", justifyContent: "center", gap: 16,
                   color: "rgba(200,191,160,0.35)",
                 }}>
-                  <div style={{ fontSize: 48 }}>📷</div>
+                  <CameraIcon size={48} />
                   <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, textAlign: "center", maxWidth: 240 }}>
                     {selected
                       ? `Ready to place "${selected.title}" — activate viewer below`
@@ -225,7 +234,7 @@ export default function AR() {
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}>
-                ADD TO CART — {selected.price}
+                ADD TO CART — <span className="num-value">{formatPrice(selected.price)}</span>
               </motion.button>
             )}
           </div>
@@ -248,10 +257,10 @@ export default function AR() {
               }}>
                 Certificate of Authenticity included · Free insured shipping
               </div>
-              <div style={{
-                fontFamily: "'Cormorant Garamond',serif", fontSize: 26,
+              <div className="num-value" style={{
+                fontFamily: "'Raleway',sans-serif", fontSize: 24,
                 color: "#D4AF37", fontWeight: 700, marginTop: 8,
-              }}>{selected.price}</div>
+              }}>{formatPrice(selected.price)}</div>
             </motion.div>
           )}
         </motion.div>

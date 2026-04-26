@@ -40,7 +40,20 @@ export default function Contact() {
           <textarea rows={5} value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} required
             style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.2)', padding: '14px', color: '#e8e0d0', fontFamily: "'Raleway', sans-serif", outline: 'none', resize: 'vertical' }} />
         </div>
-        <button type="submit" className="btn-gold" style={{ width: '100%' }}>Send Message</button>
+        <button
+          type="submit"
+          className="btn-gold"
+          style={{
+            width: '100%',
+            height: 56,
+            borderRadius: 999,
+            padding: '0 32px',
+            fontSize: 13,
+            letterSpacing: '0.18em',
+            boxShadow: '0 8px 24px rgba(212,175,55,0.3)',
+          }}>
+          SEND MESSAGE
+        </button>
       </form>
     </section>
   );

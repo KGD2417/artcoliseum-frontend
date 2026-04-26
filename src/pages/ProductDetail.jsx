@@ -1,35 +1,46 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import SafeImage from "../components/SafeImage";
+import { useLocale } from "../context/Locale";
+import { HeartIcon, ZoomIcon, SparkIcon, ShieldIcon, CheckIcon } from "../components/Icons";
+import i1 from "../assets/i1.png";
+import i2 from "../assets/i2.png";
+import i3 from "../assets/i3.png";
+import i4 from "../assets/i4.png";
+import i5 from "../assets/i5.png";
+import i6 from "../assets/i6.png";
+import i7 from "../assets/i7.png";
 
 const PRODUCTS = {
   default: {
     title: "Solstice in Obsidian",
     artist: "Julian Voss",
     year: "2023",
-    price: "$42,500.00",
+    price: 42500,
     badge: "PRIVATE COLLECTION",
-    images: ["src/assets/i4.png", "src/assets/i6.png", "src/assets/i2.png", "src/assets/i1.png"],
+    images: [i4, i6, i2, i1],
     description: 'A masterwork of tactile minimalism, "Solstice in Obsidian" explores the intersection of celestial events and terrestrial silence. Each stroke of genuine 24k gold leaf is applied during the first hour of daylight over three lunar cycles.',
     medium: "Oil & 24k Gold on Linen",
     dimensions: "180 x 140 cm",
     availability: "Available for Inquiry",
     certificate: "Digital Ledger Authenticity",
-    artistImg: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&q=80",
+    artistImg: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&q=80&auto=format&fit=crop",
     artistBio: "Based in Berlin, Voss's work has been featured in the Tate Modern and private collections across six continents. His process involves extreme isolation and traditional alchemy.",
     quote: '"My work is a dialogue with the unseen. I use gold not as a symbol of wealth, but as a capture of light in its most primal, static form."',
   },
 };
 
 const RELATED = [
-  { id: "rel-1", title: "SILVER RAIN NO. 4",  artist: "JULIAN VOSS",   price: "$18,200", img: "src/assets/i5.png" },
-  { id: "rel-2", title: "NEBULA IN REPOSE",   artist: "JULIAN VOSS",   price: "$24,500", img: "src/assets/i3.png" },
-  { id: "rel-3", title: "ZENITH HORIZON",     artist: "JULIAN VOSS",   price: "$31,000", img: "src/assets/i7.png" },
+  { id: "rel-1", title: "SILVER RAIN NO. 4", artist: "JULIAN VOSS", price: 18200, img: i5 },
+  { id: "rel-2", title: "NEBULA IN REPOSE",  artist: "JULIAN VOSS", price: 24500, img: i3 },
+  { id: "rel-3", title: "ZENITH HORIZON",    artist: "JULIAN VOSS", price: 31000, img: i7 },
 ];
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { formatPrice } = useLocale();
   const product = PRODUCTS[id] || PRODUCTS.default;
   const [activeImg, setActiveImg] = useState(0);
   const [favorited, setFavorited] = useState(false);
@@ -46,14 +57,13 @@ export default function ProductDetail() {
             background: "rgba(255,255,255,0.03)",
             border: "1px solid rgba(212,175,55,0.15)",
           }}>
-            <img src={product.images[activeImg]} alt={product.title}
+            <SafeImage src={product.images[activeImg]} alt={product.title} fallbackIndex={activeImg}
               style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             <div style={{ position: "absolute", bottom: 14, right: 14, display: "flex", gap: 10 }}>
-              <CircleBtn>🔍</CircleBtn>
-              <CircleBtn onClick={() => navigate("/ar")}>✨</CircleBtn>
+              <CircleBtn><ZoomIcon size={16} /></CircleBtn>
+              <CircleBtn onClick={() => navigate("/ar")}><SparkIcon size={16} /></CircleBtn>
             </div>
           </div>
-          {/* thumbs */}
           <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
             {product.images.map((img, i) => (
               <div key={i}
@@ -63,7 +73,8 @@ export default function ProductDetail() {
                   border: activeImg === i ? "1px solid #D4AF37" : "1px solid rgba(212,175,55,0.15)",
                   borderRadius: 4, overflow: "hidden", cursor: "pointer",
                 }}>
-                <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <SafeImage src={img} alt="" fallbackIndex={i}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               </div>
             ))}
           </div>
@@ -80,8 +91,10 @@ export default function ProductDetail() {
                 width: 38, height: 38, borderRadius: "50%",
                 background: "transparent", border: "1px solid rgba(212,175,55,0.25)",
                 color: favorited ? "#D4AF37" : "rgba(200,191,160,0.55)", cursor: "pointer",
-                fontSize: 14,
-              }}>♥</button>
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+              <HeartIcon size={16} filled={favorited} />
+            </button>
           </div>
 
           <h1 style={{
@@ -93,8 +106,8 @@ export default function ProductDetail() {
             {product.artist}, {product.year}
           </div>
 
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#D4AF37", marginBottom: 28 }}>
-            {product.price}
+          <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 36, fontWeight: 700, color: "#D4AF37", marginBottom: 28 }}>
+            {formatPrice(product.price, { decimals: 0 })}
           </div>
 
           <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "10px 0 22px" }} />
@@ -104,15 +117,18 @@ export default function ProductDetail() {
             {product.description}
           </p>
 
-          {/* meta grid */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28, paddingTop: 22, borderTop: "1px solid rgba(212,175,55,0.18)" }}>
             <Meta label="MEDIUM"       value={product.medium} />
             <Meta label="DIMENSIONS"   value={product.dimensions} />
-            <Meta label="AVAILABILITY" value={<span><span style={{ color: "#4ade80" }}>● </span>{product.availability}</span>} />
+            <Meta label="AVAILABILITY" value={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
+                {product.availability}
+              </span>
+            } />
             <Meta label="CERTIFICATE"  value={product.certificate} />
           </div>
 
-          {/* CTAs */}
           <motion.button
             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             onClick={() => navigate("/checkout")}
@@ -127,20 +143,12 @@ export default function ProductDetail() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 22 }}>
             <button
               onClick={() => navigate("/cart")}
-              style={{
-                padding: "13px",
-                background: "transparent", color: "#e8e0d0",
-                fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
-                border: "1px solid rgba(212,175,55,0.4)", borderRadius: 999, cursor: "pointer",
-              }}>ADD TO CART</button>
+              style={pillBtn}>ADD TO CART</button>
             <button
               onClick={() => navigate("/ar")}
-              style={{
-                padding: "13px",
-                background: "transparent", color: "#e8e0d0",
-                fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
-                border: "1px solid rgba(212,175,55,0.4)", borderRadius: 999, cursor: "pointer",
-              }}>✦ VIEW IN AR</button>
+              style={{ ...pillBtn, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <SparkIcon size={14} /> VIEW IN AR
+            </button>
           </div>
 
           <div style={{
@@ -149,7 +157,7 @@ export default function ProductDetail() {
             border: "1px solid rgba(212,175,55,0.2)",
             borderRadius: 8,
           }}>
-            <span style={{ color: "#D4AF37", fontSize: 16 }}>✓</span>
+            <span style={{ color: "#D4AF37", display: "flex", alignItems: "flex-start" }}><ShieldIcon size={18} /></span>
             <div>
               <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#D4AF37" }}>AUREUM GUARANTEE</div>
               <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)", marginTop: 4, lineHeight: 1.5 }}>
@@ -168,7 +176,7 @@ export default function ProductDetail() {
         borderRadius: 12,
         display: "grid", gridTemplateColumns: "180px 1fr", gap: 36, alignItems: "center",
       }} className="pd-artist">
-        <img src={product.artistImg} alt={product.artist}
+        <SafeImage src={product.artistImg} alt={product.artist} fallbackIndex={1}
           style={{ width: 180, height: 180, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(212,175,55,0.4)" }} />
         <div>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>THE ARTIST</div>
@@ -186,7 +194,6 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* curated recommendations */}
       <div style={{ marginTop: 60, marginBottom: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
         <div>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>CURATED RECOMMENDATIONS</div>
@@ -199,17 +206,19 @@ export default function ProductDetail() {
         display: "grid", gap: 20,
         gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
       }}>
-        {RELATED.map(r => (
+        {RELATED.map((r, i) => (
           <motion.div
             key={r.id}
             onClick={() => navigate(`/product/${r.id}`)}
             whileHover={{ y: -4 }}
             style={{ cursor: "pointer" }}>
             <div style={{ width: "100%", aspectRatio: "1/1.05", overflow: "hidden", borderRadius: 6, marginBottom: 10 }}>
-              <img src={r.img} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <SafeImage src={r.img} alt={r.title} fallbackIndex={i} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", color: "#f0e8d8", marginBottom: 4 }}>{r.title}</div>
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)" }}>{r.artist} — {r.price}</div>
+            <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)" }}>
+              {r.artist} — {formatPrice(r.price)}
+            </div>
           </motion.div>
         ))}
       </div>
@@ -225,13 +234,21 @@ export default function ProductDetail() {
   );
 }
 
+const pillBtn = {
+  padding: "13px",
+  background: "transparent", color: "#e8e0d0",
+  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
+  border: "1px solid rgba(212,175,55,0.4)", borderRadius: 999, cursor: "pointer",
+};
+
 function CircleBtn({ children, onClick }) {
   return (
     <button onClick={onClick} style={{
       width: 36, height: 36, borderRadius: "50%",
       background: "rgba(0,0,0,0.6)", backdropFilter: "blur(10px)",
       border: "1px solid rgba(212,175,55,0.3)",
-      color: "#D4AF37", cursor: "pointer", fontSize: 14,
+      color: "#D4AF37", cursor: "pointer",
+      display: "flex", alignItems: "center", justifyContent: "center",
     }}>{children}</button>
   );
 }

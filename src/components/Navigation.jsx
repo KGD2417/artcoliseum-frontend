@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../assets/logo.png";
+import { useLocale, LANGS } from "../context/Locale";
+import { CheckIcon } from "./Icons";
 
 const LINKS = [
   { label: "HOME",        to: "/"           },
@@ -12,11 +14,10 @@ const LINKS = [
 
 const ALL_LINKS = [
   ...LINKS,
-  { label: "GALLERY",     to: "/gallery"    },
-  { label: "CONTACT",     to: "/contact"    },
+  { label: "GALLERY",  to: "/gallery" },
+  { label: "CONTACT",  to: "/contact" },
 ];
 
-/* ── SVG nav icons ── */
 function CartIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -43,6 +44,77 @@ function ProfileIcon() {
   );
 }
 
+function LangButton({ compact }) {
+  const { lang, setLang, currency } = useLocale();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <motion.button
+        title="Language"
+        onClick={() => setOpen(v => !v)}
+        className="nav-icon-btn"
+        whileHover={{ scale: 1.18, color: "#D4AF37" }}
+        whileTap={{ scale: 0.92 }}>
+        <GlobeIcon />
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="lang-pop"
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.96 }}
+            transition={{ duration: 0.18 }}
+            style={compact ? { right: "auto", left: 0 } : {}}>
+            <div style={{
+              fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em",
+              color: "#D4AF37", padding: "8px 12px 10px",
+              borderBottom: "1px solid rgba(212,175,55,0.15)",
+              marginBottom: 6,
+            }}>
+              LANGUAGE & CURRENCY
+            </div>
+            {Object.entries(LANGS).map(([code, l]) => (
+              <button
+                key={code}
+                onClick={() => { setLang(code); setOpen(false); }}
+                className={`lang-pop-row ${lang === code ? "active" : ""}`}>
+                <span>{l.label}</span>
+                <span style={{
+                  fontFamily: "'Raleway',sans-serif", fontSize: 11,
+                  letterSpacing: "0.08em",
+                  color: lang === code ? "#D4AF37" : "rgba(200,191,160,0.5)",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}>
+                  {l.currency}
+                  {lang === code && <CheckIcon size={12} />}
+                </span>
+              </button>
+            ))}
+            <div style={{
+              padding: "8px 12px", marginTop: 6,
+              borderTop: "1px solid rgba(212,175,55,0.12)",
+              fontFamily: "'Raleway',sans-serif", fontSize: 10,
+              color: "rgba(200,191,160,0.5)", letterSpacing: "0.05em",
+            }}>
+              Showing prices in <span style={{ color: "#D4AF37" }}>{currency}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function Navigation() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -51,8 +123,6 @@ export default function Navigation() {
     <>
       <nav className="nav-container">
         <div className="nav-inner">
-
-          {/* LEFT — logo */}
           <div className="nav-left">
             <motion.img
               src={logo}
@@ -64,7 +134,6 @@ export default function Navigation() {
             />
           </div>
 
-          {/* CENTER — desktop links */}
           <div className="nav-center nav-desktop">
             {LINKS.map(({ label, to }) => (
               <NavLink
@@ -77,26 +146,28 @@ export default function Navigation() {
             ))}
           </div>
 
-          {/* RIGHT — desktop icons */}
           <div className="nav-right nav-desktop">
-            {[
-              { icon: <CartIcon />,    title: "Cart",     action: () => navigate("/cart") },
-              { icon: <GlobeIcon />,   title: "Language", action: () => navigate("/profile") },
-              { icon: <ProfileIcon />, title: "Profile",  action: () => navigate("/signin") },
-            ].map(({ icon, title, action }) => (
-              <motion.button
-                key={title}
-                title={title}
-                onClick={action}
-                className="nav-icon-btn"
-                whileHover={{ scale: 1.18, color: "#D4AF37" }}
-                whileTap={{ scale: 0.92 }}>
-                {icon}
-              </motion.button>
-            ))}
+            <motion.button
+              title="Cart"
+              onClick={() => navigate("/cart")}
+              className="nav-icon-btn"
+              whileHover={{ scale: 1.18, color: "#D4AF37" }}
+              whileTap={{ scale: 0.92 }}>
+              <CartIcon />
+            </motion.button>
+
+            <LangButton />
+
+            <motion.button
+              title="Profile"
+              onClick={() => navigate("/signin")}
+              className="nav-icon-btn"
+              whileHover={{ scale: 1.18, color: "#D4AF37" }}
+              whileTap={{ scale: 0.92 }}>
+              <ProfileIcon />
+            </motion.button>
           </div>
 
-          {/* HAMBURGER — mobile */}
           <button
             className="hamburger nav-mobile"
             onClick={() => setMenuOpen(v => !v)}
@@ -108,7 +179,6 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {/* mobile drawer */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
@@ -135,13 +205,13 @@ export default function Navigation() {
             <motion.div
               style={{ display: "flex", gap: 16, marginTop: 32, justifyContent: "center" }}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.38 }}>
-              {[
-                { icon: <CartIcon />, title: "Cart" },
-                { icon: <GlobeIcon />, title: "Language" },
-                { icon: <ProfileIcon />, title: "Profile" },
-              ].map(({ icon, title }) => (
-                <motion.button key={title} className="nav-icon-btn" whileHover={{ scale: 1.15 }}>{icon}</motion.button>
-              ))}
+              <motion.button title="Cart" className="nav-icon-btn" onClick={() => { navigate("/cart"); setMenuOpen(false); }}>
+                <CartIcon />
+              </motion.button>
+              <LangButton compact />
+              <motion.button title="Profile" className="nav-icon-btn" onClick={() => { navigate("/signin"); setMenuOpen(false); }}>
+                <ProfileIcon />
+              </motion.button>
             </motion.div>
             <motion.button
               className="btn-outline"

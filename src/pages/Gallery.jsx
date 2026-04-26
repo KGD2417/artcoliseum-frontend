@@ -1,17 +1,27 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import SafeImage from "../components/SafeImage";
+import { SearchIcon } from "../components/Icons";
+import { useLocale } from "../context/Locale";
+import i1 from "../assets/i1.png";
+import i3 from "../assets/i3.png";
+import i4 from "../assets/i4.png";
+import i5 from "../assets/i5.png";
+import i6 from "../assets/i6.png";
+import i7 from "../assets/i7.png";
+import i8 from "../assets/i8.png";
 
 const GALLERY_ITEMS = [
-  { id: "p1", title: "Ethereal Horizon",   medium: "Acrylic on Canvas", artist: "MARCUS THOMAS", year: "2024", price: "$12,400", priceN: 12400, size: "medium", style: "Abstract",     category: "oil",       img: "src/assets/i1.png" },
-  { id: "p2", title: "Fractured Silence",  medium: "Mixed Media",       artist: "ELENA VANCE",   year: "2023", price: "$8,900",  priceN: 8900,  size: "medium", style: "Abstract",     category: "mixed",     img: "src/assets/i7.png" },
-  { id: "p3", title: "Obsidian Flow",      medium: "Acrylic & Oil",     artist: "JULIAN ARIS",   year: "2024", price: "$15,500", priceN: 15500, size: "medium", style: "Abstract",     category: "oil",       img: "src/assets/i6.png" },
-  { id: "p4", title: "The Infinite Stair", medium: "Sculpture",         artist: "SOREN KLEIN",   year: "2024", price: "$4,200",  priceN: 4200,  size: "small",  style: "Minimalism",   category: "sculpture", img: "src/assets/i3.png" },
-  { id: "p5", title: "Cosmic Flow",        medium: "Mixed Media",       artist: "HIDEO TANAKA",  year: "2024", price: "$1,950",  priceN: 1950,  size: "small",  style: "Impressionist", category: "mixed",    img: "src/assets/i6.png" },
-  { id: "p6", title: "The Golden Tree",    medium: "Oil on Canvas",     artist: "CHEN WEI",      year: "2024", price: "$2,100",  priceN: 2100,  size: "medium", style: "Impressionist", category: "oil",      img: "src/assets/i4.png" },
-  { id: "p7", title: "Whispers of Silence", medium: "Oil on Canvas",     artist: "LENA BACH",    year: "2025", price: "$1,700",  priceN: 1700,  size: "small",  style: "Minimalism",   category: "oil",       img: "src/assets/i5.png" },
-  { id: "p8", title: "Renaissance Study",  medium: "Oil on Panel",      artist: "ELENA ROSSI",   year: "2023", price: "$5,800",  priceN: 5800,  size: "medium", style: "Digital Fusion", category: "oil",     img: "src/assets/i8.png" },
-  { id: "p9", title: "Ocean Depths",       medium: "Digital Print",     artist: "HIDEO TANAKA",  year: "2024", price: "$1,200",  priceN: 1200,  size: "small",  style: "Digital Fusion", category: "digital", img: "src/assets/i7.png" },
+  { id: "p1", title: "Ethereal Horizon",   medium: "Acrylic on Canvas", artist: "MARCUS THOMAS", year: "2024", price: 12400, size: "medium", style: "Abstract",     category: "oil",       img: i1 },
+  { id: "p2", title: "Fractured Silence",  medium: "Mixed Media",       artist: "ELENA VANCE",   year: "2023", price: 8900,  size: "medium", style: "Abstract",     category: "mixed",     img: i7 },
+  { id: "p3", title: "Obsidian Flow",      medium: "Acrylic & Oil",     artist: "JULIAN ARIS",   year: "2024", price: 15500, size: "medium", style: "Abstract",     category: "oil",       img: i6 },
+  { id: "p4", title: "The Infinite Stair", medium: "Sculpture",         artist: "SOREN KLEIN",   year: "2024", price: 4200,  size: "small",  style: "Minimalism",    category: "sculpture", img: i3 },
+  { id: "p5", title: "Cosmic Flow",        medium: "Mixed Media",       artist: "HIDEO TANAKA",  year: "2024", price: 1950,  size: "small",  style: "Impressionist", category: "mixed",     img: i6 },
+  { id: "p6", title: "The Golden Tree",    medium: "Oil on Canvas",     artist: "CHEN WEI",      year: "2024", price: 2100,  size: "medium", style: "Impressionist", category: "oil",       img: i4 },
+  { id: "p7", title: "Whispers of Silence", medium: "Oil on Canvas",    artist: "LENA BACH",     year: "2025", price: 1700,  size: "small",  style: "Minimalism",    category: "oil",       img: i5 },
+  { id: "p8", title: "Renaissance Study",  medium: "Oil on Panel",      artist: "ELENA ROSSI",   year: "2023", price: 5800,  size: "medium", style: "Digital Fusion", category: "oil",      img: i8 },
+  { id: "p9", title: "Ocean Depths",       medium: "Digital Print",     artist: "HIDEO TANAKA",  year: "2024", price: 1200,  size: "small",  style: "Digital Fusion", category: "digital",  img: i7 },
 ];
 
 const STYLES = [
@@ -37,6 +47,7 @@ const SIZES = [
 export default function Gallery() {
   const navigate = useNavigate();
   const { medium, sub } = useParams();
+  const { formatPrice } = useLocale();
   const [styleFilter, setStyleFilter] = useState("Abstract");
   const [catFilter, setCatFilter]     = useState("sculpture");
   const [sizeFilter, setSizeFilter]   = useState("medium");
@@ -86,7 +97,7 @@ export default function Gallery() {
               fontSize: 11, letterSpacing: "0.12em",
             }}
           />
-          <span style={{ color: "rgba(200,191,160,0.5)" }}>🔍</span>
+          <span style={{ color: "rgba(200,191,160,0.5)", display: "flex" }}><SearchIcon size={14} /></span>
         </div>
       </motion.div>
 
@@ -178,7 +189,7 @@ export default function Gallery() {
                   borderRadius: 6, overflow: "hidden",
                   background: "rgba(255,255,255,0.03)",
                 }}>
-                  <img src={item.img} alt={item.title}
+                  <SafeImage src={item.img} alt={item.title} fallbackIndex={i}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block",
                              transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)" }}
                     onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
@@ -190,7 +201,7 @@ export default function Gallery() {
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{item.title}</div>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{item.artist}</div>
                   </div>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#D4AF37" }}>{item.price}</div>
+                  <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 16, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(item.price)}</div>
                 </div>
               </motion.div>
             ))}

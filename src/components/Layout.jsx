@@ -131,8 +131,8 @@ function Footer() {
 
         {/* bottom bar */}
         <div className="footer-bottom">
-          <div className="footer-copy">
-            © 2025 Art Coliseum. All Rights Reserved.
+          <div className="footer-copy num-value">
+            © 2026 Made by <span style={{ color: "#D4AF37", letterSpacing: "0.18em" }}>TRISPARC</span>. All Rights Reserved.
           </div>
           <div className="footer-bottom-links">
             {LEGAL_LINKS.map(({ label, href }) => (

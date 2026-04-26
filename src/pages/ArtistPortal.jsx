@@ -1,25 +1,40 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-
-const STATS = [
-  { label: "TOTAL REVENUE",  value: "$124,500", sub: "↗ +12.4% THIS MONTH",   highlight: true },
-  { label: "PIECES SOLD",    value: "18",       sub: "LIFETIME CURATION" },
-  { label: "GALLERY VIEWS",  value: "42.8K",    sub: "👁 HIGH ENGAGEMENT" },
-  { label: "COLLECTOR INDEX", value: "A+",      sub: "TOP 5% ARTISTS" },
-];
+import SafeImage from "../components/SafeImage";
+import { useLocale } from "../context/Locale";
+import { CloudIcon, ImageIcon, UploadIcon, PlusIcon } from "../components/Icons";
+import i1 from "../assets/i1.png";
+import i3 from "../assets/i3.png";
+import i6 from "../assets/i6.png";
 
 const ACTIVE_COLLECTION = [
-  { id: 1, title: "Celestial Fracture",   status: "AVAILABLE", price: "$12,000", tags: ["DIGITAL PAINTING", "4K MASTER"],   thumb: "src/assets/i1.png" },
-  { id: 2, title: "Architectural Silence", status: "SOLD",     price: "$8,500",  tags: ["3D SCULPTURE", "VR READY"],         thumb: "src/assets/i3.png" },
-  { id: 3, title: "Obsidian Bloom",       status: "AVAILABLE", price: "$15,200", tags: ["GENERATIVE ART", "LIMITED EDITION"], thumb: "src/assets/i6.png" },
+  { id: 1, title: "Celestial Fracture",     status: "AVAILABLE", price: 12000, tags: ["DIGITAL PAINTING", "4K MASTER"],     thumb: i1 },
+  { id: 2, title: "Architectural Silence",  status: "SOLD",      price: 8500,  tags: ["3D SCULPTURE", "VR READY"],          thumb: i3 },
+  { id: 3, title: "Obsidian Bloom",         status: "AVAILABLE", price: 15200, tags: ["GENERATIVE ART", "LIMITED EDITION"], thumb: i6 },
 ];
 
 export default function ArtistPortal() {
+  const { formatPrice } = useLocale();
+  const formRef = useRef(null);
+  const titleRef = useRef(null);
+
   const [form, setForm] = useState({
     title: "", price: "", category: "Digital Painting", materials: "",
   });
   const [fileName, setFileName] = useState("");
   const [assetName, setAssetName] = useState("");
+
+  const STATS = [
+    { label: "TOTAL REVENUE",   value: formatPrice(124500),  sub: "+12.4% THIS MONTH",  highlight: true },
+    { label: "PIECES SOLD",     value: "18",                 sub: "LIFETIME CURATION" },
+    { label: "GALLERY VIEWS",   value: "42.8K",              sub: "HIGH ENGAGEMENT" },
+    { label: "COLLECTOR INDEX", value: "A+",                 sub: "TOP 5% ARTISTS" },
+  ];
+
+  const focusUploadForm = () => {
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => titleRef.current?.focus(), 350);
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -32,7 +47,6 @@ export default function ArtistPortal() {
 
   return (
     <section style={{ padding: "100px 24px 80px", maxWidth: 1300, margin: "0 auto" }}>
-      {/* header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
         style={{
@@ -51,15 +65,18 @@ export default function ArtistPortal() {
         </div>
         <motion.button
           whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+          onClick={focusUploadForm}
           style={{
+            display: "inline-flex", alignItems: "center", gap: 10,
             padding: "14px 26px",
             background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
             color: "#111", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
             border: "none", borderRadius: 999, cursor: "pointer",
-          }}>+ NEW UPLOAD</motion.button>
+          }}>
+          <PlusIcon size={14} /> NEW UPLOAD
+        </motion.button>
       </motion.div>
 
-      {/* stats */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -76,9 +93,9 @@ export default function ArtistPortal() {
               borderRadius: 8, padding: "20px 22px",
             }}>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "rgba(200,191,160,0.55)", marginBottom: 12 }}>{s.label}</div>
-            <div style={{
-              fontFamily: "'Cormorant Garamond',serif", fontSize: 32, fontWeight: 700,
-              color: s.highlight ? "#D4AF37" : "#fff", marginBottom: 12,
+            <div className="num-value" style={{
+              fontFamily: "'Raleway',sans-serif", fontSize: 30, fontWeight: 700,
+              color: s.highlight ? "#D4AF37" : "#fff", marginBottom: 12, letterSpacing: "0.005em",
             }}>{s.value}</div>
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, letterSpacing: "0.1em", color: s.highlight ? "#D4AF37" : "rgba(200,191,160,0.5)" }}>{s.sub}</div>
           </motion.div>
@@ -86,16 +103,15 @@ export default function ArtistPortal() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.05fr", gap: 36 }} className="ap-grid">
-        {/* exhibition entry */}
         <motion.form
+          ref={formRef}
           onSubmit={submit}
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.15 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22 }}>
-            <span style={{ fontSize: 22, color: "#D4AF37" }}>☁</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22, color: "#D4AF37" }}>
+            <CloudIcon size={22} />
             <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 30, fontWeight: 700, color: "#fff" }}>Exhibition Entry</h2>
           </div>
 
-          {/* drop zone */}
           <label style={{
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             padding: "60px 20px", marginBottom: 24,
@@ -106,19 +122,21 @@ export default function ArtistPortal() {
             <input type="file" onChange={e => setFileName(e.target.files?.[0]?.name || "")} style={{ display: "none" }} accept="image/*" />
             <div style={{
               width: 38, height: 38, borderRadius: 6,
-              background: "rgba(212,175,55,0.15)", display: "flex", alignItems: "center", justifyContent: "center",
-              marginBottom: 14,
+              background: "rgba(212,175,55,0.15)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 14, color: "#D4AF37",
             }}>
-              <span style={{ fontSize: 18, color: "#D4AF37" }}>🖼</span>
+              <ImageIcon size={20} />
             </div>
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", marginBottom: 4 }}>
               {fileName || "DROP MASTER FILE OR CLICK TO BROWSE"}
             </div>
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>TIFF, PNG or WEBP up to 100MB</div>
+            <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>TIFF, PNG or WEBP up to 100MB</div>
           </label>
 
           <Field label="ARTWORK TITLE">
             <input
+              ref={titleRef}
               value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
               placeholder="E.g., The Golden Zenith" style={inp}
             />
@@ -151,7 +169,6 @@ export default function ArtistPortal() {
             />
           </Field>
 
-          {/* 3D asset row */}
           <label style={{
             display: "flex", justifyContent: "space-between", alignItems: "center",
             padding: "16px 18px", marginBottom: 24,
@@ -163,7 +180,7 @@ export default function ArtistPortal() {
               <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", color: "#e8e0d0" }}>3D ASSET (OPTIONAL)</div>
               <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.5)", marginTop: 4 }}>{assetName || "Include GLB/GLTF for AR exhibition"}</div>
             </div>
-            <span style={{ fontSize: 16, color: "#D4AF37" }}>⬆</span>
+            <span style={{ color: "#D4AF37", display: "flex" }}><UploadIcon size={16} /></span>
           </label>
 
           <button type="submit" style={{
@@ -176,7 +193,6 @@ export default function ArtistPortal() {
           }}>INITIALIZE MINT &amp; LIST</button>
         </motion.form>
 
-        {/* active collection */}
         <motion.div
           initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.25 }}>
           <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 30, fontWeight: 700, color: "#fff", marginBottom: 22 }}>Active Collection</h2>
@@ -185,12 +201,13 @@ export default function ArtistPortal() {
             {ACTIVE_COLLECTION.map((p, i) => (
               <div key={p.id} style={{ display: "flex", gap: 18, alignItems: "center", paddingBottom: 22,
                 borderBottom: i !== ACTIVE_COLLECTION.length - 1 ? "1px solid rgba(212,175,55,0.1)" : "none" }}>
-                <img src={p.thumb} alt={p.title} style={{ width: 66, height: 66, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
+                <SafeImage src={p.thumb} alt={p.title} fallbackIndex={i}
+                  style={{ width: 66, height: 66, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#f0e8d8", fontWeight: 600 }}>{p.title}</div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", marginTop: 4,
+                  <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, letterSpacing: "0.1em", marginTop: 4,
                     color: p.status === "SOLD" ? "rgba(200,191,160,0.45)" : "#D4AF37" }}>
-                    {p.status} · {p.price}
+                    {p.status} · {formatPrice(p.price)}
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                     {p.tags.map(t => (

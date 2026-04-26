@@ -1,30 +1,39 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import SafeImage from "../components/SafeImage";
+import { useLocale } from "../context/Locale";
+import i1 from "../assets/i1.png";
+import i2 from "../assets/i2.png";
+import i3 from "../assets/i3.png";
+import i4 from "../assets/i4.png";
+import i5 from "../assets/i5.png";
+import i6 from "../assets/i6.png";
 
 const ARTISTS = {
   "elena-vance": {
     name: "Elena Vance",
     location: "Florence, Italy",
-    image: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=600&q=80",
+    image: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=600&q=80&auto=format&fit=crop",
     bio: "Based in Florence, Elena Vance explores the intersection of digital abstraction and classical renaissance techniques. Her work serves as a silent dialogue between the tactile history of oil on canvas and the ephemeral nature of generative light. Vance's pieces are held in private collections globally and have been featured in the Venetian Biennale of Digital Arts.",
     tags: ["DIGITAL NEO-CLASSICAL", "FLORENCE, ITALY", "OIL & PROJECTION"],
     period: "2021 — 2024 COLLECTION",
   },
-  "elena-rossi":  { name: "Elena Rossi",  location: "Milan, Italy",       image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80", bio: "Milan-based digital surrealist whose work blends classical techniques with generative algorithms. Rossi's dreamscapes have been exhibited across Europe and Japan.", tags: ["DIGITAL SURREALISM", "MILAN, ITALY", "MIXED MEDIA"], period: "2022 — 2024 COLLECTION" },
-  "hideo-tanaka": { name: "Hideo Tanaka", location: "Kyoto, Japan",       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80", bio: "Kinetic sculptor working with metal, glass, and magnetic fields. His installations invite the viewer into a quiet conversation between motion and stillness.",  tags: ["KINETIC SCULPTURE", "KYOTO, JAPAN", "METAL & GLASS"], period: "2020 — 2024 COLLECTION" },
-  "aria-voss":    { name: "Aria Voss",    location: "Berlin, Germany",    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&q=80", bio: "Berlin-based artist exploring the subconscious through dreamlike compositions. Voss collaborates with neuroscientists to interpret the architecture of memory.",   tags: ["DIGITAL SURREALISM", "BERLIN, GERMANY", "DIGITAL"],   period: "2023 — 2024 COLLECTION" },
-  "chen-wei":     { name: "Chen Wei",     location: "Shanghai, China",    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80", bio: "Captures the spiritual essence of nature in expansive oil and ink works that draw on classical Chinese landscape traditions.",                                  tags: ["FOREST ETHEREAL", "SHANGHAI, CHINA", "OIL & INK"],    period: "2019 — 2024 COLLECTION" },
-  "lena-bach":    { name: "Lena Bach",    location: "Zurich, Switzerland", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&q=80", bio: "Contemporary minimalism fused with metallic textures and geometric form. Bach's work is held in the permanent collections of the MoMA and Tate Modern.",      tags: ["GOLD ABSTRACTIONS", "ZURICH", "MIXED MEDIA"],          period: "2020 — 2024 COLLECTION" },
+  "elena-rossi":  { name: "Elena Rossi",  location: "Milan, Italy",        image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80&auto=format&fit=crop", bio: "Milan-based digital surrealist whose work blends classical techniques with generative algorithms. Rossi's dreamscapes have been exhibited across Europe and Japan.", tags: ["DIGITAL SURREALISM", "MILAN, ITALY", "MIXED MEDIA"], period: "2022 — 2024 COLLECTION" },
+  "hideo-tanaka": { name: "Hideo Tanaka", location: "Kyoto, Japan",        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80&auto=format&fit=crop", bio: "Kinetic sculptor working with metal, glass, and magnetic fields. His installations invite the viewer into a quiet conversation between motion and stillness.",   tags: ["KINETIC SCULPTURE", "KYOTO, JAPAN", "METAL & GLASS"], period: "2020 — 2024 COLLECTION" },
+  "aria-voss":    { name: "Aria Voss",    location: "Berlin, Germany",     image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&q=80&auto=format&fit=crop", bio: "Berlin-based artist exploring the subconscious through dreamlike compositions. Voss collaborates with neuroscientists to interpret the architecture of memory.", tags: ["DIGITAL SURREALISM", "BERLIN, GERMANY", "DIGITAL"],   period: "2023 — 2024 COLLECTION" },
+  "chen-wei":     { name: "Chen Wei",     location: "Shanghai, China",     image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80&auto=format&fit=crop", bio: "Captures the spiritual essence of nature in expansive oil and ink works that draw on classical Chinese landscape traditions.",                                tags: ["FOREST ETHEREAL", "SHANGHAI, CHINA", "OIL & INK"],     period: "2019 — 2024 COLLECTION" },
+  "lena-bach":    { name: "Lena Bach",    location: "Zurich, Switzerland", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&q=80&auto=format&fit=crop", bio: "Contemporary minimalism fused with metallic textures and geometric form. Bach's work is held in the permanent collections of the MoMA and Tate Modern.",     tags: ["GOLD ABSTRACTIONS", "ZURICH", "MIXED MEDIA"],          period: "2020 — 2024 COLLECTION" },
 };
 
+/* price = USD number; null = special-case label (Sold / Inquiry / Auction) */
 const WORKS = [
-  { id: "alch-1", title: "The Alchemist's Study",   medium: "OIL AND GOLD LEAF ON LINEN",  price: "Price Upon Request", img: "src/assets/i1.png", status: "available" },
-  { id: "ghst-2", title: "Ghost of the Renaissance", medium: "MIXED MEDIA ON PANEL",        price: "Sold",                img: "src/assets/i3.png", status: "sold" },
-  { id: "arch-3", title: "Architectural Echo",      medium: "DIGITAL CANVAS GICLÉE",       price: "$4,200",              img: "src/assets/i2.png", status: "available" },
-  { id: "slnc-4", title: "Silence in Motion",       medium: "DIGITAL PROJECTION",          price: "$12,400",             img: "src/assets/i6.png", status: "available" },
-  { id: "cels-5", title: "Celestial Tides",         medium: "ACRYLIC AND RESIN",           price: "$8,900",              img: "src/assets/i4.png", status: "available" },
-  { id: "frag-6", title: "Fragmented Memory",       medium: "PLASTER AND LIGHT INSTALLATION", price: "Available at Auction", img: "src/assets/i5.png", status: "auction" },
+  { id: "alch-1", title: "The Alchemist's Study",    medium: "OIL AND GOLD LEAF ON LINEN",        price: null,  label: "Price Upon Request",   img: i1, status: "available" },
+  { id: "ghst-2", title: "Ghost of the Renaissance", medium: "MIXED MEDIA ON PANEL",              price: null,  label: "Sold",                 img: i3, status: "sold" },
+  { id: "arch-3", title: "Architectural Echo",       medium: "DIGITAL CANVAS GICLÉE",             price: 4200,                                  img: i2, status: "available" },
+  { id: "slnc-4", title: "Silence in Motion",        medium: "DIGITAL PROJECTION",                price: 12400,                                 img: i6, status: "available" },
+  { id: "cels-5", title: "Celestial Tides",          medium: "ACRYLIC AND RESIN",                 price: 8900,                                  img: i4, status: "available" },
+  { id: "frag-6", title: "Fragmented Memory",        medium: "PLASTER AND LIGHT INSTALLATION",    price: null,  label: "Available at Auction", img: i5, status: "auction" },
 ];
 
 const FILTERS = [
@@ -36,6 +45,7 @@ const FILTERS = [
 export default function ArtistProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { formatPrice } = useLocale();
   const artist = ARTISTS[id] || ARTISTS["elena-vance"];
   const [filter, setFilter] = useState("all");
   const [followed, setFollowed] = useState(false);
@@ -54,11 +64,13 @@ export default function ArtistProfile() {
         gap: 56, alignItems: "center",
         padding: "32px 0 48px",
       }} className="ap-hero">
-        <motion.img
+        <motion.div
           initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7 }}
-          src={artist.image} alt={artist.name}
-          style={{ width: "100%", aspectRatio: "1/1.1", objectFit: "cover", borderRadius: 6 }}
-        />
+          style={{ width: "100%", aspectRatio: "1/1.1", borderRadius: 6, overflow: "hidden" }}>
+          <SafeImage src={artist.image} alt={artist.name} fallbackIndex={0}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </motion.div>
         <motion.div
           initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
@@ -157,14 +169,15 @@ export default function ArtistProfile() {
             whileHover={{ y: -4 }}
             style={{ cursor: "pointer" }}>
             <div style={{ width: "100%", aspectRatio: "1/1", overflow: "hidden", borderRadius: 4, position: "relative", marginBottom: 12 }}>
-              <img src={w.img} alt={w.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <SafeImage src={w.img} alt={w.title} fallbackIndex={i}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{w.title}</div>
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, letterSpacing: "0.12em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{w.medium}</div>
-            <div style={{
-              fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600, marginTop: 4,
+            <div className="num-value" style={{
+              fontFamily: "'Raleway',sans-serif", fontSize: 14, fontWeight: 600, marginTop: 4,
               color: w.status === "sold" ? "rgba(200,191,160,0.5)" : "#D4AF37",
-            }}>{w.price}</div>
+            }}>{w.price != null ? formatPrice(w.price) : w.label}</div>
           </motion.div>
         ))}
       </div>

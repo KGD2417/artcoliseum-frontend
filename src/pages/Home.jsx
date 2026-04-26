@@ -1,62 +1,75 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
+import SafeImage from "../components/SafeImage";
+import { useLocale } from "../context/Locale";
+import { ArEyeIcon, SunIcon, TextureIcon } from "../components/Icons";
+import i1 from "../assets/i1.png";
+import i2 from "../assets/i2.png";
+import i3 from "../assets/i3.png";
+import i4 from "../assets/i4.png";
+import i5 from "../assets/i5.png";
+import i6 from "../assets/i6.png";
+import i7 from "../assets/i7.png";
+import i8 from "../assets/i8.png";
 
-/* ── data ─────────────────────────────────────────────────────── */
+/* prices stored as USD numbers — formatPrice converts to active currency */
 const CAROUSEL_ITEMS = [
-  { img: "src/assets/i1.png", title: "Golden Horizon",       medium: "Acrylic on Canvas", price: "$2,400" },
-  { img: "src/assets/i2.png", title: "Eternal Grace",        medium: "Bronze Sculpture",  price: "$3,800" },
-  { img: "src/assets/i6.png", title: "Cosmic Flow",          medium: "Mixed Media",       price: "$1,950" },
-  { img: "src/assets/i4.png", title: "The Golden Tree",      medium: "Oil on Canvas",     price: "$2,100" },
-  { img: "src/assets/i5.png", title: "Whispers of Silence",  medium: "Oil on Canvas",     price: "$1,700" },
-  { img: "src/assets/i3.png", title: "Azure Dreams",         medium: "Mixed Media",       price: "$2,250" },
-  { img: "src/assets/i8.png", title: "Renaissance Study",    medium: "Oil on Panel",      price: "$5,800" },
-  { img: "src/assets/i7.png", title: "Ocean Depths",         medium: "Digital Print",     price: "$1,200" },
+  { img: i1, title: "Golden Horizon",       medium: "Acrylic on Canvas", price: 2400 },
+  { img: i2, title: "Eternal Grace",        medium: "Bronze Sculpture",  price: 3800 },
+  { img: i6, title: "Cosmic Flow",          medium: "Mixed Media",       price: 1950 },
+  { img: i4, title: "The Golden Tree",      medium: "Oil on Canvas",     price: 2100 },
+  { img: i5, title: "Whispers of Silence",  medium: "Oil on Canvas",     price: 1700 },
+  { img: i3, title: "Azure Dreams",         medium: "Mixed Media",       price: 2250 },
+  { img: i8, title: "Renaissance Study",    medium: "Oil on Panel",      price: 5800 },
+  { img: i7, title: "Ocean Depths",         medium: "Digital Print",     price: 1200 },
 ];
 
 const MEDIUMS = [
-  { slug: "paintings",  label: "PAINTINGS",   sub: "Oil, Acrylic & Watercolor",   count: "2,400+ works", img: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=800&q=80" },
-  { slug: "sculptures", label: "SCULPTURES",  sub: "Bronze, Marble & Mixed Media", count: "840+ works",   img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" },
-  { slug: "photography", label: "PHOTOGRAPHY", sub: "Fine Art & Documentary",       count: "1,200+ works", img: "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=800&q=80" },
-  { slug: "digital",    label: "DIGITAL",     sub: "NFT & Digital Canvas",         count: "3,600+ works", img: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=800&q=80" },
+  { slug: "paintings",  label: "Paintings",   sub: "Oil, Acrylic & Watercolor",   count: "2,400+ works",
+    img: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=900&q=80&auto=format&fit=crop" },
+  { slug: "sculptures", label: "Sculptures",  sub: "Bronze, Marble & Mixed Media", count: "840+ works",
+    img: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=900&q=80&auto=format&fit=crop" },
+  { slug: "photography", label: "Photography", sub: "Fine Art & Documentary",      count: "1,200+ works",
+    img: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=900&q=80&auto=format&fit=crop" },
+  { slug: "digital",    label: "Digital",     sub: "NFT & Generative Canvas",      count: "3,600+ works",
+    img: "https://images.unsplash.com/photo-1633437039415-f3d6611db4d5?w=900&q=80&auto=format&fit=crop" },
 ];
 
 const AR_FEATURES = [
-  { icon: "⟨AR⟩", label: "True-to-scale projection",       desc: "See exactly how each artwork fits your space in full dimension" },
-  { icon: "✦",    label: "Dynamic lighting simulation",    desc: "Preview your art under natural, warm, and ambient lighting" },
-  { icon: "◈",    label: "Museum-grade texture detail",    desc: "Every brushstroke and surface rendered at exhibition fidelity" },
+  { Icon: ArEyeIcon,   label: "True-to-scale projection",    desc: "See exactly how each artwork fits your space in full dimension" },
+  { Icon: SunIcon,     label: "Dynamic lighting simulation", desc: "Preview your art under natural, warm, and ambient lighting" },
+  { Icon: TextureIcon, label: "Museum-grade texture detail", desc: "Every brushstroke and surface rendered at exhibition fidelity" },
 ];
 
 const TESTIMONIALS = [
   {
     quote: "Aureum is the only platform where I trust the provenance as much as the curation. My living room has never looked more deliberate.",
-    name: "Isabella Moreau",
-    title: "Private Collector, Paris",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+    name: "Isabella Moreau", title: "Private Collector, Paris",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80&auto=format&fit=crop", fbIdx: 1,
   },
   {
     quote: "The AR preview alone changed how I commit to a piece. I placed three pieces virtually before purchasing — every single one was perfect on arrival.",
-    name: "Daniel Hoffmann",
-    title: "Architect, Berlin",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    name: "Daniel Hoffmann", title: "Architect, Berlin",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop", fbIdx: 2,
   },
   {
     quote: "From inquiry to white-glove delivery, the experience felt like working with a personal curator. This is what art collecting should feel like.",
-    name: "Aria Patel",
-    title: "Gallery Director, Mumbai",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
+    name: "Aria Patel", title: "Gallery Director, Mumbai",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80&auto=format&fit=crop", fbIdx: 3,
   },
 ];
 
 const STATS = [
   { value: "10,000+", label: "Original Artworks" },
   { value: "2,500+",  label: "Talented Artists"  },
-  { value: "50+",     label: "Countries"          },
-  { value: "Secure",  label: "Global Delivery"    },
-  { value: "100%",    label: "Authentic Artwork"  },
+  { value: "50+",     label: "Countries"         },
+  { value: "Secure",  label: "Global Delivery"   },
+  { value: "100%",    label: "Authentic Artwork" },
 ];
 
-/* ── helper ────────────────────────────────────────────────────── */
+const AR_PHONE_PHOTO = "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1100&q=80&auto=format&fit=crop";
+
 function SectionHeader({ tag, title, italic, sub }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -83,16 +96,15 @@ function SectionHeader({ tag, title, italic, sub }) {
   );
 }
 
-/* ── component ─────────────────────────────────────────────────── */
 export default function Home() {
   const navigate = useNavigate();
+  const { formatPrice } = useLocale();
   const [email, setEmail] = useState("");
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
   const startRot = useRef(0);
 
-  /* auto-rotate */
   useEffect(() => {
     const id = setInterval(() => {
       if (!isDragging) setRotation(r => r - 0.25);
@@ -114,17 +126,13 @@ export default function Home() {
 
   return (
     <>
-      {/* ═══════════════════════════════════════════════
-          HERO — heading, subheading, 2 buttons
-      ═══════════════════════════════════════════════ */}
+      {/* HERO */}
       <section className="hero-section">
         <div className="hero-glow" />
         <div className="hero-glow-2" />
 
-        <motion.div
-          className="hero-text"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
+        <motion.div className="hero-text"
+          initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
           <h1 className="hero-h1">
             <motion.span style={{ display: "block", color: "#fff" }}
@@ -172,15 +180,13 @@ export default function Home() {
 
         <motion.div className="hero-buttons"
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.88 }}>
-          <motion.button
-            className="btn-gold-main"
+          <motion.button className="btn-gold-main"
             whileHover={{ scale: 1.05, boxShadow: "0 0 48px rgba(212,175,55,0.6)" }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate("/categories")}>
             EXPLORE MARKETPLACE
           </motion.button>
-          <motion.button
-            className="btn-outline"
+          <motion.button className="btn-outline"
             whileHover={{ scale: 1.04, borderColor: "#D4AF37", color: "#f0e8d8" }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate("/become-artist")}>
@@ -193,18 +199,17 @@ export default function Home() {
           style={{ marginTop: 80 }}>
           {STATS.map(({ value, label }, i) => (
             <div key={i} className="stat-item">
-              <div className="stat-value">{value}</div>
+              <div className="stat-value num-value">{value}</div>
               <div className="stat-label">{label}</div>
             </div>
           ))}
         </motion.div>
       </section>
 
-      {/* ═══════════════════════════════════════════════
-          MEDIUMS — 4 types
-      ═══════════════════════════════════════════════ */}
+      {/* MEDIUMS */}
       <section className="section-pad">
-        <SectionHeader tag="Browse by Medium" title="The" italic="Mediums" />
+        <SectionHeader tag="Browse by Medium" title="The" italic="Mediums"
+          sub="Four pillars of fine art, each curated by our specialist team. Click a medium to explore its sub-categories." />
         <div className="mediums-grid">
           {MEDIUMS.map(({ slug, label, sub, count, img }, i) => (
             <motion.div
@@ -216,21 +221,19 @@ export default function Home() {
               transition={{ duration: 0.6, delay: i * 0.1 }}
               onClick={() => navigate(`/categories/${slug}`)}
               style={{ cursor: "pointer" }}>
-              <img src={img} alt={label} className="med-img" />
+              <SafeImage src={img} alt={label} fallbackIndex={i} className="med-img" />
               <div className="med-gradient" />
               <div className="med-info">
-                <div className="med-label">{label}</div>
+                <div className="med-label">{label.toUpperCase()}</div>
                 <div className="med-sub">{sub}</div>
-                <div className="med-count">{count}</div>
+                <div className="med-count num-value">{count}</div>
               </div>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════
-          HIGHLIGHTS — 3D spiral carousel
-      ═══════════════════════════════════════════════ */}
+      {/* HIGHLIGHTS — 3D carousel */}
       <section className="section-pad" style={{ background: "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)" }}>
         <SectionHeader
           tag="Curator's Picks"
@@ -255,8 +258,7 @@ export default function Home() {
           <div
             style={{
               position: "relative",
-              width: 240,
-              height: 320,
+              width: 240, height: 320,
               transformStyle: "preserve-3d",
               transform: `rotateY(${rotation}deg)`,
               transition: isDragging ? "none" : "transform 0.1s linear",
@@ -270,12 +272,12 @@ export default function Home() {
                   style={{ transform: `rotateY(${angle}deg) translateZ(420px)` }}>
                   <img src={item.img} alt={item.title} className="carousel-card-img" />
                   <div className="carousel-default-info">
-                    <span className="carousel-price-tag">{item.price}</span>
+                    <span className="carousel-price-tag num-value">{formatPrice(item.price)}</span>
                   </div>
                   <div className="carousel-glass">
                     <div className="carousel-glass-title">{item.title}</div>
                     <div className="carousel-glass-medium">{item.medium}</div>
-                    <div className="carousel-glass-price">{item.price}</div>
+                    <div className="carousel-glass-price num-value">{formatPrice(item.price)}</div>
                     <button className="carousel-glass-btn" onClick={() => navigate("/gallery")}>
                       View Artwork ›
                     </button>
@@ -287,76 +289,64 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* ═══════════════════════════════════════════════
-          ART IN YOUR SPACE — image instead of phone, centered
-      ═══════════════════════════════════════════════ */}
+      {/* ART IN YOUR SPACE — two-column, centered */}
       <section className="ar-section ar-section-center">
         <motion.div
-          className="ar-content-col"
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: -40 }}
+          whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          style={{ textAlign: "center", maxWidth: 720, margin: "0 auto" }}>
-          <div className="gold-rule" style={{ marginBottom: 18, justifyContent: "center" }}>
+          className="ar-photo-card">
+          <SafeImage src={AR_PHONE_PHOTO} alt="Artwork visualised through phone AR preview" fallbackIndex={5} />
+        </motion.div>
+
+        <motion.div
+          className="ar-content-col"
+          initial={{ opacity: 0, x: 40 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="gold-rule" style={{ marginBottom: 18 }}>
             <div className="grl" style={{ background: "linear-gradient(90deg,transparent,#D4AF37)", maxWidth: 60 }} />
             <span className="grt">Augmented Reality</span>
             <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)", maxWidth: 60 }} />
           </div>
 
-          <h2 className="ar-heading">
-            Art in Your <em>Space</em>
-          </h2>
-          <p className="ar-desc" style={{ margin: "0 auto 36px", maxWidth: 560 }}>
-            Immerse yourself in an unparalleled preview experience. Point your camera at any wall and watch museum-quality art come to life in your living space — before you commit to a purchase.
+          <h2 className="ar-heading">Art in Your <em>Space</em></h2>
+          <p className="ar-desc">
+            Bridge the gap between digital and physical. Our immersive AR preview allows you to visualise any masterpiece in your own environment with perfect scale and lighting fidelity.
           </p>
-        </motion.div>
 
-        {/* hero image */}
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className="ar-hero-image">
-          <img src="src/assets/i6.png" alt="Art in your space" />
-          <div className="ar-hero-overlay" />
-        </motion.div>
+          <div className="ar-features">
+            {AR_FEATURES.map(({ Icon, label, desc }, i) => (
+              <motion.div
+                key={label}
+                className="ar-feature-item"
+                initial={{ opacity: 0, x: 24 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.55, delay: 0.3 + i * 0.14 }}>
+                <div className="ar-feature-icon"><Icon size={20} /></div>
+                <div>
+                  <div className="ar-feature-label">{label.toUpperCase()}</div>
+                  <div className="ar-feature-desc">{desc}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
 
-        <motion.div
-          className="ar-features ar-features-row"
-          initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
-          viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.3 }}>
-          {AR_FEATURES.map(({ icon, label, desc }, i) => (
-            <motion.div
-              key={label}
-              className="ar-feature-item"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.55, delay: 0.4 + i * 0.14 }}>
-              <div className="ar-feature-icon">{icon}</div>
-              <div>
-                <div className="ar-feature-label">{label}</div>
-                <div className="ar-feature-desc">{desc}</div>
-              </div>
-            </motion.div>
-          ))}
+          <motion.button
+            className="btn-outline"
+            style={{ marginTop: 36, borderColor: "#D4AF37", color: "#D4AF37" }}
+            whileHover={{ scale: 1.04, boxShadow: "0 0 36px rgba(212,175,55,0.35)" }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/ar")}>
+            LAUNCH AR PREVIEW
+          </motion.button>
         </motion.div>
-
-        <motion.button
-          className="btn-gold-main"
-          style={{ marginTop: 40 }}
-          whileHover={{ scale: 1.05, boxShadow: "0 0 48px rgba(212,175,55,0.55)" }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => navigate("/ar")}>
-          LAUNCH AR PREVIEW
-        </motion.button>
       </section>
 
-      {/* ═══════════════════════════════════════════════
-          TESTIMONIALS
-      ═══════════════════════════════════════════════ */}
+      {/* TESTIMONIALS */}
       <section className="section-pad" style={{ background: "linear-gradient(180deg,#080808 0%,#0d0b08 50%,#080808 100%)" }}>
         <SectionHeader
           tag="Voices"
@@ -397,7 +387,7 @@ export default function Home() {
               }}>{t.quote}</p>
 
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <img src={t.avatar} alt={t.name}
+                <SafeImage src={t.avatar} alt={t.name} fallbackIndex={t.fbIdx}
                   style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(212,175,55,0.3)" }} />
                 <div>
                   <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#D4AF37" }}>{t.name.toUpperCase()}</div>
@@ -409,9 +399,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════
-          NEWSLETTER
-      ═══════════════════════════════════════════════ */}
+      {/* NEWSLETTER */}
       <motion.section
         className="newsletter-section"
         initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
