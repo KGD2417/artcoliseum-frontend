@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import CircularGallery from "../components/CircularGallery";
+import ColiseumGallery from "../components/ColiseumGallery";
 import CircularRotator from "../components/CircularRotator";
 import { useLocale } from "../context/Locale";
 import {
@@ -563,21 +563,13 @@ export default function Home() {
           </motion.p>
         </motion.div>
 
-        {/* OGL bent gallery */}
+        {/* True 3D concave coliseum gallery — full-bleed cinematic */}
         <motion.div
+          className="coliseum-bleed"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="circ-gallery-wrap">
-          <CircularGallery
-            items={HERO_GALLERY}
-            bend={3}
-            borderRadius={0.05}
-            scrollEase={0.04}
-            scrollSpeed={2}
-            autoplay={0.05}
-            textColor="#D4AF37"
-          />
+          transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}>
+          <ColiseumGallery items={HERO_GALLERY} />
         </motion.div>
 
         <motion.div
