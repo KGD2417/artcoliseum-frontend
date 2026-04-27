@@ -284,7 +284,7 @@ function SectionHeader({ tag, title, italic, sub }) {
   );
 }
 
-/* ── Premium 3D cylinder carousel (Highlights — heading + sub + 3D + glass morph) ── */
+/* ── Highlights carousel — front-facing illusion (scale + depth, no rotateY) ── */
 function CylinderCarousel({ items, navigate }) {
   const { formatPrice } = useLocale();
 
@@ -334,7 +334,7 @@ function CylinderCarousel({ items, navigate }) {
       initial={{ opacity: 0, y: 70 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 10, ease: [0.22, 1, 0.36, 1] }}
       className="carousel-wrap"
       style={{ cursor: isDragging ? "grabbing" : "grab" }}
       onMouseDown={handleDown}
@@ -569,7 +569,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}>
-          <ColiseumGallery items={HERO_GALLERY} />
+          <ColiseumGallery items={CAROUSEL_ITEMS} navigate={navigate} />
         </motion.div>
 
         <motion.div

@@ -360,11 +360,11 @@ a {
    HERO SECTION
 ═══════════════════════════════════════════════ */
 .hero-section {
-  min-height: 115vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 130px 24px 80px;
+  padding: 110px 24px 40px;
   background: radial-gradient(
     ellipse at 50% 10%,
     #1e1608 0%,
@@ -580,6 +580,210 @@ a {
 }
 .carousel-glass-btn:hover {
   transform: scale(1.05);
+}
+
+/* ═══════════════════════════════════════════════
+   HIGHLIGHTS — front-facing illusion carousel
+═══════════════════════════════════════════════ */
+.hl-wrap {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  margin: 40px auto 0;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+.hl-glow {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 200px;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(212, 175, 55, 0.14) 0%,
+    rgba(212, 175, 55, 0.04) 40%,
+    transparent 75%
+  );
+  filter: blur(34px);
+  z-index: 0;
+}
+
+.hl-stage {
+  position: absolute;
+  left: 50%;
+  bottom: 60px;
+  width: 0;
+  height: 0;
+  z-index: 2;
+}
+
+.hl-card {
+  position: absolute;
+  left: -120px;
+  top: -340px;
+  width: 240px;
+  height: 340px;
+  transform-origin: 50% 100%;
+  transition:
+    opacity 0.45s ease,
+    transform 0.3s ease-out;
+  will-change: transform, opacity;
+}
+
+.hl-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0c0a07;
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(212, 175, 55, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition:
+    filter 0.35s ease,
+    box-shadow 0.4s ease;
+}
+
+.hl-card.is-center .hl-card-inner {
+  box-shadow:
+    0 50px 100px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(212, 175, 55, 0.55),
+    0 0 50px rgba(212, 175, 55, 0.28);
+}
+
+.hl-card-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hl-card.is-center:hover .hl-card-inner img {
+  transform: scale(1.05);
+}
+
+.hl-card-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.65) 100%);
+  pointer-events: none;
+}
+
+.hl-default-info {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  transition: opacity 0.3s;
+  z-index: 2;
+}
+.hl-card.is-center:hover .hl-default-info {
+  opacity: 0;
+}
+
+.hl-glass {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 18px 16px 16px;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 3;
+}
+.hl-card.is-center:hover .hl-glass {
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.hl-glass-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+.hl-glass-medium {
+  font-family: "Raleway", sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.82);
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+.hl-glass-price {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffe082;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1200px) {
+  .hl-wrap {
+    height: 420px;
+  }
+  .hl-stage {
+    bottom: 50px;
+  }
+  .hl-card {
+    left: -100px;
+    top: -290px;
+    width: 200px;
+    height: 290px;
+  }
+}
+
+@media (max-width: 800px) {
+  .hl-wrap {
+    height: 360px;
+    margin-top: 24px;
+  }
+  .hl-stage {
+    bottom: 40px;
+  }
+  .hl-card {
+    left: -85px;
+    top: -240px;
+    width: 170px;
+    height: 240px;
+  }
+  .hl-glass-title {
+    font-size: 15px;
+  }
+  .hl-glass-price {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hl-wrap {
+    height: 300px;
+  }
+  .hl-stage {
+    bottom: 32px;
+  }
+  .hl-card {
+    left: -65px;
+    top: -200px;
+    width: 130px;
+    height: 200px;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -2158,25 +2362,26 @@ input[type="email"] {
 }
 
 /* ═══════════════════════════════════════════════
-   COLISEUM GALLERY — true 3D concave hero gallery (full-bleed cinematic)
+   COLISEUM GALLERY — UI illusion of curved gallery wall
+   (front-facing cards, anchored bottom, scale + depth fake)
 ═══════════════════════════════════════════════ */
 .coliseum-bleed {
   position: relative;
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  margin-top: 56px;
-  margin-bottom: 48px;
+  margin-top: 28px;
+  margin-bottom: 28px;
   z-index: 2;
 }
 
 .coliseum-wrap {
   position: relative;
   width: 100vw;
-  height: 460px;
-  perspective: 2400px;
-  perspective-origin: 50% 50%;
-  overflow: visible;
+  height: 500px;
+  perspective: 1800px;
+  perspective-origin: 50% 75%;
+  overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
   touch-action: pan-y;
@@ -2184,31 +2389,36 @@ input[type="email"] {
 
 .coliseum-glow {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  bottom: -20px;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 220px;
   pointer-events: none;
   background: radial-gradient(
-    ellipse at 50% 58%,
-    rgba(212, 175, 55, 0.25) 0%,
-    rgba(212, 175, 55, 0.08) 30%,
-    transparent 65%
+    ellipse at center,
+    rgba(212, 175, 55, 0.16) 0%,
+    rgba(212, 175, 55, 0.05) 35%,
+    transparent 70%
   );
+  filter: blur(40px);
   z-index: 1;
 }
 
 .coliseum-floor {
   position: absolute;
   left: 50%;
-  bottom: 4%;
+  bottom: 6px;
   transform: translateX(-50%);
-  width: 70%;
-  height: 130px;
+  width: 60%;
+  height: 24px;
   background: radial-gradient(
     ellipse at center,
-    rgba(212, 175, 55, 0.28) 0%,
-    rgba(212, 175, 55, 0.08) 35%,
-    transparent 70%
+    rgba(212, 175, 55, 0.22) 0%,
+    rgba(212, 175, 55, 0.05) 50%,
+    transparent 80%
   );
-  filter: blur(28px);
+  filter: blur(14px);
   pointer-events: none;
   z-index: 1;
 }
@@ -2218,8 +2428,8 @@ input[type="email"] {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 22vw;
-  max-width: 360px;
+  width: 18vw;
+  max-width: 320px;
   pointer-events: none;
   z-index: 6;
 }
@@ -2247,23 +2457,23 @@ input[type="email"] {
 .coliseum-stage {
   position: absolute;
   left: 50%;
-  top: 50%;
+  bottom: 80px;
   width: 0;
   height: 0;
   transform-style: preserve-3d;
-  will-change: transform;
   z-index: 2;
 }
 
 .coliseum-tile {
   position: absolute;
-  left: -90px;
-  top: -130px;
-  width: 180px;
-  height: 260px;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-  transition: opacity 0.55s ease;
+  left: -100px;
+  top: -290px;
+  width: 200px;
+  height: 290px;
+  transform-origin: 50% 100%;
+  transition:
+    opacity 0.45s ease,
+    transform 0.3s ease-out;
   will-change: transform, opacity;
 }
 
@@ -2275,21 +2485,19 @@ input[type="email"] {
   overflow: hidden;
   background: #0c0a07;
   box-shadow:
-    0 40px 80px rgba(0, 0, 0, 0.65),
-    0 0 0 1px rgba(212, 175, 55, 0.18),
+    0 30px 60px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(212, 175, 55, 0.16),
     inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   transition:
-    filter 0.55s ease,
-    transform 0.55s ease,
-    box-shadow 0.55s ease;
-  transform-origin: center center;
+    filter 0.35s ease,
+    box-shadow 0.4s ease;
 }
 
 .coliseum-tile.is-center .coliseum-tile-inner {
   box-shadow:
-    0 60px 110px rgba(0, 0, 0, 0.85),
-    0 0 0 1px rgba(212, 175, 55, 0.65),
-    0 0 70px rgba(212, 175, 55, 0.32),
+    0 50px 100px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(212, 175, 55, 0.6),
+    0 0 60px rgba(212, 175, 55, 0.3),
     inset 0 0 0 1px rgba(212, 175, 55, 0.14);
 }
 
@@ -2307,17 +2515,17 @@ input[type="email"] {
   inset: 0;
   background: linear-gradient(
     180deg,
-    transparent 50%,
-    rgba(0, 0, 0, 0.78) 100%
+    transparent 55%,
+    rgba(0, 0, 0, 0.8) 100%
   );
   pointer-events: none;
 }
 
 .coliseum-tile-label {
   position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
   color: #d4af37;
   font-family: "Cormorant Garamond", "Playfair Display", serif;
   font-size: 18px;
@@ -2328,39 +2536,39 @@ input[type="email"] {
 }
 
 @media (max-width: 1200px) {
-  .coliseum-bleed {
-    margin-top: 48px;
-    margin-bottom: 36px;
-  }
   .coliseum-wrap {
-    height: 420px;
-    perspective: 2000px;
+    height: 440px;
+  }
+  .coliseum-stage {
+    bottom: 70px;
   }
   .coliseum-tile {
-    left: -80px;
-    top: -115px;
-    width: 160px;
-    height: 230px;
+    left: -85px;
+    top: -250px;
+    width: 170px;
+    height: 250px;
   }
   .coliseum-tile-label {
-    font-size: 15px;
+    font-size: 16px;
   }
 }
 
 @media (max-width: 800px) {
   .coliseum-bleed {
-    margin-top: 36px;
-    margin-bottom: 24px;
+    margin-top: 24px;
+    margin-bottom: 20px;
   }
   .coliseum-wrap {
-    height: 360px;
-    perspective: 1600px;
+    height: 380px;
+  }
+  .coliseum-stage {
+    bottom: 56px;
   }
   .coliseum-tile {
     left: -70px;
-    top: -100px;
+    top: -210px;
     width: 140px;
-    height: 200px;
+    height: 210px;
   }
   .coliseum-tile-label {
     font-size: 13px;
@@ -2370,24 +2578,26 @@ input[type="email"] {
   }
   .coliseum-fade-l,
   .coliseum-fade-r {
-    width: 14vw;
+    width: 12vw;
   }
 }
 
 @media (max-width: 520px) {
   .coliseum-bleed {
-    margin-top: 24px;
-    margin-bottom: 18px;
+    margin-top: 18px;
+    margin-bottom: 14px;
   }
   .coliseum-wrap {
     height: 300px;
-    perspective: 1300px;
+  }
+  .coliseum-stage {
+    bottom: 42px;
   }
   .coliseum-tile {
     left: -55px;
-    top: -78px;
+    top: -170px;
     width: 110px;
-    height: 156px;
+    height: 170px;
   }
   .coliseum-tile-label {
     font-size: 11px;
