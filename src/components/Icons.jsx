@@ -157,3 +157,62 @@ export const GlobeIcon = ({ size = 18 }) => (
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
   </svg>
 );
+
+/* Service strip icons (image1 reference, gold line-art) */
+export const ArtistFigureIcon = ({ size = 56 }) => (
+  <svg {...base(size)} strokeWidth={1.2}>
+    <path d="M7.8 5.5C7.8 4 9.5 3 12 3s4.2 1 4.2 2.5V7H7.8z" />
+    <path d="M7 7h10" />
+    <circle cx="12" cy="11" r="3.4" />
+    <path d="M5.5 21v-2.5c0-2 2.5-3.5 6.5-3.5s6.5 1.5 6.5 3.5V21" />
+    <path d="M19.5 13.6l2.5 6" />
+    <path d="M21 13l-1.4 1.5" />
+  </svg>
+);
+
+export const HandshakeIcon = ({ size = 56 }) => (
+  <svg {...base(size)} strokeWidth={1.2}>
+    <path d="M2.5 12.5l4-4 3.5 3.5-1.5 1.5-1.5 1.5-2.5 1z" />
+    <path d="M21.5 12.5l-4-4-3.5 3.5 1.5 1.5 1.5 1.5 2.5 1z" />
+    <path d="M9 12l3-3 3 3" />
+    <path d="M12 9l3.5 3.5-1 1L11.5 10z" />
+  </svg>
+);
+
+export const ArtSolutionsIcon = ({ size = 56 }) => (
+  <svg {...base(size)} strokeWidth={1.2}>
+    <path d="M12 3a9 9 0 1 0 0 18c1.6 0 2.8-1.3 2.8-2.9 0-.8-.3-1.5-.8-2-.5-.5-.3-1.4.4-1.4H16a5 5 0 0 0 5-5c0-3.9-4-6.7-9-6.7z" />
+    <circle cx="7.5" cy="11" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="10" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="14.5" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="17" cy="11" r="1.1" fill="currentColor" stroke="none" />
+    <path d="M14.5 17.5l3-3 4 4-3 3z" />
+  </svg>
+);
+
+export const FrameArtIcon = ({ size = 56 }) => (
+  <svg {...base(size)} strokeWidth={1.2}>
+    <rect x="4" y="4" width="16" height="16" />
+    <rect x="6.5" y="6.5" width="11" height="11" />
+    <circle cx="9" cy="10" r="1.2" />
+    <path d="M7 16l3-3 2.5 2.5L15 13l3 3" />
+  </svg>
+);
+
+export const PencilRulerIcon = ({ size = 56 }) => (
+  <svg {...base(size)} strokeWidth={1.2}>
+    <path d="M14 3l-10 10-1.5 4.5L7 16l10-10z" />
+    <path d="M12 5l4 4" />
+    <path d="M19 10l3 3-9 9-3-3z" />
+    <path d="M12 16l1 1M14 14l1 1M16 12l1 1" />
+  </svg>
+);
+
+export const DealIcon = ({ size = 56 }) => (
+  <svg {...base(size)} strokeWidth={1.2}>
+    <path d="M5 3h10l4 4v14H5z" />
+    <path d="M15 3v4h4" />
+    <path d="M7 13l3-2 3 2 4-3" />
+    <path d="M9 16l2-1 2 1 2-1.5" />
+  </svg>
+);

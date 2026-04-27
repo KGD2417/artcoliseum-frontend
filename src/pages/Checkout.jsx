@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { useLocale } from "../context/Locale";
-import { CopyIcon } from "../components/Icons";
+import { CopyIcon, CheckIcon } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i6 from "../assets/i6.png";
 
@@ -38,6 +38,7 @@ export default function Checkout() {
   const [code, setCode] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const fmt = (n) => formatPrice(n, { decimals: 2 });
 
   const subtotal = items.reduce((s, i) => s + i.price, 0);
@@ -47,8 +48,11 @@ export default function Checkout() {
 
   const remove = (id) => setItems(items.filter(i => i.id !== id));
   const settle = () => {
-    alert(`Settlement initiated for ${fmt(total)}. You'll receive confirmation by email.`);
-    navigate("/profile");
+    setOrderPlaced(true);
+    setTimeout(() => {
+      setOrderPlaced(false);
+      navigate("/");
+    }, 2600);
   };
 
   return (
@@ -311,6 +315,29 @@ export default function Checkout() {
               <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid rgba(212,175,55,0.12)", display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
                 <span>Logged events: <span className="num-value" style={{ color: "#D4AF37" }}>{HISTORY_LOG.length}</span></span>
                 <span>Tracking · <span className="num-value" style={{ color: "#D4AF37" }}>AUR-7729-BMX-01</span></span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ORDER PLACED MODAL */}
+      <AnimatePresence>
+        {orderPlaced && (
+          <motion.div className="order-modal-backdrop"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="order-modal"
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 280, damping: 22 }}>
+              <div className="order-modal-tick"><CheckIcon size={32} /></div>
+              <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, fontWeight: 700, color: "#fff", marginBottom: 10 }}>
+                Order Placed
+              </h2>
+              <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.65, marginBottom: 18 }}>
+                Settlement of <span className="num-value" style={{ color: "#D4AF37" }}>{fmt(total)}</span> confirmed. A confirmation email is on its way and our concierge will reach out within 24 hours to arrange white-glove delivery.
+              </p>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "rgba(200,191,160,0.5)" }}>
+                Returning home…
               </div>
             </motion.div>
           </motion.div>

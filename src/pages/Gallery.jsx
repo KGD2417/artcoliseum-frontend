@@ -52,6 +52,7 @@ export default function Gallery() {
   const [catFilter, setCatFilter]     = useState("sculpture");
   const [sizeFilter, setSizeFilter]   = useState("medium");
   const [search, setSearch] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const filtered = GALLERY_ITEMS.filter(it => {
     if (search && !`${it.title} ${it.artist}`.toLowerCase().includes(search.toLowerCase())) return false;
@@ -86,7 +87,7 @@ export default function Gallery() {
           display: "flex", alignItems: "center",
           background: "rgba(255,255,255,0.04)",
           border: "1px solid rgba(212,175,55,0.2)",
-          borderRadius: 8, padding: "0 14px", height: 44, width: 280, maxWidth: "100%",
+          borderRadius: 8, padding: "0 14px", height: 44, width: "100%", maxWidth: 280,
         }}>
           <input
             value={search} onChange={e => setSearch(e.target.value)}
@@ -101,9 +102,15 @@ export default function Gallery() {
         </div>
       </motion.div>
 
+      <button
+        className={`gal-filter-toggle ${filtersOpen ? "is-open" : ""}`}
+        onClick={() => setFiltersOpen(v => !v)}>
+        {filtersOpen ? "HIDE FILTERS" : "SHOW FILTERS & SORT"}
+      </button>
+
       <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 36 }} className="gal-grid">
         {/* sidebar filters */}
-        <aside>
+        <aside className={`gal-sidebar ${filtersOpen ? "is-open" : ""}`}>
           <FilterSection title="STYLE">
             {STYLES.map(s => (
               <button

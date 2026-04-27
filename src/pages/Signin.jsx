@@ -27,6 +27,15 @@ export default function SignIn() {
     borderRadius: 6,
   };
 
+  const phoneInputStyle = {
+    ...inputStyle,
+    fontFamily: "'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif",
+    fontVariantNumeric: 'tabular-nums',
+    letterSpacing: '0.04em',
+    fontSize: 15,
+    fontWeight: 500,
+  };
+
   return (
     <section style={{ padding: '120px 24px 100px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
       <motion.div
@@ -59,11 +68,12 @@ export default function SignIn() {
           />
           <input
             type="tel"
+            inputMode="tel"
             placeholder="Phone Number"
             value={phone}
             onChange={e => setPhone(e.target.value)}
             required
-            style={inputStyle}
+            style={phoneInputStyle}
           />
           <input
             type="password"
