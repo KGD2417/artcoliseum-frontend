@@ -2703,3 +2703,769 @@ input[type="email"] {
     max-height: 360px;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   ABOUT ARRT COLISEUM — two-column stacked cards
+═══════════════════════════════════════════════ */
+.about-col-section {
+  padding: 100px 24px;
+  background: linear-gradient(180deg, #080808 0%, #0c0a07 50%, #080808 100%);
+}
+.about-col-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 80px;
+}
+.about-col-cards {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.about-col-content {
+  flex: 1;
+  min-width: 280px;
+}
+
+/* Stacked cards */
+.stacked-cards-wrap {
+  position: relative;
+  width: 300px;
+  height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stacked-card {
+  position: absolute;
+  width: 195px;
+  height: 255px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(212, 175, 55, 0.2);
+  cursor: pointer;
+}
+.stacked-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.stacked-card:hover img {
+  transform: scale(1.06);
+}
+
+.about-col-pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.about-col-pillar {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+.about-col-pillar-num {
+  flex-shrink: 0;
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #d4af37;
+  line-height: 1;
+  padding-top: 2px;
+}
+.about-col-pillar-label {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #f0e8d8;
+  margin-bottom: 4px;
+}
+.about-col-pillar-desc {
+  font-family: "Raleway", sans-serif;
+  font-size: 13px;
+  color: rgba(200, 191, 160, 0.55);
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .about-col-inner {
+    flex-direction: column;
+    gap: 56px;
+    align-items: center;
+  }
+  .about-col-content {
+    text-align: left;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   LAUNCH OF NEW PRODUCTS — image stack
+═══════════════════════════════════════════════ */
+.launch-img-col {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.launch-img-stack {
+  position: relative;
+  width: clamp(260px, 38vw, 460px);
+  aspect-ratio: 4/5;
+}
+.launch-img-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  transform: rotate(-4deg) translate(-14px, 14px);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.launch-img-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.launch-img-front {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.65);
+}
+.launch-img-front img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.launch-img-front:hover img {
+  transform: scale(1.04);
+}
+
+.launch-features {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.launch-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+.launch-feature-num {
+  flex-shrink: 0;
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #d4af37;
+  padding-top: 2px;
+}
+.launch-feature-label {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #f0e8d8;
+  margin-bottom: 4px;
+}
+.launch-feature-desc {
+  font-family: "Raleway", sans-serif;
+  font-size: 13px;
+  color: rgba(200, 191, 160, 0.55);
+  line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════════════
+   EVENTS — 3D tilt cards
+═══════════════════════════════════════════════ */
+.events-tilt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.event-tilt-wrap {
+  border-radius: 18px;
+  cursor: default;
+}
+.event-tilt-card {
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(14, 11, 8, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  transition: box-shadow 0.3s ease;
+}
+.event-tilt-card:hover {
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(212, 175, 55, 0.28);
+}
+.event-card-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+}
+.event-card-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.event-tilt-card:hover .event-card-img-wrap img {
+  transform: scale(1.06);
+}
+.event-card-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 30%,
+    rgba(10, 8, 5, 0.55) 100%
+  );
+}
+.event-card-body {
+  padding: 22px 24px 26px;
+}
+.event-card-tag {
+  display: inline-block;
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+.event-tag-ongoing {
+  background: rgba(212, 175, 55, 0.18);
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+}
+.event-tag-upcoming {
+  background: rgba(200, 200, 200, 0.08);
+  color: rgba(200, 191, 160, 0.7);
+  border: 1px solid rgba(200, 191, 160, 0.2);
+}
+.event-card-date {
+  font-family: "Raleway", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(200, 191, 160, 0.5);
+  margin-bottom: 8px;
+}
+.event-card-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #f5ede1;
+  margin-bottom: 6px;
+  line-height: 1.25;
+}
+.event-card-loc {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #d4af37;
+  margin-bottom: 12px;
+}
+.event-card-desc {
+  font-family: "Raleway", sans-serif;
+  font-size: 13px;
+  color: rgba(200, 191, 160, 0.55);
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .events-tilt-grid {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+  }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+  .events-tilt-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   PRESERVATION OF ART — stagger grid
+═══════════════════════════════════════════════ */
+.pres-section {
+  background: linear-gradient(
+    180deg,
+    #080808 0%,
+    #0c0a07 50%,
+    #080808 100%
+  ) !important;
+}
+.pres-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 72px;
+}
+.pres-text-col {
+  flex: 1;
+  min-width: 280px;
+}
+.pres-grid-col {
+  flex: 0 0 auto;
+}
+.pres-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: clamp(280px, 38vw, 460px);
+}
+.pres-cell {
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 3/4;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  background: #0d0a07;
+}
+.pres-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pres-cell:hover img {
+  transform: scale(1.06);
+}
+.pres-cell:nth-child(2) {
+  margin-top: 28px;
+}
+.pres-cell:nth-child(4) {
+  margin-top: -28px;
+}
+
+@media (max-width: 1000px) {
+  .pres-inner {
+    flex-direction: column-reverse;
+    gap: 52px;
+    align-items: center;
+  }
+  .pres-grid {
+    width: 100%;
+    max-width: 420px;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   EVENTS PAGE
+═══════════════════════════════════════════════ */
+.ev-page-root {
+  padding-top: 100px;
+  min-height: 100vh;
+}
+.ev-page-hero {
+  text-align: center;
+  padding: 80px 24px 60px;
+}
+.ev-page-h1 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(44px, 6vw, 80px);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.05;
+  margin-bottom: 16px;
+}
+.ev-page-h1 em {
+  color: #d4af37;
+  font-style: italic;
+}
+.ev-page-sub {
+  font-family: "Raleway", sans-serif;
+  font-size: 15px;
+  color: rgba(200, 191, 160, 0.6);
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+.ev-page-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+.ev-page-card {
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(14, 11, 8, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
+  cursor: default;
+}
+.ev-page-card:hover {
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(212, 175, 55, 0.25);
+  transform: translateY(-4px);
+}
+.ev-page-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+.ev-page-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ev-page-card:hover .ev-page-img-wrap img {
+  transform: scale(1.06);
+}
+.ev-page-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 40%,
+    rgba(10, 8, 5, 0.5) 100%
+  );
+}
+.ev-page-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+.ev-page-tag-ongoing {
+  background: rgba(212, 175, 55, 0.22);
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+.ev-page-tag-upcoming {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(200, 191, 160, 0.7);
+  border: 1px solid rgba(200, 191, 160, 0.2);
+}
+.ev-page-body {
+  padding: 22px 24px 28px;
+}
+.ev-page-date {
+  font-family: "Raleway", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(200, 191, 160, 0.5);
+  margin-bottom: 8px;
+}
+.ev-page-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #f5ede1;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+.ev-page-location {
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #d4af37;
+  margin-bottom: 12px;
+}
+.ev-page-desc {
+  font-family: "Raleway", sans-serif;
+  font-size: 13px;
+  color: rgba(200, 191, 160, 0.55);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+.ev-page-curator {
+  font-family: "Raleway", sans-serif;
+  font-size: 12px;
+  color: rgba(200, 191, 160, 0.45);
+  letter-spacing: 0.03em;
+}
+.ev-page-curator span {
+  color: rgba(212, 175, 55, 0.7);
+}
+.ev-page-cta {
+  text-align: center;
+  padding: 0 24px 100px;
+}
+
+@media (max-width: 900px) {
+  .ev-page-grid {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+  }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+  .ev-page-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* ═══════════════════════════════════════════════
+   COLISEUM GALLERY — UI illusion of curved gallery wall
+   (front-facing cards, anchored bottom, scale + depth fake)
+═══════════════════════════════════════════════ */
+.coliseum-bleed {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 28px;
+  margin-bottom: 28px;
+  z-index: 2;
+}
+
+.coliseum-wrap {
+  position: relative;
+  width: 100vw;
+  height: 500px;
+  perspective: 1800px;
+  perspective-origin: 50% 75%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+.coliseum-glow {
+  position: absolute;
+  left: 50%;
+  bottom: -20px;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 220px;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(212, 175, 55, 0.16) 0%,
+    rgba(212, 175, 55, 0.05) 35%,
+    transparent 70%
+  );
+  filter: blur(40px);
+  z-index: 1;
+}
+
+.coliseum-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 24px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(212, 175, 55, 0.22) 0%,
+    rgba(212, 175, 55, 0.05) 50%,
+    transparent 80%
+  );
+  filter: blur(14px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.coliseum-fade-l,
+.coliseum-fade-r {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18vw;
+  max-width: 320px;
+  pointer-events: none;
+  z-index: 6;
+}
+.coliseum-fade-l {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    #080808 0%,
+    rgba(8, 8, 8, 0.92) 25%,
+    rgba(8, 8, 8, 0.55) 60%,
+    transparent 100%
+  );
+}
+.coliseum-fade-r {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    #080808 0%,
+    rgba(8, 8, 8, 0.92) 25%,
+    rgba(8, 8, 8, 0.55) 60%,
+    transparent 100%
+  );
+}
+
+.coliseum-stage {
+  position: absolute;
+  left: 50%;
+  bottom: 80px;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  z-index: 2;
+}
+
+.coliseum-tile {
+  position: absolute;
+  left: -100px;
+  top: -290px;
+  width: 200px;
+  height: 290px;
+  transform-origin: 50% 100%;
+  transition:
+    opacity 0.45s ease,
+    transform 0.3s ease-out;
+  will-change: transform, opacity;
+}
+
+.coliseum-tile-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0c0a07;
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(212, 175, 55, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition:
+    filter 0.35s ease,
+    box-shadow 0.4s ease;
+}
+
+.coliseum-tile.is-center .coliseum-tile-inner {
+  box-shadow:
+    0 50px 100px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(212, 175, 55, 0.6),
+    0 0 60px rgba(212, 175, 55, 0.3),
+    inset 0 0 0 1px rgba(212, 175, 55, 0.14);
+}
+
+.coliseum-tile-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.coliseum-tile-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.8) 100%);
+  pointer-events: none;
+}
+
+.coliseum-tile-label {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  color: #d4af37;
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-size: 18px;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+@media (max-width: 1200px) {
+  .coliseum-wrap {
+    height: 440px;
+  }
+  .coliseum-stage {
+    bottom: 70px;
+  }
+  .coliseum-tile {
+    left: -85px;
+    top: -250px;
+    width: 170px;
+    height: 250px;
+  }
+  .coliseum-tile-label {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 800px) {
+  .coliseum-bleed {
+    margin-top: 24px;
+    margin-bottom: 20px;
+  }
+  .coliseum-wrap {
+    height: 380px;
+  }
+  .coliseum-stage {
+    bottom: 56px;
+  }
+  .coliseum-tile {
+    left: -70px;
+    top: -210px;
+    width: 140px;
+    height: 210px;
+  }
+  .coliseum-tile-label {
+    font-size: 13px;
+    left: 12px;
+    right: 12px;
+    bottom: 10px;
+  }
+  .coliseum-fade-l,
+  .coliseum-fade-r {
+    width: 12vw;
+  }
+}
+
+@media (max-width: 520px) {
+  .coliseum-bleed {
+    margin-top: 18px;
+    margin-bottom: 14px;
+  }
+  .coliseum-wrap {
+    height: 300px;
+  }
+  .coliseum-stage {
+    bottom: 42px;
+  }
+  .coliseum-tile {
+    left: -55px;
+    top: -170px;
+    width: 110px;
+    height: 170px;
+  }
+  .coliseum-tile-label {
+    font-size: 11px;
+    left: 8px;
+    right: 8px;
+    bottom: 6px;
+  }
+  .coliseum-fade-l,
+  .coliseum-fade-r {
+    width: 10vw;
+  }
+}

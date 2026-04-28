@@ -14,7 +14,7 @@ const LINKS = [
   { label: "HOME",        to: "/"           },
   { label: "ARTISTS",     to: "/artists"    },
   { label: "MARKETPLACE", to: "/categories" },
-  { label: "ABOUT",       to: "/about"      },
+  { label: "EVENTS",      to: "/events"     },
 ];
 
 const ALL_LINKS = [

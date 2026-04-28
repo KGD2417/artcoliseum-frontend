@@ -3,22 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import CircularGallery from "../components/CircularGallery";
-import CircularRotator from "../components/CircularRotator";
-import { useLocale } from "../context/Locale";
 import {
-  ArEyeIcon,
-  SunIcon,
-  TextureIcon,
   PaletteIcon,
   ChiselIcon,
   CameraIcon,
   ChipIcon,
-  ArtistFigureIcon,
-  HandshakeIcon,
-  ArtSolutionsIcon,
-  FrameArtIcon,
-  PencilRulerIcon,
-  DealIcon,
 } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
@@ -29,7 +18,7 @@ import i6 from "../assets/i6.png";
 import i7 from "../assets/i7.png";
 import i8 from "../assets/i8.png";
 
-/* ── Hero gallery items: gold/red/warm aesthetic ─────────────────── */
+/* ── Hero gallery items ─────────────────────────────────────────── */
 const HERO_GALLERY = [
   { image: i4, text: "The Golden Tree" },
   { image: i1, text: "Golden Horizon" },
@@ -61,26 +50,16 @@ const HERO_GALLERY = [
   { image: i7, text: "Ocean Depths" },
 ];
 
-/* ── 3D carousel (Highlights) ────────────────────────────────────── */
+/* ── 3D carousel items ───────────────────────────────────────────── */
 const CAROUSEL_ITEMS = [
-  {
-    img: i1,
-    title: "Golden Horizon",
-    medium: "Acrylic on Canvas",
-    price: 2400,
-  },
-  { img: i2, title: "Eternal Grace", medium: "Bronze Sculpture", price: 3800 },
-  { img: i6, title: "Cosmic Flow", medium: "Mixed Media", price: 1950 },
-  { img: i4, title: "The Golden Tree", medium: "Oil on Canvas", price: 2100 },
-  {
-    img: i5,
-    title: "Whispers of Silence",
-    medium: "Oil on Canvas",
-    price: 1700,
-  },
-  { img: i3, title: "Azure Dreams", medium: "Mixed Media", price: 2250 },
-  { img: i8, title: "Renaissance Study", medium: "Oil on Panel", price: 5800 },
-  { img: i7, title: "Ocean Depths", medium: "Digital Print", price: 1200 },
+  { img: i1, title: "Golden Horizon", medium: "Acrylic on Canvas" },
+  { img: i2, title: "Eternal Grace", medium: "Bronze Sculpture" },
+  { img: i6, title: "Cosmic Flow", medium: "Mixed Media" },
+  { img: i4, title: "The Golden Tree", medium: "Oil on Canvas" },
+  { img: i5, title: "Whispers of Silence", medium: "Oil on Canvas" },
+  { img: i3, title: "Azure Dreams", medium: "Mixed Media" },
+  { img: i8, title: "Renaissance Study", medium: "Oil on Panel" },
+  { img: i7, title: "Ocean Depths", medium: "Digital Print" },
 ];
 
 const MEDIUMS = [
@@ -116,40 +95,6 @@ const MEDIUMS = [
     Icon: ChipIcon,
     img: "https://images.unsplash.com/photo-1558244661-d248897f7bc4?w=900&q=80&auto=format&fit=crop",
   },
-];
-
-const SERVICES = [
-  { Icon: ArtistFigureIcon, label: "ARTISTS", to: "/artists" },
-  { Icon: HandshakeIcon, label: "CONNECTIONS", to: "/about" },
-  { Icon: ArtSolutionsIcon, label: "ART SOLUTIONS", to: "/categories" },
-  { Icon: FrameArtIcon, label: "GALLERY", to: "/gallery" },
-  { Icon: PencilRulerIcon, label: "CUSTOMISATION", to: "/contact" },
-  { Icon: DealIcon, label: "DEAL", to: "/checkout" },
-];
-
-const AR_FEATURES = [
-  {
-    Icon: ArEyeIcon,
-    label: "True-to-scale projection",
-    desc: "See exactly how each artwork fits your space in full dimension",
-  },
-  {
-    Icon: SunIcon,
-    label: "Dynamic lighting simulation",
-    desc: "Preview your art under natural, warm, and ambient lighting",
-  },
-  {
-    Icon: TextureIcon,
-    label: "Museum-grade texture detail",
-    desc: "Every brushstroke and surface rendered at exhibition fidelity",
-  },
-];
-
-const AR_ROTATOR = [
-  { image: i4, text: "Solstice Bedroom" },
-  { image: i6, text: "Velvet Study" },
-  { image: i1, text: "Golden Lounge" },
-  { image: i2, text: "Bronze Atrium" },
 ];
 
 const TESTIMONIALS = [
@@ -227,14 +172,41 @@ const TESTIMONIALS = [
   },
 ];
 
-const STATS = [
-  { value: "10,000+", label: "Original Artworks" },
-  { value: "2,500+", label: "Talented Artists" },
-  { value: "50+", label: "Countries" },
-  { value: "Secure", label: "Global Delivery" },
-  { value: "100%", label: "Authentic Artwork" },
+/* About section — 3 stacked art cards */
+const ABOUT_IMAGES = [i1, i4, i8];
+
+/* Events data */
+const EVENTS_DATA = [
+  {
+    title: "The Golden Age Exhibition",
+    date: "May 15 – June 30, 2025",
+    location: "Mumbai, India",
+    desc: "A curated journey through contemporary Indian masters exploring gold as medium, metaphor, and memory.",
+    img: i4,
+    tag: "ONGOING",
+  },
+  {
+    title: "Silence in Motion",
+    date: "June 5 – July 20, 2025",
+    location: "Florence, Italy",
+    desc: "Kinetic installations that blur the boundary between stillness and movement. Nine artists, one shared language.",
+    img: i2,
+    tag: "ONGOING",
+  },
+  {
+    title: "Digital Frontiers",
+    date: "July 1 – August 15, 2025",
+    location: "Berlin, Germany",
+    desc: "Generative art redefining what it means to own and experience art in the modern era.",
+    img: i6,
+    tag: "UPCOMING",
+  },
 ];
 
+/* Preservation section images */
+const PRES_IMAGES = [i5, i3, i7, i8];
+
+/* ── Section header ─────────────────────────────────────────────── */
 function SectionHeader({ tag, title, italic, sub }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -284,49 +256,38 @@ function SectionHeader({ tag, title, italic, sub }) {
   );
 }
 
-/* ── Premium 3D cylinder carousel (Highlights — heading + sub + 3D + glass morph) ── */
+/* ── Premium 3D cylinder carousel — slower, no price ────────────── */
 function CylinderCarousel({ items, navigate }) {
-  const { formatPrice } = useLocale();
-
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-
   const startX = useRef(0);
   const startRot = useRef(0);
 
-  // Auto rotate
   useEffect(() => {
     let raf;
     let lastTime = performance.now();
-
     const animate = (time) => {
       const delta = time - lastTime;
       lastTime = time;
-
       if (!isDragging) {
-        setRotation((r) => r - delta * 0.02); // speed control
+        setRotation((r) => r - delta * 0.008); // slow, contemplative pace
       }
-
       raf = requestAnimationFrame(animate);
     };
-
     raf = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(raf);
   }, [isDragging]);
 
-  // Drag handlers
   const handleDown = (e) => {
     setIsDragging(true);
     startX.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     startRot.current = rotation;
   };
-
   const handleMove = (e) => {
     if (!isDragging) return;
     const x = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     setRotation(startRot.current + (x - startX.current) * 0.4);
   };
-
   const handleUp = () => setIsDragging(false);
 
   return (
@@ -355,36 +316,19 @@ function CylinderCarousel({ items, navigate }) {
         }}>
         {items.map((item, i) => {
           const angle = (360 / items.length) * i;
-
           return (
             <div
               key={i}
               className="carousel-card"
-              style={{
-                transform: `rotateY(${angle}deg) translateZ(420px)`,
-              }}>
-              {/* IMAGE */}
+              style={{ transform: `rotateY(${angle}deg) translateZ(420px)` }}>
               <img
                 src={item.img}
                 alt={item.title}
                 className="carousel-card-img"
               />
-
-              {/* DEFAULT VIEW */}
-              <div className="carousel-default-info">
-                <span className="carousel-price-tag num-value">
-                  {formatPrice(item.price)}
-                </span>
-              </div>
-
-              {/* GLASS HOVER */}
               <div className="carousel-glass">
                 <div className="carousel-glass-title">{item.title}</div>
                 <div className="carousel-glass-medium">{item.medium}</div>
-                <div className="carousel-glass-price num-value">
-                  {formatPrice(item.price)}
-                </div>
-
                 <button
                   className="carousel-glass-btn"
                   onClick={() => navigate("/gallery")}>
@@ -399,7 +343,7 @@ function CylinderCarousel({ items, navigate }) {
   );
 }
 
-/* ── Interactive medium selector (kept) ────────────────────────────── */
+/* ── Interactive medium selector ────────────────────────────────── */
 function InteractiveMediums({ items, onPick }) {
   const [active, setActive] = useState(0);
   const [animatedIn, setAnimatedIn] = useState([]);
@@ -480,7 +424,7 @@ function InteractiveMediums({ items, onPick }) {
   );
 }
 
-/* ── Auto-scrolling testimonial column (kept) ─────────────────────── */
+/* ── Auto-scrolling testimonial column ──────────────────────────── */
 function TestimonialColumn({ items, duration = 16, className = "" }) {
   return (
     <div className={`tcol ${className}`}>
@@ -527,6 +471,123 @@ function TestimonialColumn({ items, duration = 16, className = "" }) {
   );
 }
 
+/* ── Stacked cards that spread on hover (About section) ─────────── */
+function StackedCardsInteraction({ images }) {
+  const [hovered, setHovered] = useState(false);
+
+  const STACK = [
+    { rotate: -7, x: -14, y: 8 },
+    { rotate: 0, x: 0, y: 0 },
+    { rotate: 7, x: 14, y: 8 },
+  ];
+  const SPREAD = [
+    { rotate: -18, x: -100, y: 20 },
+    { rotate: 0, x: 0, y: -28 },
+    { rotate: 18, x: 100, y: 20 },
+  ];
+
+  return (
+    <div
+      className="stacked-cards-wrap"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}>
+      {images.map((src, i) => {
+        const pos = hovered ? SPREAD[i] : STACK[i];
+        return (
+          <motion.div
+            key={i}
+            className="stacked-card"
+            animate={pos}
+            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            style={{ zIndex: i === 1 ? 3 : i === 0 ? 1 : 2 }}>
+            <img src={src} alt="" draggable={false} />
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── 3D tilt card for Events ────────────────────────────────────── */
+function TiltCard({ event, index }) {
+  const cardRef = useRef(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const inView = useInView(cardRef, { once: true, margin: "-60px" });
+
+  const handleMove = (e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setTilt({
+      x: ((e.clientY - rect.top - rect.height / 2) / (rect.height / 2)) * -10,
+      y: ((e.clientX - rect.left - rect.width / 2) / (rect.width / 2)) * 10,
+    });
+  };
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 50 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{
+        duration: 0.7,
+        delay: index * 0.15,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className="event-tilt-wrap"
+      onMouseMove={handleMove}
+      onMouseLeave={() => setTilt({ x: 0, y: 0 })}
+      style={{ perspective: 900 }}>
+      <motion.div
+        className="event-tilt-card"
+        animate={{ rotateX: tilt.x, rotateY: tilt.y }}
+        transition={{ type: "spring", stiffness: 200, damping: 28 }}
+        style={{ transformStyle: "preserve-3d" }}>
+        <div className="event-card-img-wrap">
+          <img src={event.img} alt={event.title} />
+          <div className="event-card-img-overlay" />
+        </div>
+        <div className="event-card-body">
+          <div
+            className={`event-card-tag event-tag-${event.tag.toLowerCase()}`}>
+            {event.tag}
+          </div>
+          <div className="event-card-date">{event.date}</div>
+          <div className="event-card-title">{event.title}</div>
+          <div className="event-card-loc">{event.location}</div>
+          <div className="event-card-desc">{event.desc}</div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ── Preservation stagger grid ──────────────────────────────────── */
+function PreservationGrid({ items }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  return (
+    <div ref={ref} className="pres-grid">
+      {items.map((src, i) => (
+        <motion.div
+          key={i}
+          className="pres-cell"
+          initial={{ opacity: 0, filter: "blur(14px)", scale: 0.92 }}
+          animate={inView ? { opacity: 1, filter: "blur(0px)", scale: 1 } : {}}
+          transition={{
+            duration: 0.85,
+            delay: i * 0.18,
+            ease: [0.22, 1, 0.36, 1],
+          }}>
+          <img src={src} alt="" draggable={false} />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HOME PAGE
+═══════════════════════════════════════════════════════════════════ */
 export default function Home() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -538,7 +599,7 @@ export default function Home() {
   return (
     <>
       {/* ═══════════════════════════════════════════════
-          HERO — heading on one line, OGL bent gallery, two buttons, service strip
+          HERO
       ═══════════════════════════════════════════════ */}
       <section className="hero-section hero-cyl">
         <div className="hero-glow" />
@@ -550,20 +611,17 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
           <h1 className="hero-h1 hero-h1-single">
-            <span style={{ color: "#fff" }}>Discover </span>
-            <span className="hero-gold">Timeless Art</span>
+            <span className="hero-gold">Arrt Coliseum</span>
           </h1>
           <motion.p
             className="hero-sub"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.4 }}>
-            Discover, collect and cherish extraordinary artworks from talented
-            artists around the world.
+            Timeless and Priceless Art at Your Space
           </motion.p>
         </motion.div>
 
-        {/* OGL bent gallery */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -592,80 +650,106 @@ export default function Home() {
             onClick={() => navigate("/categories")}>
             EXPLORE GALLERY →
           </motion.button>
-          <motion.button
-            className="btn-secondary"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate("/become-artist")}>
-            BECOME AN ARTIST
-          </motion.button>
         </motion.div>
-
-        {/* Service strip (image1) */}
-        <motion.div
-          className="service-strip"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
-          <div className="service-divider">
-            <span className="sd-line" />
-            <span className="sd-ornament">
-              <svg
-                viewBox="0 0 60 16"
-                width="60"
-                height="16"
-                fill="none"
-                stroke="#D4AF37"
-                strokeWidth="1.2"
-                strokeLinecap="round">
-                <path d="M30 2c-3 4-6 6-10 6s-6-2-6-2 2 6 8 6 8-4 8-4" />
-                <path d="M30 2c3 4 6 6 10 6s6-2 6-2-2 6-8 6-8-4-8-4" />
-                <circle cx="30" cy="8" r="1.5" fill="#D4AF37" stroke="none" />
-              </svg>
-            </span>
-            <span className="sd-line" />
-          </div>
-          <h3 className="service-strip-title">
-            CONNECTING ART. ELEVATING CREATORS. INSPIRING SPACES.
-          </h3>
-          <div className="service-row">
-            {SERVICES.map(({ Icon, label, to }, i) => (
-              <motion.button
-                key={label}
-                onClick={() => navigate(to)}
-                className="service-item"
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.07 }}
-                whileHover={{ y: -4 }}>
-                <div className="service-icon">
-                  <Icon size={50} />
-                </div>
-                <div className="service-label">{label}</div>
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* <motion.div
-          className="stats-bar"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.2 }}>
-          {STATS.map(({ value, label }, i) => (
-            <div key={i} className="stat-item">
-              <div className="stat-value num-value">{value}</div>
-              <div className="stat-label">{label}</div>
-            </div>
-          ))}
-        </motion.div> */}
       </section>
 
       {/* ═══════════════════════════════════════════════
-          HIGHLIGHTS — heading + sub + 3D cards + glass morph
+          ABOUT ARRT COLISEUM
+      ═══════════════════════════════════════════════ */}
+      <section className="about-col-section">
+        <div className="about-col-inner">
+          <motion.div
+            className="about-col-cards"
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+            <StackedCardsInteraction images={ABOUT_IMAGES} />
+          </motion.div>
+
+          <motion.div
+            className="about-col-content"
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{
+              duration: 0.9,
+              delay: 0.15,
+              ease: [0.22, 1, 0.36, 1],
+            }}>
+            <div className="gold-rule" style={{ marginBottom: 20 }}>
+              <div
+                className="grl"
+                style={{
+                  background: "linear-gradient(90deg,transparent,#D4AF37)",
+                  maxWidth: 60,
+                }}
+              />
+              <span className="grt">Our Story</span>
+              <div
+                className="grl"
+                style={{
+                  background: "linear-gradient(90deg,#D4AF37,transparent)",
+                  maxWidth: 60,
+                }}
+              />
+            </div>
+            <h2 className="ar-heading">
+              About <em>Arrt Coliseum</em>
+            </h2>
+            <p className="ar-desc" style={{ marginBottom: 20 }}>
+              Arrt Coliseum is not a marketplace — it is a sanctuary for art. We
+              believe that great art does not need a price tag to prove its
+              worth; it speaks through silence, through texture, through the
+              quiet authority of a well-considered composition.
+            </p>
+            <p className="ar-desc" style={{ marginBottom: 32 }}>
+              We bring together artists and admirers in a space designed to
+              honour the essence of creative work — where every piece is
+              presented with the reverence it deserves, and every visitor is
+              invited to truly feel what they see.
+            </p>
+            <div className="about-col-pillars">
+              {[
+                {
+                  num: "01",
+                  label: "CURATION",
+                  desc: "Every work is chosen for its cultural resonance, not its commercial appeal.",
+                },
+                {
+                  num: "02",
+                  label: "AUTHENTICITY",
+                  desc: "Provenance, artist narratives, and full documentation for every piece.",
+                },
+                {
+                  num: "03",
+                  label: "EXPERIENCE",
+                  desc: "A gallery without walls — art you can live with, not just look at.",
+                },
+              ].map(({ num, label, desc }) => (
+                <div key={num} className="about-col-pillar">
+                  <div className="about-col-pillar-num">{num}</div>
+                  <div>
+                    <div className="about-col-pillar-label">{label}</div>
+                    <div className="about-col-pillar-desc">{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <motion.button
+              className="btn-secondary"
+              style={{ marginTop: 36 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/artists")}>
+              MEET THE ARTISTS →
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          GALLERY HIGHLIGHTS
       ═══════════════════════════════════════════════ */}
       <section
         className="section-pad"
@@ -680,10 +764,19 @@ export default function Home() {
           sub="A rotating selection of the most coveted works in our collection — drag the cylinder to explore."
         />
         <CylinderCarousel items={CAROUSEL_ITEMS} navigate={navigate} />
+        <div style={{ textAlign: "center", marginTop: 52 }}>
+          <motion.button
+            className="btn-primary"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/categories")}>
+            EXPLORE GALLERY →
+          </motion.button>
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          MEDIUMS (kept)
+          MEDIUMS
       ═══════════════════════════════════════════════ */}
       <section className="section-pad">
         <SectionHeader
@@ -697,18 +790,26 @@ export default function Home() {
           onPick={(m) => navigate(`/categories/${m.slug}`)}
         />
       </section>
+
       {/* ═══════════════════════════════════════════════
-          ART IN YOUR SPACE — circular rotator animation
+          LAUNCH OF NEW PRODUCTS
       ═══════════════════════════════════════════════ */}
       <section className="ar-section">
         <div className="ar-inner">
           <motion.div
+            className="launch-img-col"
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="ar-rotator-col">
-            <CircularRotator items={AR_ROTATOR} autoplay interval={4000} />
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
+            <div className="launch-img-stack">
+              <div className="launch-img-back">
+                <img src={i7} alt="" />
+              </div>
+              <div className="launch-img-front">
+                <img src={i3} alt="" />
+              </div>
+            </div>
           </motion.div>
 
           <motion.div
@@ -729,7 +830,7 @@ export default function Home() {
                   maxWidth: 60,
                 }}
               />
-              <span className="grt">Augmented Reality</span>
+              <span className="grt">New Arrivals</span>
               <div
                 className="grl"
                 style={{
@@ -738,53 +839,153 @@ export default function Home() {
                 }}
               />
             </div>
-
             <h2 className="ar-heading">
-              Art in Your <em>Space</em>
+              Launch of <em>New Products</em>
             </h2>
-
             <p className="ar-desc">
-              Bridge the gap between digital and physical. Our immersive AR
-              preview allows you to visualise any masterpiece in your own
-              environment with perfect scale and lighting fidelity.
+              A new chapter in art begins. Our latest curated collection brings
+              together emerging and established artists — each piece a testament
+              to the enduring power of human expression. Be the first to
+              encounter works that transcend their time.
             </p>
-
-            <div className="ar-features">
-              {AR_FEATURES.map(({ Icon, label, desc }, i) => (
+            <div className="launch-features">
+              {[
+                {
+                  num: "01",
+                  label: "EXCLUSIVE DEBUTS",
+                  desc: "First-release works from artists at the height of their craft",
+                },
+                {
+                  num: "02",
+                  label: "LIMITED EDITIONS",
+                  desc: "Each piece authenticated and numbered for its collector",
+                },
+                {
+                  num: "03",
+                  label: "GLOBAL VOICES",
+                  desc: "Curated perspectives from across continents and disciplines",
+                },
+              ].map(({ num, label, desc }, i) => (
                 <motion.div
-                  key={label}
-                  className="ar-feature-item"
+                  key={num}
+                  className="launch-feature"
                   initial={{ opacity: 0, x: 24 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.55, delay: 0.3 + i * 0.14 }}>
-                  <div className="ar-feature-icon">
-                    <Icon size={20} />
-                  </div>
+                  <div className="launch-feature-num">{num}</div>
                   <div>
-                    <div className="ar-feature-label">
-                      {label.toUpperCase()}
-                    </div>
-                    <div className="ar-feature-desc">{desc}</div>
+                    <div className="launch-feature-label">{label}</div>
+                    <div className="launch-feature-desc">{desc}</div>
                   </div>
                 </motion.div>
               ))}
             </div>
-
             <motion.button
               className="btn-secondary"
               style={{ marginTop: 36 }}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => navigate("/ar")}>
-              LAUNCH AR PREVIEW
+              onClick={() => navigate("/categories")}>
+              EXPLORE COLLECTION →
             </motion.button>
           </motion.div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════
-          TESTIMONIALS (kept)
+          EVENTS
+      ═══════════════════════════════════════════════ */}
+      <section
+        className="section-pad"
+        style={{
+          background:
+            "linear-gradient(180deg,#080808 0%,#0d0b08 60%,#080808 100%)",
+        }}>
+        <SectionHeader
+          tag="Ongoing & Upcoming"
+          title="Art"
+          italic="Events"
+          sub="Immersive exhibitions and curated experiences from across the globe."
+        />
+        <div className="events-tilt-grid">
+          {EVENTS_DATA.map((ev, i) => (
+            <TiltCard key={ev.title} event={ev} index={i} />
+          ))}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 52 }}>
+          <motion.button
+            className="btn-secondary"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/events")}>
+            VIEW ALL EVENTS →
+          </motion.button>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          PRESERVATION OF ART
+      ═══════════════════════════════════════════════ */}
+      <section className="section-pad pres-section">
+        <div className="pres-inner">
+          <motion.div
+            className="pres-text-col"
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
+            <div className="gold-rule" style={{ marginBottom: 20 }}>
+              <div
+                className="grl"
+                style={{
+                  background: "linear-gradient(90deg,transparent,#D4AF37)",
+                  maxWidth: 60,
+                }}
+              />
+              <span className="grt">Our Commitment</span>
+              <div
+                className="grl"
+                style={{
+                  background: "linear-gradient(90deg,#D4AF37,transparent)",
+                  maxWidth: 60,
+                }}
+              />
+            </div>
+            <h2 className="ar-heading">
+              Preservation
+              <br />
+              of <em>Art</em>
+            </h2>
+            <p className="ar-desc">
+              Art is not merely object — it is memory, culture, and the
+              irreplaceable record of human feeling. We are committed to its
+              preservation: archiving provenance, supporting restoration, and
+              ensuring that every work in our collection endures for generations
+              to come.
+            </p>
+            <p className="ar-desc">
+              From climate-controlled documentation to partnerships with
+              conservation institutes, every piece in our care receives the
+              protection its legacy demands.
+            </p>
+            <motion.button
+              className="btn-primary"
+              style={{ marginTop: 36 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/about")}>
+              LEARN MORE →
+            </motion.button>
+          </motion.div>
+          <div className="pres-grid-col">
+            <PreservationGrid items={PRES_IMAGES} />
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          TESTIMONIALS
       ═══════════════════════════════════════════════ */}
       <section
         className="section-pad"
@@ -798,7 +999,6 @@ export default function Home() {
           italic="Reflections"
           sub="What our private collectors and curators say about acquiring art with Aureum."
         />
-
         <div className="tcols-wrap">
           <TestimonialColumn items={col1} duration={22} />
           <TestimonialColumn items={col2} duration={28} className="tcol-md" />
