@@ -2,14 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import { useLocale } from "../context/Locale";
 import { CopyIcon, CheckIcon } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i6 from "../assets/i6.png";
 
 const INITIAL_ITEMS = [
-  { id: "ev-1", artist: "ELARA VANCE", title: "Echoes of Silence, 2023", desc: "Mixed Media on Canvas, 120 x 150 cm", price: 18400, img: i1 },
-  { id: "jm-2", artist: "JULIAN MARX", title: "Structural Gravity II",   desc: "Carrara Marble and Polished Brass",   price: 12200, img: i6 },
+  { id: "ev-1", artist: "ELARA VANCE", title: "Echoes of Silence, 2023", desc: "Mixed Media on Canvas, 120 x 150 cm", img: i1 },
+  { id: "jm-2", artist: "JULIAN MARX", title: "Structural Gravity II",   desc: "Carrara Marble and Polished Brass",   img: i6 },
 ];
 
 const TIMELINE = [
@@ -33,24 +32,16 @@ const HISTORY_LOG = [
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { formatPrice } = useLocale();
   const [items, setItems] = useState(INITIAL_ITEMS);
-  const [code, setCode] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [orderPlaced, setOrderPlaced] = useState(false);
-  const fmt = (n) => formatPrice(n, { decimals: 2 });
-
-  const subtotal = items.reduce((s, i) => s + i.price, 0);
-  const delivery = 850;
-  const insurance = 320;
-  const total = subtotal + delivery + insurance;
+  const [enquirySent, setEnquirySent] = useState(false);
 
   const remove = (id) => setItems(items.filter(i => i.id !== id));
-  const settle = () => {
-    setOrderPlaced(true);
+  const sendEnquiry = () => {
+    setEnquirySent(true);
     setTimeout(() => {
-      setOrderPlaced(false);
+      setEnquirySent(false);
       navigate("/");
     }, 2600);
   };
@@ -61,10 +52,10 @@ export default function Checkout() {
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
         style={{ textAlign: "center", marginBottom: 56 }}>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 56, fontWeight: 700, color: "#fff", lineHeight: 1.1, marginBottom: 16 }}>
-          Curation &amp; Fulfillment
+          Send Your Enquiry
         </h1>
         <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.6)", maxWidth: 540, margin: "0 auto", lineHeight: 1.7 }}>
-          Review your selected masterpieces and track their journey from our vault to your collection.
+          Review your selected masterpieces. Our curator will respond within 24 hours with availability and viewing arrangements.
         </p>
       </motion.div>
 
@@ -88,13 +79,13 @@ export default function Checkout() {
                   <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{it.desc}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 22, fontWeight: 700, color: "#fff" }}>{formatPrice(it.price)}</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", fontWeight: 600, color: "#D4AF37" }}>ENQUIRE →</div>
                   <button
                     onClick={() => remove(it.id)}
                     style={{
                       background: "transparent", border: "none", cursor: "pointer",
                       fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em",
-                      color: "#D4AF37", marginTop: 6,
+                      color: "rgba(200,191,160,0.55)", marginTop: 8,
                     }}>REMOVE</button>
                 </div>
               </div>
@@ -106,40 +97,20 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* summary */}
+          {/* enquiry CTA */}
           <div style={{
             marginTop: 30, padding: 28,
             border: "1px solid rgba(212,175,55,0.18)",
             borderRadius: 8,
           }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 18 }}>ACQUISITION SUMMARY</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 14 }}>SEND ENQUIRY</div>
 
-            <Row label="Subtotal"           value={fmt(subtotal)} />
-            <Row label="White Glove Delivery" value={fmt(delivery)} />
-            <Row label="Insurance (Valuation)" value={fmt(insurance)} />
-
-            <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "16px 0" }} />
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
-              <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#fff" }}>Total Investment</span>
-              <span className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 26, fontWeight: 700, color: "#fff" }}>{fmt(total)}</span>
-            </div>
-
-            <input
-              value={code} onChange={e => setCode(e.target.value)}
-              placeholder="GIFT CODE OR COLLECTOR ID"
-              style={{
-                width: "100%", padding: "12px 0",
-                background: "transparent", border: "none",
-                borderBottom: "1px solid rgba(212,175,55,0.25)",
-                color: "#e8e0d0", outline: "none",
-                fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em",
-                marginBottom: 24,
-              }}
-            />
+            <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, marginBottom: 22 }}>
+              A single enquiry covers all selected works. Our curator will respond personally within 24 hours with availability, provenance, and viewing arrangements.
+            </p>
 
             <motion.button
-              onClick={settle}
+              onClick={sendEnquiry}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               style={{
                 width: "100%", padding: "16px",
@@ -147,10 +118,10 @@ export default function Checkout() {
                 color: "#111", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.2em",
                 border: "none", borderRadius: 999, cursor: "pointer",
                 boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
-              }}>PROCEED TO SECURE SETTLEMENT</motion.button>
+              }}>SEND ENQUIRY →</motion.button>
 
             <div style={{ textAlign: "center", marginTop: 14, fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "rgba(200,191,160,0.4)" }}>
-              ENCRYPTED BY AUREUM SECURITY PROTOCOL
+              RESPONSE WITHIN 24 HOURS
             </div>
           </div>
         </div>
@@ -321,9 +292,9 @@ export default function Checkout() {
         )}
       </AnimatePresence>
 
-      {/* ORDER PLACED MODAL */}
+      {/* ENQUIRY SENT MODAL */}
       <AnimatePresence>
-        {orderPlaced && (
+        {enquirySent && (
           <motion.div className="order-modal-backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="order-modal"
@@ -331,10 +302,10 @@ export default function Checkout() {
               transition={{ type: "spring", stiffness: 280, damping: 22 }}>
               <div className="order-modal-tick"><CheckIcon size={32} /></div>
               <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, fontWeight: 700, color: "#fff", marginBottom: 10 }}>
-                Order Placed
+                Enquiry Received
               </h2>
               <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.65, marginBottom: 18 }}>
-                Settlement of <span className="num-value" style={{ color: "#D4AF37" }}>{fmt(total)}</span> confirmed. A confirmation email is on its way and our concierge will reach out within 24 hours to arrange white-glove delivery.
+                Thank you. Our curator will reach out personally within 24 hours to share availability, provenance, and arrange a private viewing.
               </p>
               <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "rgba(200,191,160,0.5)" }}>
                 Returning home…
@@ -353,11 +324,3 @@ export default function Checkout() {
   );
 }
 
-function Row({ label, value }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0",
-                  fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)" }}>
-      <span>{label}</span><span style={{ color: "#e8e0d0" }}>{value}</span>
-    </div>
-  );
-}

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import { useLocale } from "../context/Locale";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
 import i3 from "../assets/i3.png";
@@ -45,7 +44,6 @@ const FILTERS = [
 export default function ArtistProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { formatPrice } = useLocale();
   const artist = ARTISTS[id] || ARTISTS["elena-vance"];
   const [filter, setFilter] = useState("all");
   const [followed, setFollowed] = useState(false);
@@ -174,10 +172,11 @@ export default function ArtistProfile() {
             </div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{w.title}</div>
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, letterSpacing: "0.12em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{w.medium}</div>
-            <div className="num-value" style={{
-              fontFamily: "'Raleway',sans-serif", fontSize: 14, fontWeight: 600, marginTop: 4,
+            <div style={{
+              fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em",
+              fontWeight: 600, marginTop: 6,
               color: w.status === "sold" ? "rgba(200,191,160,0.5)" : "#D4AF37",
-            }}>{w.price != null ? formatPrice(w.price) : w.label}</div>
+            }}>{w.status === "sold" ? "SOLD" : w.status === "auction" ? "AT AUCTION" : "ENQUIRE →"}</div>
           </motion.div>
         ))}
       </div>

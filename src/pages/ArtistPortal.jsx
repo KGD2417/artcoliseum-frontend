@@ -1,20 +1,18 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import { useLocale } from "../context/Locale";
 import { CloudIcon, ImageIcon, UploadIcon, PlusIcon } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i3 from "../assets/i3.png";
 import i6 from "../assets/i6.png";
 
 const ACTIVE_COLLECTION = [
-  { id: 1, title: "Celestial Fracture",     status: "AVAILABLE", price: 12000, tags: ["DIGITAL PAINTING", "4K MASTER"],     thumb: i1 },
-  { id: 2, title: "Architectural Silence",  status: "SOLD",      price: 8500,  tags: ["3D SCULPTURE", "VR READY"],          thumb: i3 },
-  { id: 3, title: "Obsidian Bloom",         status: "AVAILABLE", price: 15200, tags: ["GENERATIVE ART", "LIMITED EDITION"], thumb: i6 },
+  { id: 1, title: "Celestial Fracture",     status: "AVAILABLE", tags: ["DIGITAL PAINTING", "4K MASTER"],     thumb: i1 },
+  { id: 2, title: "Architectural Silence",  status: "SOLD",      tags: ["3D SCULPTURE", "VR READY"],          thumb: i3 },
+  { id: 3, title: "Obsidian Bloom",         status: "AVAILABLE", tags: ["GENERATIVE ART", "LIMITED EDITION"], thumb: i6 },
 ];
 
 export default function ArtistPortal() {
-  const { formatPrice } = useLocale();
   const formRef = useRef(null);
   const titleRef = useRef(null);
 
@@ -31,7 +29,6 @@ export default function ArtistPortal() {
     title: "",
     artistName: "",
     artistBio: "",
-    price: "",
     category: "Digital Painting",
     subCategory: "Generative",
     materials: "",
@@ -58,10 +55,10 @@ export default function ArtistPortal() {
   };
 
   const STATS = [
-    { label: "TOTAL REVENUE",   value: formatPrice(124500),  sub: "+12.4% THIS MONTH",  highlight: true },
-    { label: "PIECES SOLD",     value: "18",                 sub: "LIFETIME CURATION" },
-    { label: "GALLERY VIEWS",   value: "42.8K",              sub: "HIGH ENGAGEMENT" },
-    { label: "COLLECTOR INDEX", value: "A+",                 sub: "TOP 5% ARTISTS" },
+    { label: "ENQUIRIES RECEIVED", value: "184",   sub: "+12.4% THIS MONTH",  highlight: true },
+    { label: "PIECES PLACED",      value: "18",    sub: "LIFETIME CURATION" },
+    { label: "GALLERY VIEWS",      value: "42.8K", sub: "HIGH ENGAGEMENT" },
+    { label: "COLLECTOR INDEX",    value: "A+",    sub: "TOP 5% ARTISTS" },
   ];
 
   const focusUploadForm = () => {
@@ -71,8 +68,8 @@ export default function ArtistPortal() {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!form.title || !form.price || !form.artistName) {
-      return alert("Name of art, artist name, and price are required.");
+    if (!form.title || !form.artistName) {
+      return alert("Name of art and artist name are required.");
     }
     alert(`"${form.title}" by ${form.artistName} submitted for curation. Our team will review within 48h.`);
     setForm(initialForm);
@@ -178,20 +175,12 @@ export default function ArtistPortal() {
               />
             </Field>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Field label="NAME OF ARTIST *">
-                <input
-                  value={form.artistName} onChange={e => updateField("artistName", e.target.value)}
-                  placeholder="E.g., Elena Vance" style={inp}
-                />
-              </Field>
-              <Field label="PRICE (USD) *">
-                <input
-                  value={form.price} onChange={e => updateField("price", e.target.value)}
-                  placeholder="0.00" type="number" style={inp}
-                />
-              </Field>
-            </div>
+            <Field label="NAME OF ARTIST *">
+              <input
+                value={form.artistName} onChange={e => updateField("artistName", e.target.value)}
+                placeholder="E.g., Elena Vance" style={inp}
+              />
+            </Field>
 
             <Field label="SHORT DESCRIPTION OF ARTIST">
               <textarea
@@ -307,9 +296,9 @@ export default function ArtistPortal() {
                   style={{ width: 66, height: 66, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#f0e8d8", fontWeight: 600 }}>{p.title}</div>
-                  <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, letterSpacing: "0.1em", marginTop: 4,
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", marginTop: 4,
                     color: p.status === "SOLD" ? "rgba(200,191,160,0.45)" : "#D4AF37" }}>
-                    {p.status} · {formatPrice(p.price)}
+                    {p.status}
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                     {p.tags.map(t => (

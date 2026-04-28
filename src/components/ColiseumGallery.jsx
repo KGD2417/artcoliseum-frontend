@@ -1,13 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { useLocale } from "../context/Locale";
 
-const TARGET_RING_COUNT = 18;
-const VISIBLE_DEG = 75;
-
-export default function ColiseumGallery({ items, navigate }) {
-  const { formatPrice } = useLocale();
-
+export default function ColiseumGallery({ items }) {
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dims, setDims] = useState({ hRadius: 620, dRadius: 200 });

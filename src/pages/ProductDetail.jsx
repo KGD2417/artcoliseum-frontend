@@ -3,28 +3,22 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import { useLocale } from "../context/Locale";
 import {
   HeartIcon,
   ZoomIcon,
   SparkIcon,
-  ShieldIcon,
   CheckIcon,
 } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
-import i3 from "../assets/i3.png";
 import i4 from "../assets/i4.png";
-import i5 from "../assets/i5.png";
 import i6 from "../assets/i6.png";
-import i7 from "../assets/i7.png";
 
 const PRODUCTS = {
   default: {
     title: "Solstice in Obsidian",
     artist: "Julian Voss",
     year: "2023",
-    price: 42500,
     badge: "PRIVATE COLLECTION",
     images: [i4, i6, i2, i1],
     description:
@@ -77,43 +71,18 @@ const PRODUCTS = {
   },
 };
 
-const RELATED = [
-  {
-    id: "rel-1",
-    title: "SILVER RAIN NO. 4",
-    artist: "JULIAN VOSS",
-    price: 18200,
-    img: i5,
-  },
-  {
-    id: "rel-2",
-    title: "NEBULA IN REPOSE",
-    artist: "JULIAN VOSS",
-    price: 24500,
-    img: i3,
-  },
-  {
-    id: "rel-3",
-    title: "ZENITH HORIZON",
-    artist: "JULIAN VOSS",
-    price: 31000,
-    img: i7,
-  },
-];
-
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { formatPrice } = useLocale();
   const product = PRODUCTS[id] || PRODUCTS.default;
   const [activeImg, setActiveImg] = useState(0);
   const [favorited, setFavorited] = useState(false);
-  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [enquirySent, setEnquirySent] = useState(false);
 
-  const placeOrder = () => {
-    setOrderPlaced(true);
+  const sendEnquiry = () => {
+    setEnquirySent(true);
     setTimeout(() => {
-      setOrderPlaced(false);
+      setEnquirySent(false);
       navigate("/");
     }, 2400);
   };
@@ -261,18 +230,6 @@ export default function ProductDetail() {
           </div>
 
           <div
-            className="num-value"
-            style={{
-              fontFamily: "'Inter',sans-serif",
-              fontSize: 36,
-              fontWeight: 700,
-              color: "#D4AF37",
-              marginBottom: 28,
-            }}>
-            {formatPrice(product.price, { decimals: 0 })}
-          </div>
-
-          <div
             style={{
               height: 1,
               background: "rgba(212,175,55,0.18)",
@@ -340,7 +297,7 @@ export default function ProductDetail() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={placeOrder}
+            onClick={sendEnquiry}
             style={{
               width: "100%",
               padding: "16px",
@@ -355,72 +312,22 @@ export default function ProductDetail() {
               boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
               marginBottom: 12,
             }}>
-            BUY NOW
+            ENQUIRY FOR MORE
           </motion.button>
 
-          <div
+          <button
+            onClick={() => navigate("/ar")}
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 12,
+              ...pillBtn,
+              width: "100%",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
               marginBottom: 22,
             }}>
-            <button onClick={() => navigate("/cart")} style={pillBtn}>
-              ADD TO CART
-            </button>
-            <button
-              onClick={() => navigate("/ar")}
-              style={{
-                ...pillBtn,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}>
-              <SparkIcon size={14} /> VIEW IN AR
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              padding: "14px 16px",
-              background: "rgba(212,175,55,0.06)",
-              border: "1px solid rgba(212,175,55,0.2)",
-              borderRadius: 8,
-            }}>
-            <span
-              style={{
-                color: "#D4AF37",
-                display: "flex",
-                alignItems: "flex-start",
-              }}>
-              <ShieldIcon size={18} />
-            </span>
-            <div>
-              <div
-                style={{
-                  fontFamily: "'Cinzel',serif",
-                  fontSize: 11,
-                  letterSpacing: "0.16em",
-                  color: "#D4AF37",
-                }}>
-                AUREUM GUARANTEE
-              </div>
-              <div
-                style={{
-                  fontFamily: "'Raleway',sans-serif",
-                  fontSize: 11,
-                  color: "rgba(200,191,160,0.6)",
-                  marginTop: 4,
-                  lineHeight: 1.5,
-                }}>
-                Insured white-glove delivery, expert appraisal documentation,
-                and lifetime curator support.
-              </div>
-            </div>
-          </div>
+            <SparkIcon size={14} /> VIEW IN AR
+          </button>
         </motion.div>
       </div>
 
@@ -510,102 +417,9 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div
-        style={{
-          marginTop: 60,
-          marginBottom: 30,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          flexWrap: "wrap",
-          gap: 14,
-        }}>
-        <div>
-          <div
-            style={{
-              fontFamily: "'Cinzel',serif",
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              color: "#D4AF37",
-              marginBottom: 8,
-            }}>
-            CURATED RECOMMENDATIONS
-          </div>
-          <h2
-            style={{
-              fontFamily: "'Cormorant Garamond',serif",
-              fontSize: 32,
-              fontWeight: 700,
-              color: "#fff",
-            }}>
-            More from {product.artist.split(" ").slice(-1)[0]}
-          </h2>
-        </div>
-        <Link
-          to="/gallery"
-          style={{
-            fontFamily: "'Cinzel',serif",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            color: "#D4AF37",
-          }}>
-          Browse All →
-        </Link>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gap: 20,
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-        }}>
-        {RELATED.map((r, i) => (
-          <motion.div
-            key={r.id}
-            onClick={() => navigate(`/product/${r.id}`)}
-            whileHover={{ y: -4 }}
-            style={{ cursor: "pointer" }}>
-            <div
-              style={{
-                width: "100%",
-                aspectRatio: "1/1.05",
-                overflow: "hidden",
-                borderRadius: 6,
-                marginBottom: 10,
-              }}>
-              <SafeImage
-                src={r.img}
-                alt={r.title}
-                fallbackIndex={i}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
-            <div
-              style={{
-                fontFamily: "'Cinzel',serif",
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                color: "#f0e8d8",
-                marginBottom: 4,
-              }}>
-              {r.title}
-            </div>
-            <div
-              className="num-value"
-              style={{
-                fontFamily: "'Inter',sans-serif",
-                fontSize: 12,
-                color: "rgba(200,191,160,0.6)",
-              }}>
-              {r.artist} — {formatPrice(r.price)}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* ORDER PLACED MODAL */}
+      {/* ENQUIRY SENT MODAL */}
       <AnimatePresence>
-        {orderPlaced && (
+        {enquirySent && (
           <motion.div
             className="order-modal-backdrop"
             initial={{ opacity: 0 }}
@@ -628,7 +442,7 @@ export default function ProductDetail() {
                   color: "#fff",
                   marginBottom: 10,
                 }}>
-                Order Placed
+                Enquiry Received
               </h2>
               <p
                 style={{
@@ -638,9 +452,9 @@ export default function ProductDetail() {
                   lineHeight: 1.65,
                   marginBottom: 18,
                 }}>
-                Thank you. A confirmation email is on its way to you, and our
-                concierge will reach out within 24 hours to arrange white-glove
-                delivery.
+                Thank you for your interest. Our curator will reach out
+                personally within 24 hours to share more about the work and
+                arrange a private viewing.
               </p>
               <div
                 style={{

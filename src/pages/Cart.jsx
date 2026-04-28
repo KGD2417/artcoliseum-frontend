@@ -2,30 +2,20 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import { useLocale } from "../context/Locale";
 import i1 from "../assets/i1.png";
 import i4 from "../assets/i4.png";
 import i6 from "../assets/i6.png";
 
 const INITIAL_CART = [
-  { id: "p-101", title: "Solstice in Obsidian", artist: "Julian Voss",  desc: "Oil & 24k Gold on Linen, 180 x 140 cm", price: 42500, qty: 1, img: i4 },
-  { id: "p-102", title: "Echoes of Silence",    artist: "Elara Vance",  desc: "Mixed Media on Canvas, 120 x 150 cm",   price: 18400, qty: 1, img: i1 },
-  { id: "p-103", title: "Fragmented Memory",    artist: "Soren Klein",  desc: "Plaster and Light Installation",         price: 8400,  qty: 1, img: i6 },
+  { id: "p-101", title: "Solstice in Obsidian", artist: "Julian Voss",  desc: "Oil & 24k Gold on Linen, 180 x 140 cm", img: i4 },
+  { id: "p-102", title: "Echoes of Silence",    artist: "Elara Vance",  desc: "Mixed Media on Canvas, 120 x 150 cm",   img: i1 },
+  { id: "p-103", title: "Fragmented Memory",    artist: "Soren Klein",  desc: "Plaster and Light Installation",         img: i6 },
 ];
 
 export default function Cart() {
   const navigate = useNavigate();
-  const { formatPrice } = useLocale();
   const [cart, setCart] = useState(INITIAL_CART);
-  const fmt = (n) => formatPrice(n);
 
-  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const shipping = subtotal === 0 ? 0 : 850;
-  const total = subtotal + shipping;
-
-  const updateQty = (id, delta) => {
-    setCart(cart.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i));
-  };
   const remove = (id) => setCart(cart.filter(i => i.id !== id));
 
   return (
@@ -33,12 +23,12 @@ export default function Cart() {
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
         style={{ marginBottom: 38 }}>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>YOUR ACQUISITIONS</div>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>YOUR ENQUIRIES</div>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 56, fontWeight: 700, color: "#fff", lineHeight: 1.05 }}>
-          Shopping Cart
+          Saved Works
         </h1>
         <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginTop: 10 }}>
-          {cart.length} {cart.length === 1 ? "piece" : "pieces"} reserved · prices in USD
+          {cart.length} {cart.length === 1 ? "piece" : "pieces"} held for enquiry
         </p>
       </motion.div>
 
@@ -48,7 +38,7 @@ export default function Cart() {
           border: "1px solid rgba(212,175,55,0.15)",
           borderRadius: 12,
         }}>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 14 }}>Your cart is empty</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 14 }}>No saved works yet</div>
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 26 }}>
             Discover masterpieces curated by our specialist team.
           </p>
@@ -82,15 +72,6 @@ export default function Cart() {
                     <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{item.desc}</div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 12 }}>
-                      <div style={{
-                        display: "flex", alignItems: "center", gap: 12,
-                        border: "1px solid rgba(212,175,55,0.2)", borderRadius: 999,
-                        padding: "4px 10px",
-                      }}>
-                        <button onClick={() => updateQty(item.id, -1)} style={qtyBtn}>−</button>
-                        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 13, color: "#e8e0d0", minWidth: 16, textAlign: "center" }}>{item.qty}</span>
-                        <button onClick={() => updateQty(item.id, 1)} style={qtyBtn}>+</button>
-                      </div>
                       <button
                         onClick={() => remove(item.id)}
                         style={{
@@ -101,7 +82,7 @@ export default function Cart() {
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 22, fontWeight: 700, color: "#D4AF37" }}>{fmt(item.price * item.qty)}</div>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", fontWeight: 600, color: "#D4AF37" }}>ENQUIRE →</div>
                   </div>
                 </motion.div>
               ))}
@@ -116,18 +97,13 @@ export default function Cart() {
             border: "1px solid rgba(212,175,55,0.18)",
             borderRadius: 12,
           }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 22 }}>ORDER SUMMARY</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 18 }}>ENQUIRY SUMMARY</div>
 
-            <Row label="Subtotal" value={fmt(subtotal)} />
-            <Row label="White-glove Shipping" value={fmt(shipping)} />
-            <Row label="Tax" value="Calculated at checkout" />
+            <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, marginBottom: 22 }}>
+              Send a single enquiry for all saved works. Our curator will respond within 24 hours with availability, provenance details, and viewing arrangements.
+            </p>
 
-            <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "16px 0" }} />
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
-              <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#fff" }}>Total</span>
-              <span className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 26, fontWeight: 700, color: "#D4AF37" }}>{fmt(total)}</span>
-            </div>
+            <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "0 0 22px" }} />
 
             <motion.button
               onClick={() => navigate("/checkout")}
@@ -138,7 +114,7 @@ export default function Cart() {
                 color: "#111", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.2em",
                 border: "none", borderRadius: 999, cursor: "pointer",
                 boxShadow: "0 8px 24px rgba(212,175,55,0.25)", marginBottom: 12,
-              }}>PROCEED TO CHECKOUT</motion.button>
+              }}>SEND ENQUIRY FOR ALL</motion.button>
 
             <Link to="/categories" style={{
               display: "block", textAlign: "center", padding: "12px",
@@ -157,20 +133,5 @@ export default function Cart() {
         }
       `}</style>
     </section>
-  );
-}
-
-const qtyBtn = {
-  background: "transparent",
-  border: "none", cursor: "pointer",
-  color: "#D4AF37", fontSize: 16, fontFamily: "'Cinzel',serif",
-};
-
-function Row({ label, value }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0",
-                  fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)" }}>
-      <span>{label}</span><span style={{ color: "#e8e0d0" }}>{value}</span>
-    </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CameraIcon } from "../components/Icons";
-import { useLocale } from "../context/Locale";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
 import i4 from "../assets/i4.png";
@@ -19,7 +18,6 @@ const ARTWORKS = [
 ];
 
 export default function AR() {
-  const { formatPrice } = useLocale();
   const [selected, setSelected] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [placement, setPlacement] = useState({ x: 50, y: 40 });
@@ -110,10 +108,11 @@ export default function AR() {
                     fontFamily: "'Cormorant Garamond',serif", fontSize: 16,
                     color: "#f0e8d8", fontWeight: 600,
                   }}>{art.title}</div>
-                  <div className="num-value" style={{
-                    fontFamily: "'Raleway',sans-serif", fontSize: 12,
-                    color: "#D4AF37", marginTop: 2,
-                  }}>{formatPrice(art.price)}</div>
+                  <div style={{
+                    fontFamily: "'Cinzel',serif", fontSize: 9,
+                    letterSpacing: "0.16em",
+                    color: "rgba(200,191,160,0.55)", marginTop: 4,
+                  }}>FOR ENQUIRY</div>
                 </div>
               </motion.div>
             ))}
@@ -234,7 +233,7 @@ export default function AR() {
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}>
-                ADD TO CART — <span className="num-value">{formatPrice(selected.price)}</span>
+                ENQUIRE FOR THIS WORK
               </motion.button>
             )}
           </div>
@@ -257,10 +256,11 @@ export default function AR() {
               }}>
                 Certificate of Authenticity included · Free insured shipping
               </div>
-              <div className="num-value" style={{
-                fontFamily: "'Raleway',sans-serif", fontSize: 24,
-                color: "#D4AF37", fontWeight: 700, marginTop: 8,
-              }}>{formatPrice(selected.price)}</div>
+              <div style={{
+                fontFamily: "'Cinzel',serif", fontSize: 11,
+                letterSpacing: "0.18em",
+                color: "#D4AF37", fontWeight: 600, marginTop: 10,
+              }}>PRICE UPON REQUEST</div>
             </motion.div>
           )}
         </motion.div>

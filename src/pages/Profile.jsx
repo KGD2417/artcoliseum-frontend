@@ -43,7 +43,7 @@ const NOTIFS = [
 ];
 
 export default function Profile() {
-  const { lang, setLang, formatPrice } = useLocale();
+  const { lang, setLang } = useLocale();
   const [tab, setTab] = useState("details");
   const [editing, setEditing] = useState(false);
   const [user, setUser] = useState(INITIAL_USER);
@@ -138,7 +138,6 @@ export default function Profile() {
                             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{o.eta}</div>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 20, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(o.total)}</div>
                             <div style={{
                               display: "inline-block", marginTop: 8, padding: "5px 12px", borderRadius: 999,
                               fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em",
@@ -172,7 +171,7 @@ export default function Profile() {
                             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#f0e8d8" }}>{c.title}</div>
                             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 2 }}>{c.artist}</div>
                           </div>
-                          <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 18, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(c.price)}</div>
+                          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600, color: "#D4AF37" }}>ENQUIRE →</div>
                         </div>
                       ))}
                     </div>

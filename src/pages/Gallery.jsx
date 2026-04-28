@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { SearchIcon } from "../components/Icons";
-import { useLocale } from "../context/Locale";
 import i1 from "../assets/i1.png";
 import i3 from "../assets/i3.png";
 import i4 from "../assets/i4.png";
@@ -47,7 +46,6 @@ const SIZES = [
 export default function Gallery() {
   const navigate = useNavigate();
   const { medium, sub } = useParams();
-  const { formatPrice } = useLocale();
   const [styleFilter, setStyleFilter] = useState("Abstract");
   const [catFilter, setCatFilter]     = useState("sculpture");
   const [sizeFilter, setSizeFilter]   = useState("medium");
@@ -208,7 +206,7 @@ export default function Gallery() {
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{item.title}</div>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{item.artist}</div>
                   </div>
-                  <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 16, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(item.price)}</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600, color: "#D4AF37", whiteSpace: "nowrap", alignSelf: "center" }}>ENQUIRE →</div>
                 </div>
               </motion.div>
             ))}
