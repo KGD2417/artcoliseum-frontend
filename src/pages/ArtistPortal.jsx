@@ -43,6 +43,15 @@ export default function ArtistPortal() {
   const [form, setForm] = useState(initialForm);
   const [fileName, setFileName] = useState("");
   const [assetName, setAssetName] = useState("");
+  const [artistPhoto, setArtistPhoto] = useState(null);
+
+  const onPhotoPick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setArtistPhoto(reader.result);
+    reader.readAsDataURL(file);
+  };
 
   const updateField = (key, value) => {
     setForm(prev => {
@@ -75,6 +84,7 @@ export default function ArtistPortal() {
     setForm(initialForm);
     setFileName("");
     setAssetName("");
+    setArtistPhoto(null);
   };
 
   return (
@@ -165,6 +175,58 @@ export default function ArtistPortal() {
             </div>
             <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>TIFF, PNG or WEBP up to 100MB</div>
           </label>
+
+          <FieldGroup title="ARTIST PROFILE">
+            <Field label="PROFILE PHOTO">
+              <label style={{
+                display: "flex", alignItems: "center", gap: 18,
+                padding: 14,
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(212,175,55,0.2)",
+                borderRadius: 8, cursor: "pointer",
+              }}>
+                <input
+                  type="file" accept="image/*"
+                  onChange={onPhotoPick}
+                  style={{ display: "none" }}
+                />
+                <div style={{
+                  width: 76, height: 76, borderRadius: "50%",
+                  background: artistPhoto ? "transparent" : "rgba(212,175,55,0.1)",
+                  border: "1.5px dashed rgba(212,175,55,0.4)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  overflow: "hidden", flexShrink: 0,
+                  color: "#D4AF37",
+                }}>
+                  {artistPhoto ? (
+                    <img src={artistPhoto} alt="Artist"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <UploadIcon size={20} />
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, fontWeight: 600, color: "#fff", marginBottom: 4 }}>
+                    {artistPhoto ? "Change profile photo" : "Upload your profile photo"}
+                  </div>
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", lineHeight: 1.5 }}>
+                    Square image works best · JPG / PNG · max 5 MB. This appears on your artist profile and next to every work you upload.
+                  </div>
+                </div>
+                {artistPhoto && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setArtistPhoto(null); }}
+                    style={{
+                      background: "transparent", border: "1px solid rgba(212,175,55,0.3)",
+                      color: "rgba(200,191,160,0.7)", padding: "6px 12px",
+                      fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em",
+                      borderRadius: 999, cursor: "pointer",
+                    }}>REMOVE</button>
+                )}
+              </label>
+            </Field>
+          </FieldGroup>
 
           <FieldGroup title="WORK BASICS">
             <Field label="NAME OF ART *">

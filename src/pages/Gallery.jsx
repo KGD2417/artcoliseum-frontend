@@ -144,14 +144,6 @@ export default function Gallery() {
             </div>
           </FilterSection>
 
-          <FilterSection title="PRICE RANGE">
-            <input type="range" min="0" max="100" defaultValue="55"
-              style={{ width: "100%", accentColor: "#D4AF37" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)", marginTop: 6 }}>
-              <span>$2,500</span><span>$15,000+</span>
-            </div>
-          </FilterSection>
-
           <FilterSection title="SIZE">
             {SIZES.map(s => (
               <label

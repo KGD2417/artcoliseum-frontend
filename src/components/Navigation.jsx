@@ -159,7 +159,7 @@ function ProfileIcon() {
 }
 
 function LangButton({ compact }) {
-  const { lang, setLang, currency } = useLocale();
+  const { lang, setLang } = useLocale();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -195,7 +195,7 @@ function LangButton({ compact }) {
               borderBottom: "1px solid rgba(212,175,55,0.15)",
               marginBottom: 6,
             }}>
-              LANGUAGE & CURRENCY
+              LANGUAGE
             </div>
             {Object.entries(LANGS).map(([code, l]) => (
               <button
@@ -203,25 +203,9 @@ function LangButton({ compact }) {
                 onClick={() => { setLang(code); setOpen(false); }}
                 className={`lang-pop-row ${lang === code ? "active" : ""}`}>
                 <span>{l.label}</span>
-                <span style={{
-                  fontFamily: "'Raleway',sans-serif", fontSize: 11,
-                  letterSpacing: "0.08em",
-                  color: lang === code ? "#D4AF37" : "rgba(200,191,160,0.5)",
-                  display: "flex", alignItems: "center", gap: 6,
-                }}>
-                  {l.currency}
-                  {lang === code && <CheckIcon size={12} />}
-                </span>
+                {lang === code && <CheckIcon size={12} />}
               </button>
             ))}
-            <div style={{
-              padding: "8px 12px", marginTop: 6,
-              borderTop: "1px solid rgba(212,175,55,0.12)",
-              fontFamily: "'Raleway',sans-serif", fontSize: 10,
-              color: "rgba(200,191,160,0.5)", letterSpacing: "0.05em",
-            }}>
-              Showing prices in <span style={{ color: "#D4AF37" }}>{currency}</span>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

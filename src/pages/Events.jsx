@@ -119,6 +119,7 @@ export default function Events() {
   const headerRef = useRef(null);
   const headerInView = useInView(headerRef, { once: true });
 
+  const [tab, setTab] = useState("ongoing");
   const [activeEvent, setActiveEvent] = useState(null);
   const [activeMode, setActiveMode] = useState("register");
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
@@ -167,33 +168,44 @@ export default function Events() {
         </motion.p>
       </div>
 
-      {/* ONGOING */}
-      <section className="ev-section">
-        <div className="ev-section-head">
+      <div className="ev-tabs">
+        <button
+          className={`ev-tab ${tab === "ongoing" ? "is-active" : ""}`}
+          onClick={() => setTab("ongoing")}>
           <span className="ev-section-dot ev-section-dot-on" />
-          <h2 className="ev-section-title">Ongoing <em>Exhibitions</em></h2>
-          <div className="ev-section-count">{ONGOING.length} events</div>
-        </div>
-        <div className="ev-page-grid">
-          {ONGOING.map((ev, i) => (
-            <EventCard key={ev.title} event={ev} index={i} status="ONGOING" onAction={open} />
-          ))}
-        </div>
-      </section>
-
-      {/* UPCOMING */}
-      <section className="ev-section">
-        <div className="ev-section-head">
+          ONGOING
+          <span className="ev-tab-count">{ONGOING.length}</span>
+        </button>
+        <button
+          className={`ev-tab ${tab === "upcoming" ? "is-active" : ""}`}
+          onClick={() => setTab("upcoming")}>
           <span className="ev-section-dot ev-section-dot-up" />
-          <h2 className="ev-section-title">Upcoming <em>Exhibitions</em></h2>
-          <div className="ev-section-count">{UPCOMING.length} events</div>
-        </div>
-        <div className="ev-page-grid">
-          {UPCOMING.map((ev, i) => (
-            <EventCard key={ev.title} event={ev} index={i} status="UPCOMING" onAction={open} />
-          ))}
-        </div>
-      </section>
+          UPCOMING
+          <span className="ev-tab-count">{UPCOMING.length}</span>
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.section
+          key={tab}
+          className="ev-section"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="ev-page-grid">
+            {(tab === "ongoing" ? ONGOING : UPCOMING).map((ev, i) => (
+              <EventCard
+                key={ev.title}
+                event={ev}
+                index={i}
+                status={tab === "ongoing" ? "ONGOING" : "UPCOMING"}
+                onAction={open}
+              />
+            ))}
+          </div>
+        </motion.section>
+      </AnimatePresence>
 
       <div className="ev-page-cta">
         <motion.button

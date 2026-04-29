@@ -3,11 +3,12 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import ChatModal from "../components/ChatModal";
+import { addToCart } from "../utils/cartStore";
 import {
   HeartIcon,
   ZoomIcon,
   SparkIcon,
-  CheckIcon,
 } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
@@ -20,6 +21,7 @@ const PRODUCTS = {
     artist: "Julian Voss",
     year: "2023",
     badge: "PRIVATE COLLECTION",
+    price: 18500,
     images: [i4, i6, i2, i1],
     description:
       'A masterwork of tactile minimalism, "Solstice in Obsidian" explores the intersection of celestial events and terrestrial silence. Each stroke of genuine 24k gold leaf is applied during the first hour of daylight over three lunar cycles.',
@@ -44,12 +46,6 @@ const PRODUCTS = {
     spread:
       "Held in 12 private collections across Berlin, London, New York and Hong Kong. Featured in the 2024 monograph 'Voss: Substance & Silence' (Hatje Cantz). Reviewed by The Art Newspaper, ArtForum, and Frieze. A sister work resides in the permanent collection of the Tate Modern.",
     specs: [
-      {
-        k: "Materials",
-        v: "24k gold leaf, oil, gesso with bone-ash and ground basalt, on Belgian linen",
-      },
-      { k: "Dimensions", v: "180 × 140 cm (70.9 × 55.1 in)" },
-      { k: "Year", v: "2023" },
       { k: "Edition", v: "Unique work, signed verso" },
       {
         k: "Framing",
@@ -58,10 +54,6 @@ const PRODUCTS = {
       {
         k: "Provenance",
         v: "Studio of the artist → private commission, Berlin → Aureum Private Collection",
-      },
-      {
-        k: "Certificate",
-        v: "Aureum Digital Ledger + signed certificate of authenticity by the artist",
       },
       {
         k: "Care",
@@ -77,14 +69,19 @@ export default function ProductDetail() {
   const product = PRODUCTS[id] || PRODUCTS.default;
   const [activeImg, setActiveImg] = useState(0);
   const [favorited, setFavorited] = useState(false);
-  const [enquirySent, setEnquirySent] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
-  const sendEnquiry = () => {
-    setEnquirySent(true);
-    setTimeout(() => {
-      setEnquirySent(false);
-      navigate("/");
-    }, 2400);
+  const handleTakeItHome = () => {
+    addToCart({
+      id: id || "default",
+      title: product.title,
+      artist: product.artist,
+      desc: `${product.medium}, ${product.dimensions}`,
+      img: product.images[0],
+      price: product.price,
+    });
+    setChatOpen(false);
+    navigate("/cart");
   };
 
   return (
@@ -297,7 +294,7 @@ export default function ProductDetail() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={sendEnquiry}
+            onClick={() => setChatOpen(true)}
             style={{
               width: "100%",
               padding: "16px",
@@ -311,8 +308,12 @@ export default function ProductDetail() {
               cursor: "pointer",
               boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
               marginBottom: 12,
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
             }}>
-            ENQUIRY FOR MORE
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            ENQUIRE FOR MORE
           </motion.button>
 
           <button
@@ -417,58 +418,25 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* ENQUIRY SENT MODAL */}
-      <AnimatePresence>
-        {enquirySent && (
-          <motion.div
-            className="order-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}>
-            <motion.div
-              className="order-modal"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 280, damping: 22 }}>
-              <div className="order-modal-tick">
-                <CheckIcon size={32} />
-              </div>
-              <h2
-                style={{
-                  fontFamily: "'Cormorant Garamond',serif",
-                  fontSize: 32,
-                  fontWeight: 700,
-                  color: "#fff",
-                  marginBottom: 10,
-                }}>
-                Enquiry Received
-              </h2>
-              <p
-                style={{
-                  fontFamily: "'Raleway',sans-serif",
-                  fontSize: 13,
-                  color: "rgba(200,191,160,0.7)",
-                  lineHeight: 1.65,
-                  marginBottom: 18,
-                }}>
-                Thank you for your interest. Our curator will reach out
-                personally within 24 hours to share more about the work and
-                arrange a private viewing.
-              </p>
-              <div
-                style={{
-                  fontFamily: "'Cinzel',serif",
-                  fontSize: 10,
-                  letterSpacing: "0.2em",
-                  color: "rgba(200,191,160,0.5)",
-                }}>
-                Returning home…
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ChatModal
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        title="Aureum Curator"
+        subtitle={`About: ${product.title}`}
+        avatar="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=200&q=80&auto=format&fit=crop"
+        intro={[
+          `Hello — I'm one of the curators at Aureum.`,
+          `I'd be happy to share more about "${product.title}" by ${product.artist}. What would you like to know — provenance, condition, dimensions, or something else?`,
+        ]}
+        botReplies={[
+          "Great question. The work is in pristine condition with a complete provenance dossier.",
+          "Yes, the artist has signed verso and the certificate is included. Framing can be arranged on request.",
+          "Of course — we offer white-glove delivery and AR preview before purchase.",
+          "Whenever you're ready, you can take it home directly from this conversation.",
+        ]}
+        showTakeItHome
+        onTakeItHome={handleTakeItHome}
+      />
 
       <style>{`
         @media (max-width: 900px) {
@@ -610,7 +578,7 @@ function CloserLook({ product }) {
       case "about":
         return (
           <>
-            <h3 className="cl-headline">{product.title}</h3>
+            <h3 className="cl-headline">About this work</h3>
             <p className="cl-body">{product.aboutArt}</p>
           </>
         );

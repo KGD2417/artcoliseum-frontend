@@ -1,34 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import i1 from "../assets/i1.png";
-import i4 from "../assets/i4.png";
-import i6 from "../assets/i6.png";
-
-const INITIAL_CART = [
-  { id: "p-101", title: "Solstice in Obsidian", artist: "Julian Voss",  desc: "Oil & 24k Gold on Linen, 180 x 140 cm", img: i4 },
-  { id: "p-102", title: "Echoes of Silence",    artist: "Elara Vance",  desc: "Mixed Media on Canvas, 120 x 150 cm",   img: i1 },
-  { id: "p-103", title: "Fragmented Memory",    artist: "Soren Klein",  desc: "Plaster and Light Installation",         img: i6 },
-];
+import { getCart, removeFromCart } from "../utils/cartStore";
+import { useLocale } from "../context/Locale";
 
 export default function Cart() {
   const navigate = useNavigate();
-  const [cart, setCart] = useState(INITIAL_CART);
+  const { formatPrice } = useLocale();
+  const [cart, setCartState] = useState(() => getCart());
 
-  const remove = (id) => setCart(cart.filter(i => i.id !== id));
+  useEffect(() => {
+    const sync = () => setCartState(getCart());
+    window.addEventListener("cart:change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("cart:change", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  const remove = (id) => setCartState(removeFromCart(id));
+  const total = cart.reduce((sum, i) => sum + (Number(i.price) || 0), 0);
 
   return (
     <section style={{ padding: "100px 24px 80px", maxWidth: 1200, margin: "0 auto" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
         style={{ marginBottom: 38 }}>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>YOUR ENQUIRIES</div>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>YOUR CART</div>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 56, fontWeight: 700, color: "#fff", lineHeight: 1.05 }}>
-          Saved Works
+          Your Acquisitions
         </h1>
         <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginTop: 10 }}>
-          {cart.length} {cart.length === 1 ? "piece" : "pieces"} held for enquiry
+          {cart.length} {cart.length === 1 ? "piece" : "pieces"} ready to ship
         </p>
       </motion.div>
 
@@ -38,7 +43,7 @@ export default function Cart() {
           border: "1px solid rgba(212,175,55,0.15)",
           borderRadius: 12,
         }}>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 14 }}>No saved works yet</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 14 }}>Your cart is empty</div>
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 26 }}>
             Discover masterpieces curated by our specialist team.
           </p>
@@ -82,7 +87,9 @@ export default function Cart() {
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", fontWeight: 600, color: "#D4AF37" }}>ENQUIRE →</div>
+                    <div className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#D4AF37" }}>
+                      {item.price ? formatPrice(item.price) : "—"}
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -97,13 +104,23 @@ export default function Cart() {
             border: "1px solid rgba(212,175,55,0.18)",
             borderRadius: 12,
           }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 18 }}>ENQUIRY SUMMARY</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 18 }}>ORDER SUMMARY</div>
 
-            <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, marginBottom: 22 }}>
-              Send a single enquiry for all saved works. Our curator will respond within 24 hours with availability, provenance details, and viewing arrangements.
-            </p>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)" }}>
+              <span>Subtotal ({cart.length} {cart.length === 1 ? "piece" : "pieces"})</span>
+              <span className="num-value">{formatPrice(total)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)" }}>
+              <span>White-glove delivery</span>
+              <span style={{ color: "#D4AF37" }}>Included</span>
+            </div>
 
-            <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "0 0 22px" }} />
+            <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "0 0 18px" }} />
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 22, alignItems: "baseline" }}>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#fff" }}>TOTAL</span>
+              <span className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(total)}</span>
+            </div>
 
             <motion.button
               onClick={() => navigate("/checkout")}
@@ -114,7 +131,7 @@ export default function Cart() {
                 color: "#111", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.2em",
                 border: "none", borderRadius: 999, cursor: "pointer",
                 boxShadow: "0 8px 24px rgba(212,175,55,0.25)", marginBottom: 12,
-              }}>SEND ENQUIRY FOR ALL</motion.button>
+              }}>PROCEED TO CHECKOUT →</motion.button>
 
             <Link to="/categories" style={{
               display: "block", textAlign: "center", padding: "12px",

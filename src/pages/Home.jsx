@@ -2,12 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import CircularGallery from "../components/CircularGallery";
+import ColiseumCarousel from "../components/ColiseumCarousel";
 import {
   PaletteIcon,
   ChiselIcon,
   CameraIcon,
   ChipIcon,
+  FrameIcon,
+  ArtistFigureIcon,
+  GlobeIcon,
+  ShieldIcon,
+  SparkIcon,
 } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
@@ -31,23 +36,19 @@ import b2 from "../assets/3images/b2.png";
 import e1 from "../assets/events/e1.png";
 import e2 from "../assets/events/e2.png";
 import e3 from "../assets/events/e3.png";
-import m1 from "../assets/mediums/m1.png";
-import m2 from "../assets/mediums/m2.png";
-import m3 from "../assets/mediums/m3.png";
-import m4 from "../assets/mediums/m4.png";
 
 /* ── Hero gallery ────────────────────────────────────────────────── */
 const HERO_GALLERY = [
-  { image: i4, text: "The Golden Tree" },
   { image: i1, text: "Golden Horizon" },
   { image: i2, text: "Eternal Grace" },
   { image: i6, text: "Cosmic Flow" },
+  { image: i4, text: "The Golden Tree" },
+  { image: i5, text: "Whispers of Silence" },
   {
     image:
       "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop",
     text: "Crimson Reverie",
   },
-  { image: i5, text: "Whispers of Silence" },
   {
     image:
       "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?w=900&q=80&auto=format&fit=crop",
@@ -66,6 +67,14 @@ const HERO_GALLERY = [
     text: "Solstice",
   },
   { image: i7, text: "Ocean Depths" },
+];
+
+const HERO_STATS = [
+  { Icon: FrameIcon, value: "10,000+", label: "Original Artworks" },
+  { Icon: ArtistFigureIcon, value: "2,500+", label: "Talented Artists" },
+  { Icon: GlobeIcon, value: "50+", label: "Countries" },
+  { Icon: ShieldIcon, value: "Secure", label: "Global Delivery" },
+  { Icon: SparkIcon, value: "100%", label: "Authentic Artwork" },
 ];
 
 /* ── Highlights carousel ─────────────────────────────────────────── */
@@ -172,6 +181,7 @@ const EVENTS_DATA = [
   {
     title: "The Golden Age Exhibition",
     date: "May 15 – June 30, 2025",
+    time: "10:00 AM – 8:00 PM · Daily",
     location: "Mumbai, India",
     desc: "A curated journey through contemporary Indian masters exploring gold as medium, metaphor, and memory.",
     img: e1,
@@ -180,6 +190,7 @@ const EVENTS_DATA = [
   {
     title: "Silence in Motion",
     date: "June 5 – July 20, 2025",
+    time: "11:00 AM – 7:00 PM · Tue – Sun",
     location: "Florence, Italy",
     desc: "Kinetic installations that blur the boundary between stillness and movement. Nine artists, one shared language.",
     img: e2,
@@ -188,6 +199,7 @@ const EVENTS_DATA = [
   {
     title: "Digital Frontiers",
     date: "July 1 – August 15, 2025",
+    time: "12:00 PM – 9:00 PM · Daily",
     location: "Berlin, Germany",
     desc: "Generative art redefining what it means to own and experience art in the modern era.",
     img: e3,
@@ -449,8 +461,10 @@ function InteractiveMediums({ items, onPick }) {
           <div
             key={m.slug}
             className={`medsel-opt ${isActive ? "is-active" : ""}`}
-            onClick={() => setActive(i)}
-            onDoubleClick={() => onPick && onPick(m)}
+            onClick={() => {
+              if (isActive) onPick && onPick(m);
+              else setActive(i);
+            }}
             style={{
               flex: isActive ? "7 1 0%" : "1 1 0%",
               backgroundImage: `url('${m.img}')`,
@@ -893,6 +907,7 @@ function TiltCard({ event, index, onRegister }) {
             {event.tag}
           </div>
           <div className="event-card-date">{event.date}</div>
+          {event.time && <div className="event-card-time">{event.time}</div>}
           <div className="event-card-title">{event.title}</div>
           <div className="event-card-loc">{event.location}</div>
           <div className="event-card-desc">{event.desc}</div>
@@ -959,39 +974,25 @@ export default function Home() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-          <h1 className="hero-h1 hero-h1-single">
-            <span className="hero-gold-cinzel">Arrt Coliseum</span>
+          <h1 className="hero-h1 hero-h1-reference">
+            <span>Own Timeless </span>
+            <span className="hero-art-accent">Art</span>
           </h1>
           <motion.p
             className="hero-sub"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.4 }}>
-            Timeless and Priceless Art at Your Space
+            Discover, collect and cherish extraordinary artworks from
+            talented artists around the world.
           </motion.p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="circ-gallery-wrap">
-          <CircularGallery
-            items={HERO_GALLERY}
-            bend={3}
-            borderRadius={0.05}
-            scrollEase={0.04}
-            scrollSpeed={2}
-            autoplay={0.05}
-            textColor="#D4AF37"
-          />
         </motion.div>
 
         <motion.div
           className="hero-buttons"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 1 }}>
+          transition={{ duration: 0.7, delay: 0.55 }}>
           <motion.button
             className="btn-primary"
             whileHover={{ scale: 1.04 }}
@@ -999,6 +1000,28 @@ export default function Home() {
             onClick={() => navigate("/categories")}>
             EXPLORE GALLERY →
           </motion.button>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="circ-gallery-wrap">
+          <ColiseumCarousel items={HERO_GALLERY} />
+        </motion.div>
+
+        <motion.div
+          className="stats-bar hero-stats-bar"
+          initial={{ opacity: 0, y: 22 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.95 }}>
+          {HERO_STATS.map(({ Icon, value, label }) => (
+            <div className="stat-item hero-stat-item" key={label}>
+              <Icon size={28} />
+              <span className="stat-value">{value}</span>
+              <span className="stat-label">{label}</span>
+            </div>
+          ))}
         </motion.div>
       </section>
 
@@ -1118,7 +1141,7 @@ export default function Home() {
           tag="Browse by Medium"
           title="The"
           italic="Mediums"
-          sub="Click a medium to expand it — double-click or tap EXPLORE to enter the collection."
+          sub="Click a medium to expand it — click again to enter the collection."
         />
         <InteractiveMediums
           items={MEDIUMS}
