@@ -58,10 +58,10 @@ export default function Categories() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data, error } = await supabase
-          .from("categories")
-          .select("*")
-          .order("label");
+        // const { data, error } = await supabase
+        //   .from("categories")
+        //   .select("*")
+        //   .order("label");
 
         if (error) throw error;
 

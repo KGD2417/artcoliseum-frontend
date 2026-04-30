@@ -896,7 +896,9 @@ a {
   background: #d4af37;
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.55);
 }
-.ar-bullet-text { display: block; }
+.ar-bullet-text {
+  display: block;
+}
 
 .ar-features {
   display: flex;
@@ -2591,7 +2593,7 @@ input[type="email"] {
   position: relative;
   aspect-ratio: 4/4.4;
   width: 100%;
-  perspective: 1200px;
+  perspective: 100vh;
 }
 .cl-image {
   position: absolute;
@@ -3313,8 +3315,15 @@ input[type="email"] {
   box-shadow: 0 0 12px rgba(212, 175, 55, 0.55);
 }
 @keyframes evPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.55; transform: scale(1.18); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.18);
+  }
 }
 .ev-section-title {
   flex: 1;
@@ -3337,8 +3346,12 @@ input[type="email"] {
   color: rgba(200, 191, 160, 0.55);
 }
 @media (max-width: 600px) {
-  .ev-section-head { gap: 10px; }
-  .ev-section-count { display: none; }
+  .ev-section-head {
+    gap: 10px;
+  }
+  .ev-section-count {
+    display: none;
+  }
 }
 .ev-page-cta {
   text-align: center;
@@ -3624,7 +3637,11 @@ input[type="email"] {
   gap: 0;
   padding: 118px 0 0;
   background:
-    radial-gradient(ellipse at 50% 28%, rgba(76, 51, 19, 0.56) 0%, transparent 42%),
+    radial-gradient(
+      ellipse at 50% 28%,
+      rgba(76, 51, 19, 0.56) 0%,
+      transparent 42%
+    ),
     linear-gradient(180deg, #020202 0%, #050403 58%, #010101 100%);
 }
 
@@ -3636,13 +3653,41 @@ input[type="email"] {
   right: 0;
   height: 510px;
   background:
-    radial-gradient(ellipse at 50% 100%, transparent 0 42%, rgba(212, 175, 55, 0.11) 42.4% 43.1%, transparent 43.5% 50%, rgba(212, 175, 55, 0.08) 50.4% 51%, transparent 51.4%),
-    repeating-radial-gradient(ellipse at 50% 100%, rgba(212, 175, 55, 0.055) 0 1px, transparent 2px 28px),
-    repeating-linear-gradient(90deg, transparent 0 78px, rgba(212, 175, 55, 0.07) 80px 82px, transparent 84px 156px);
+    radial-gradient(
+      ellipse at 50% 100%,
+      transparent 0 42%,
+      rgba(212, 175, 55, 0.11) 42.4% 43.1%,
+      transparent 43.5% 50%,
+      rgba(212, 175, 55, 0.08) 50.4% 51%,
+      transparent 51.4%
+    ),
+    repeating-radial-gradient(
+      ellipse at 50% 100%,
+      rgba(212, 175, 55, 0.055) 0 1px,
+      transparent 2px 28px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 78px,
+      rgba(212, 175, 55, 0.07) 80px 82px,
+      transparent 84px 156px
+    );
   opacity: 0.48;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 72%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 72%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 18%,
+    #000 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 18%,
+    #000 72%,
+    transparent 100%
+  );
 }
 
 .hero-section.hero-cyl::after {
@@ -3650,8 +3695,19 @@ input[type="email"] {
   position: absolute;
   inset: 72px 0 0;
   background:
-    linear-gradient(90deg, #020202 0%, transparent 16%, transparent 84%, #020202 100%),
-    radial-gradient(ellipse at 50% 56%, transparent 0%, rgba(0, 0, 0, 0.4) 62%, rgba(0, 0, 0, 0.88) 100%);
+    linear-gradient(
+      90deg,
+      #020202 0%,
+      transparent 16%,
+      transparent 84%,
+      #020202 100%
+    ),
+    radial-gradient(
+      ellipse at 50% 56%,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 62%,
+      rgba(0, 0, 0, 0.88) 100%
+    );
   pointer-events: none;
 }
 
@@ -3695,8 +3751,7 @@ input[type="email"] {
   display: block;
   margin: 0 auto;
   width: clamp(220px, 28vw, 420px);
-  filter:
-    drop-shadow(0 0 42px rgba(212, 175, 55, 0.45))
+  filter: drop-shadow(0 0 42px rgba(212, 175, 55, 0.45))
     drop-shadow(0 4px 28px rgba(0, 0, 0, 0.7));
 }
 
@@ -3736,11 +3791,21 @@ input[type="email"] {
 }
 
 .hero-section.hero-cyl .circ-gallery-wrap::before {
-  background: linear-gradient(to right, #020202 0%, rgba(2, 2, 2, 0.84) 38%, transparent 100%);
+  background: linear-gradient(
+    to right,
+    #020202 0%,
+    rgba(2, 2, 2, 0.84) 38%,
+    transparent 100%
+  );
 }
 
 .hero-section.hero-cyl .circ-gallery-wrap::after {
-  background: linear-gradient(to left, #020202 0%, rgba(2, 2, 2, 0.84) 38%, transparent 100%);
+  background: linear-gradient(
+    to left,
+    #020202 0%,
+    rgba(2, 2, 2, 0.84) 38%,
+    transparent 100%
+  );
 }
 
 .hero-stats-bar {
@@ -3795,9 +3860,11 @@ input[type="email"] {
   cursor: grab;
   user-select: none;
   touch-action: pan-y;
-  perspective: 1400px;
-  perspective-origin: 50% 58%;
+  /* single perspective point — JS adjusts origin for parallax */
+  perspective: 1100px;
+  perspective-origin: 50% 42%;
   transform-style: preserve-3d;
+  transition: perspective-origin 0.08s linear;
 }
 
 .coliseum-carousel:active {
@@ -3816,34 +3883,69 @@ input[type="email"] {
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(ellipse at 50% 38%, rgba(212, 175, 55, 0.14), transparent 32%),
-    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.36) 62%, rgba(0, 0, 0, 0.86) 100%);
+    radial-gradient(
+      ellipse at 50% 35%,
+      rgba(212, 175, 55, 0.18),
+      transparent 38%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.44) 58%,
+      rgba(0, 0, 0, 0.92) 100%
+    );
+}
+
+/* center card spotlight — opacity animated by JS */
+.coliseum-carousel-spotlight {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  width: clamp(260px, 26vw, 400px);
+  height: 70%;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    rgba(212, 175, 55, 0.22) 0%,
+    rgba(212, 175, 55, 0.07) 38%,
+    transparent 68%
+  );
+  filter: blur(6px);
+  opacity: 0;
 }
 
 .coliseum-carousel-floor {
   left: 50%;
-  bottom: 20px;
-  width: min(980px, 82vw);
-  height: 72px;
+  bottom: 14px;
+  width: min(1080px, 88vw);
+  height: 80px;
   transform: translateX(-50%);
   z-index: 1;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.32) 0%, rgba(212, 175, 55, 0.1) 44%, transparent 72%);
-  filter: blur(18px);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(212, 175, 55, 0.38) 0%,
+    rgba(212, 175, 55, 0.14) 40%,
+    transparent 70%
+  );
+  filter: blur(20px);
 }
 
 .coliseum-carousel-rail {
   left: 50%;
-  bottom: 64px;
-  width: min(1220px, 104vw);
-  height: 86px;
+  bottom: 58px;
+  width: min(1340px, 110vw);
+  height: 96px;
   transform: translateX(-50%);
   z-index: 4;
-  border-top: 1px solid rgba(212, 175, 55, 0.44);
+  border-top: 1px solid rgba(212, 175, 55, 0.5);
   border-radius: 50% 50% 0 0 / 100% 100% 0 0;
   box-shadow:
-    0 -18px 28px rgba(0, 0, 0, 0.66),
-    inset 0 18px 18px rgba(212, 175, 55, 0.06);
+    0 -20px 32px rgba(0, 0, 0, 0.7),
+    inset 0 20px 20px rgba(212, 175, 55, 0.08),
+    0 0 0 1px rgba(212, 175, 55, 0.08);
 }
 
 .coliseum-carousel-fade {
@@ -3856,17 +3958,28 @@ input[type="email"] {
 
 .coliseum-carousel-fade-left {
   left: 0;
-  background: linear-gradient(to right, #020202 0%, rgba(2, 2, 2, 0.86) 40%, transparent 100%);
+  background: linear-gradient(
+    to right,
+    #020202 0%,
+    rgba(2, 2, 2, 0.86) 40%,
+    transparent 100%
+  );
 }
 
 .coliseum-carousel-fade-right {
   right: 0;
-  background: linear-gradient(to left, #020202 0%, rgba(2, 2, 2, 0.86) 40%, transparent 100%);
+  background: linear-gradient(
+    to left,
+    #020202 0%,
+    rgba(2, 2, 2, 0.86) 40%,
+    transparent 100%
+  );
 }
 
 .coliseum-carousel-card {
   position: absolute;
-  top: 54%;
+  /* vertical anchor: center card sits at 52% from top */
+  top: 52%;
   left: 50%;
   width: var(--col-card-w);
   height: var(--col-card-h);
@@ -3878,6 +3991,7 @@ input[type="email"] {
   color: inherit;
   cursor: pointer;
   outline: none;
+  /* preserve-3d so the card exists in the stage's 3D space */
   transform-style: preserve-3d;
   backface-visibility: hidden;
   will-change: transform, opacity, filter;
@@ -3919,7 +4033,12 @@ input[type="email"] {
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 23%),
-    linear-gradient(0deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.48) 27%, transparent 62%);
+    linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.82) 0%,
+      rgba(0, 0, 0, 0.48) 27%,
+      transparent 62%
+    );
 }
 
 .coliseum-carousel-card-copy {
@@ -3973,7 +4092,11 @@ input[type="email"] {
   transform: scaleY(-1);
   transform-origin: top center;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 66%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.55),
+    transparent 66%
+  );
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 66%);
 }
 
@@ -4016,7 +4139,7 @@ input[type="email"] {
   }
 
   .coliseum-carousel-card {
-    top: 48%;
+    top: 50%;
   }
 
   .coliseum-carousel-card-copy {
@@ -4026,7 +4149,8 @@ input[type="email"] {
   }
 
   .coliseum-carousel-rail {
-    bottom: 54px;
+    bottom: 48px;
+    height: 72px;
   }
 
   .hero-stat-item {
@@ -4135,7 +4259,9 @@ input[type="email"] {
   border: 1px solid rgba(212, 175, 55, 0.4);
   border-radius: 999px;
   cursor: pointer;
-  transition: background 0.25s, box-shadow 0.25s;
+  transition:
+    background 0.25s,
+    box-shadow 0.25s;
 }
 .event-register-btn:hover {
   background: rgba(212, 175, 55, 0.2);
@@ -4293,74 +4419,127 @@ input[type="email"] {
    CHAT MODAL
 ═══════════════════════════════════════════════ */
 .chat-backdrop {
-  position: fixed; inset: 0; z-index: 1000;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
   background: rgba(0, 0, 0, 0.78);
   backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
 }
 .chat-modal {
-  width: 100%; max-width: 460px; height: min(640px, 90vh);
+  width: 100%;
+  max-width: 460px;
+  height: min(640px, 90vh);
   background: linear-gradient(180deg, #0d0a07 0%, #09070a 100%);
   border: 1px solid rgba(212, 175, 55, 0.28);
   border-radius: 18px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 .chat-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 16px 18px;
-  background: linear-gradient(180deg, rgba(212,175,55,0.08), rgba(212,175,55,0.02));
+  background: linear-gradient(
+    180deg,
+    rgba(212, 175, 55, 0.08),
+    rgba(212, 175, 55, 0.02)
+  );
   border-bottom: 1px solid rgba(212, 175, 55, 0.18);
 }
-.chat-header-left { display: flex; align-items: center; gap: 12px; }
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .chat-avatar {
-  width: 44px; height: 44px; border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   object-fit: cover;
   border: 1.5px solid rgba(212, 175, 55, 0.45);
 }
 .chat-header-title {
   font-family: "Cormorant Garamond", serif;
-  font-size: 18px; font-weight: 600; color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
 }
 .chat-header-sub {
   font-family: "Raleway", sans-serif;
-  font-size: 11px; color: rgba(200, 191, 160, 0.6);
+  font-size: 11px;
+  color: rgba(200, 191, 160, 0.6);
   margin-top: 1px;
 }
 .chat-header-status {
   font-family: "Raleway", sans-serif;
-  font-size: 10px; color: #4ade80;
-  display: flex; align-items: center; gap: 6px;
+  font-size: 10px;
+  color: #4ade80;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-top: 4px;
 }
 .chat-status-dot {
-  width: 7px; height: 7px; border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: #4ade80;
   box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
   animation: chat-blink 1.6s ease-in-out infinite;
 }
-@keyframes chat-blink { 0%,100%{opacity:1} 50%{opacity:0.45} }
-.chat-close {
-  background: transparent; border: none; color: rgba(200, 191, 160, 0.6);
-  font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px;
+@keyframes chat-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
-.chat-close:hover { color: #D4AF37; }
+.chat-close {
+  background: transparent;
+  border: none;
+  color: rgba(200, 191, 160, 0.6);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.chat-close:hover {
+  color: #d4af37;
+}
 
 .chat-body {
-  flex: 1; overflow-y: auto;
-  padding: 18px; display: flex; flex-direction: column; gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.chat-row { display: flex; }
-.chat-row-bot { justify-content: flex-start; }
-.chat-row-me  { justify-content: flex-end; }
+.chat-row {
+  display: flex;
+}
+.chat-row-bot {
+  justify-content: flex-start;
+}
+.chat-row-me {
+  justify-content: flex-end;
+}
 .chat-bubble {
   max-width: 78%;
   padding: 10px 14px;
   border-radius: 14px;
   font-family: "Raleway", sans-serif;
-  font-size: 13.5px; line-height: 1.55;
+  font-size: 13.5px;
+  line-height: 1.55;
 }
 .chat-bubble-bot {
   background: rgba(255, 255, 255, 0.05);
@@ -4369,22 +4548,38 @@ input[type="email"] {
   border-top-left-radius: 4px;
 }
 .chat-bubble-me {
-  background: linear-gradient(135deg, #D4AF37, #e8c53a);
+  background: linear-gradient(135deg, #d4af37, #e8c53a);
   color: #111;
   border-top-right-radius: 4px;
   font-weight: 500;
 }
-.chat-typing { display: inline-flex; gap: 4px; }
+.chat-typing {
+  display: inline-flex;
+  gap: 4px;
+}
 .chat-typing span {
-  width: 6px; height: 6px; border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   background: rgba(212, 175, 55, 0.7);
   animation: chat-dot 1.2s ease-in-out infinite;
 }
-.chat-typing span:nth-child(2) { animation-delay: 0.15s; }
-.chat-typing span:nth-child(3) { animation-delay: 0.3s; }
+.chat-typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.chat-typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
 @keyframes chat-dot {
-  0%, 100% { transform: translateY(0); opacity: 0.4 }
-  50%      { transform: translateY(-4px); opacity: 1 }
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
 .chat-cta-wrap {
@@ -4394,18 +4589,25 @@ input[type="email"] {
 .chat-cta {
   width: 100%;
   padding: 12px 18px;
-  background: linear-gradient(135deg, #D4AF37, #e8c53a);
-  color: #111; border: none; border-radius: 999px;
+  background: linear-gradient(135deg, #d4af37, #e8c53a);
+  color: #111;
+  border: none;
+  border-radius: 999px;
   font-family: "Cinzel", serif;
-  font-size: 11px; letter-spacing: 0.2em; font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 8px 22px rgba(212, 175, 55, 0.3);
   transition: transform 0.2s;
 }
-.chat-cta:hover { transform: translateY(-1px); }
+.chat-cta:hover {
+  transform: translateY(-1px);
+}
 
 .chat-composer {
-  display: flex; gap: 8px;
+  display: flex;
+  gap: 8px;
   padding: 12px 14px 14px;
   border-top: 1px solid rgba(212, 175, 55, 0.18);
 }
@@ -4420,21 +4622,29 @@ input[type="email"] {
   font-size: 13px;
   outline: none;
 }
-.chat-input:focus { border-color: #D4AF37; }
+.chat-input:focus {
+  border-color: #d4af37;
+}
 .chat-send {
   padding: 0 18px;
   background: transparent;
   border: 1px solid rgba(212, 175, 55, 0.4);
-  color: #D4AF37;
+  color: #d4af37;
   font-family: "Cinzel", serif;
-  font-size: 11px; letter-spacing: 0.16em;
+  font-size: 11px;
+  letter-spacing: 0.16em;
   border-radius: 999px;
   cursor: pointer;
 }
-.chat-send:hover { background: rgba(212, 175, 55, 0.12); }
+.chat-send:hover {
+  background: rgba(212, 175, 55, 0.12);
+}
 
 @media (max-width: 540px) {
-  .chat-modal { height: 92vh; max-width: 100%; }
+  .chat-modal {
+    height: 92vh;
+    max-width: 100%;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -4442,7 +4652,9 @@ input[type="email"] {
 ═══════════════════════════════════════════════ */
 .ev-tabs {
   position: relative;
-  display: flex; justify-content: center; gap: 56px;
+  display: flex;
+  justify-content: center;
+  gap: 56px;
   margin: 18px auto 56px;
   border-bottom: 1px solid rgba(212, 175, 55, 0.15);
   max-width: 560px;
@@ -4450,26 +4662,44 @@ input[type="email"] {
 }
 .ev-tab {
   position: relative;
-  display: inline-flex; align-items: baseline; gap: 10px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
   padding: 14px 6px 18px;
   background: transparent;
   border: none;
   color: rgba(200, 191, 160, 0.5);
   font-family: "Cinzel", serif;
-  font-size: 12px; letter-spacing: 0.28em; font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  font-weight: 500;
   cursor: pointer;
   transition: color 0.3s ease;
 }
-.ev-tab:hover { color: rgba(232, 224, 208, 0.9); }
-.ev-tab.is-active { color: #fff; }
+.ev-tab:hover {
+  color: rgba(232, 224, 208, 0.9);
+}
+.ev-tab.is-active {
+  color: #fff;
+}
 .ev-tab.is-active::after {
   content: "";
   position: absolute;
-  left: 0; right: 0; bottom: -1px;
+  left: 0;
+  right: 0;
+  bottom: -1px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #D4AF37 30%, #D4AF37 70%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #d4af37 30%,
+    #d4af37 70%,
+    transparent
+  );
 }
-.ev-tab .ev-section-dot { display: none; }
+.ev-tab .ev-section-dot {
+  display: none;
+}
 .ev-tab-count {
   font-family: "Cormorant Garamond", serif;
   font-size: 13px;
@@ -4479,4 +4709,6 @@ input[type="email"] {
   color: rgba(212, 175, 55, 0.65);
   letter-spacing: 0;
 }
-.ev-tab.is-active .ev-tab-count { color: #D4AF37; }
+.ev-tab.is-active .ev-tab-count {
+  color: #d4af37;
+}

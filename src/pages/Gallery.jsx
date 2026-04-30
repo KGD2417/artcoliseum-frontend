@@ -1,9 +1,27 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { SearchIcon } from "../components/Icons";
-import { supabase } from "../utils/supabase";
+import i1 from "../assets/i1.png";
+import i3 from "../assets/i3.png";
+import i4 from "../assets/i4.png";
+import i5 from "../assets/i5.png";
+import i6 from "../assets/i6.png";
+import i7 from "../assets/i7.png";
+import i8 from "../assets/i8.png";
+
+const GALLERY_ITEMS = [
+  { id: "p1", title: "Ethereal Horizon",    medium: "Acrylic on Canvas", artist: "MARCUS THOMAS", year: "2024", price: 12400, size: "medium", style: "Abstract",      category: "oil",       img: i1 },
+  { id: "p2", title: "Fractured Silence",   medium: "Mixed Media",       artist: "ELENA VANCE",   year: "2023", price: 8900,  size: "medium", style: "Abstract",      category: "mixed",     img: i7 },
+  { id: "p3", title: "Obsidian Flow",       medium: "Acrylic & Oil",     artist: "JULIAN ARIS",   year: "2024", price: 15500, size: "medium", style: "Abstract",      category: "oil",       img: i6 },
+  { id: "p4", title: "The Infinite Stair",  medium: "Sculpture",         artist: "SOREN KLEIN",   year: "2024", price: 4200,  size: "small",  style: "Minimalism",    category: "sculpture", img: i3 },
+  { id: "p5", title: "Cosmic Flow",         medium: "Mixed Media",       artist: "HIDEO TANAKA",  year: "2024", price: 1950,  size: "small",  style: "Impressionist", category: "mixed",     img: i6 },
+  { id: "p6", title: "The Golden Tree",     medium: "Oil on Canvas",     artist: "CHEN WEI",      year: "2024", price: 2100,  size: "medium", style: "Impressionist", category: "oil",       img: i4 },
+  { id: "p7", title: "Whispers of Silence", medium: "Oil on Canvas",     artist: "LENA BACH",     year: "2025", price: 1700,  size: "small",  style: "Minimalism",    category: "oil",       img: i5 },
+  { id: "p8", title: "Renaissance Study",   medium: "Oil on Panel",      artist: "ELENA ROSSI",   year: "2023", price: 5800,  size: "medium", style: "Digital Fusion", category: "oil",      img: i8 },
+  { id: "p9", title: "Ocean Depths",        medium: "Digital Print",     artist: "HIDEO TANAKA",  year: "2024", price: 1200,  size: "small",  style: "Digital Fusion", category: "digital",  img: i7 },
+];
 
 const STYLES = [
   { label: "Minimalism",     count: "12" },
@@ -33,37 +51,8 @@ export default function Gallery() {
   const [sizeFilter, setSizeFilter]   = useState("medium");
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [items, setItems] = useState([]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from("artworks")
-        .select("id, title, medium, artist_name, year, price, size, style, category_id, image_url")
-        .order("created_at", { ascending: false });
-      if (!cancelled) {
-        if (error) console.error(error);
-        setItems(
-          (data ?? []).map(d => ({
-            id: d.id,
-            title: d.title,
-            medium: d.medium,
-            artist: d.artist_name,
-            year: d.year,
-            price: Number(d.price),
-            size: d.size,
-            style: d.style,
-            category: d.category_id,
-            img: d.image_url,
-          }))
-        );
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const filtered = items.filter(it => {
+  const filtered = GALLERY_ITEMS.filter(it => {
     if (search && !`${it.title} ${it.artist}`.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });

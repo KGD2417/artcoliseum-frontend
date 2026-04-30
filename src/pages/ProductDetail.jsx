@@ -19,7 +19,7 @@ const FALLBACK_PRODUCT = {
     year: "2023",
     badge: "PRIVATE COLLECTION",
     price: 18500,
-    images: [i4, i6, i2, i1],
+    images: [i4, i4, i4, i4],
     description:
       'A masterwork of tactile minimalism, "Solstice in Obsidian" explores the intersection of celestial events and terrestrial silence. Each stroke of genuine 24k gold leaf is applied during the first hour of daylight over three lunar cycles.',
     medium: "Oil & 24k Gold on Linen",
@@ -75,20 +75,20 @@ export default function ProductDetail() {
       setLoading(true);
       try {
         // Try to fetch from Supabase
-        const { data: artwork, error } = await supabase
-          .from("artworks")
-          .select(
-            `
-            *,
-            artists:artist_id (
-              name,
-              bio,
-              image_url
-            )
-          `,
-          )
-          .eq("id", id || "default")
-          .single();
+        // const { data: artwork, error } = await supabase
+        //   .from("artworks")
+        //   .select(
+        //     `
+        //     *,
+        //     artists:artist_id (
+        //       name,
+        //       bio,
+        //       image_url
+        //     )
+        //   `,
+        //   )
+        //   .eq("id", id || "default")
+        //   .single();
 
         if (error || !artwork) {
           // Use fallback if not found in DB
