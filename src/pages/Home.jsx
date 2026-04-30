@@ -32,7 +32,7 @@ import p5 from "../assets/preservation/p5.png";
 import p6 from "../assets/preservation/p6.png";
 import p7 from "../assets/preservation/p7.png";
 import p8 from "../assets/preservation/p8.png";
-import a1 from "../assets/about/a1.png";
+import a1 from "../assets/About/a1.png";
 import b1 from "../assets/3images/b1.png";
 import b2 from "../assets/3images/b2.png";
 import e1 from "../assets/events/e1.png";
