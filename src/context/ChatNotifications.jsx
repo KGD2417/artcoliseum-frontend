@@ -166,32 +166,48 @@ export function ChatNotificationsProvider({ children }) {
 
 export const useChatNotifications = () => useContext(Ctx);
 
-// Helper to get unread count from chat_messages
+// Helper to get unread count using chat_reads table
 export async function getUnreadCount(userId) {
   if (!userId) return 0;
   try {
-    const { count, error } = await supabase
+    const { data: reads } = await supabase
+      .from("chat_reads")
+      .select("conversation_key, last_read_at")
+      .eq("user_id", userId);
+
+    const { data: messages, error } = await supabase
       .from("chat_messages")
-      .select("*", { count: "exact", head: true })
+      .select("id, conversation_key, created_at")
       .eq("user_id", userId)
-      .eq("read", false);
+      .neq("sender", "me");
+
     if (error) throw error;
-    return count || 0;
+    if (!messages) return 0;
+
+    const readMap = Object.fromEntries(
+      (reads || []).map((r) => [r.conversation_key, r.last_read_at])
+    );
+
+    return messages.filter((m) => {
+      const lastRead = readMap[m.conversation_key];
+      return !lastRead || new Date(m.created_at) > new Date(lastRead);
+    }).length;
   } catch (err) {
     console.error("Error getting unread count:", err);
     return 0;
   }
 }
 
-// Helper to mark messages as read
+// Helper to mark messages as read via chat_reads upsert
 export async function markMessagesAsRead(userId, conversationKey) {
   if (!userId) return;
   try {
     await supabase
-      .from("chat_messages")
-      .update({ read: true })
-      .eq("user_id", userId)
-      .eq("conversation_key", conversationKey);
+      .from("chat_reads")
+      .upsert(
+        { user_id: userId, conversation_key: conversationKey, last_read_at: new Date().toISOString() },
+        { onConflict: "user_id,conversation_key" }
+      );
   } catch (err) {
     console.error("Error marking messages as read:", err);
   }

@@ -9,6 +9,7 @@ const TABS = [
   { id: "highlights", label: "Highlights" },
   { id: "events",    label: "Events" },
   { id: "orders",    label: "Orders" },
+  { id: "artists",   label: "Artists" },
   { id: "messages",  label: "Messages" },
   { id: "contact",   label: "Contact" },
   { id: "support",   label: "Support" },
@@ -36,13 +37,14 @@ export default function AdminDashboard() {
 
   // Load counts
   const loadCounts = async () => {
-    const [ordersRes, msgRes, regRes, artRes, contactRes, supRes] = await Promise.all([
+    const [ordersRes, msgRes, regRes, artRes, contactRes, supRes, appRes] = await Promise.all([
       supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("chat_messages").select("id", { count: "exact", head: true }).eq("sender", "me"),
       supabase.from("event_registrations").select("id", { count: "exact", head: true }),
       supabase.from("artworks").select("id", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
       supabase.from("contact_messages").select("id", { count: "exact", head: true }),
       supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "open"),
+      supabase.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
     ]);
     setCounts({
       pendingOrders: ordersRes.count || 0,
@@ -51,13 +53,14 @@ export default function AdminDashboard() {
       newArtworks: artRes.count || 0,
       contactCount: contactRes.count || 0,
       supportOpen: supRes.count || 0,
+      pendingArtists: appRes.count || 0,
     });
   };
 
   useEffect(() => {
     if (role !== "admin") return;
     loadCounts();
-    const channels = ["orders", "chat_messages", "event_registrations", "artworks", "contact_messages", "support_tickets"]
+    const channels = ["orders", "chat_messages", "event_registrations", "artworks", "contact_messages", "support_tickets", "artist_applications"]
       .map(t => supabase.channel(`admin-counts-${t}`)
         .on("postgres_changes", { event: "*", schema: "public", table: t }, () => loadCounts())
         .subscribe());
@@ -92,7 +95,8 @@ export default function AdminDashboard() {
               t.id === "messages" ? counts.unreadMessages :
               t.id === "events"   ? counts.newRegistrations :
               t.id === "support"  ? counts.supportOpen :
-              t.id === "contact"  ? counts.contactCount : 0;
+              t.id === "contact"  ? counts.contactCount :
+              t.id === "artists"  ? counts.pendingArtists : 0;
             return (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{
@@ -120,6 +124,7 @@ export default function AdminDashboard() {
           {tab === "highlights"&& <HighlightsTab />}
           {tab === "events"    && <EventsTab />}
           {tab === "orders"    && <OrdersTab />}
+          {tab === "artists"   && <ArtistsTab />}
           {tab === "messages"  && <MessagesTab />}
           {tab === "contact"   && <ContactTab />}
           {tab === "support"   && <SupportTab />}
@@ -132,12 +137,13 @@ export default function AdminDashboard() {
 /* ════════════════ OVERVIEW ════════════════ */
 function Overview({ counts, setTab }) {
   const cards = [
-    { label: "Pending Orders",     value: counts.pendingOrders,   to: "orders" },
-    { label: "Unread Messages",    value: counts.unreadMessages,  to: "messages" },
+    { label: "Pending Orders",      value: counts.pendingOrders,   to: "orders" },
+    { label: "Unread Messages",     value: counts.unreadMessages,  to: "messages" },
     { label: "Event Registrations", value: counts.newRegistrations, to: "events" },
-    { label: "Open Support",       value: counts.supportOpen,     to: "support" },
-    { label: "Contact Messages",   value: counts.contactCount,    to: "contact" },
-    { label: "New Artworks (7d)",  value: counts.newArtworks,     to: "artworks" },
+    { label: "Open Support",        value: counts.supportOpen,     to: "support" },
+    { label: "Contact Messages",    value: counts.contactCount,    to: "contact" },
+    { label: "New Artworks (7d)",   value: counts.newArtworks,     to: "artworks" },
+    { label: "Pending Artist Apps", value: counts.pendingArtists,  to: "artists" },
   ];
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }}>
@@ -629,6 +635,187 @@ function MessagesTab() {
         </div>
       </div>
     </Card>
+  );
+}
+
+/* ════════════════ ARTISTS ════════════════ */
+function ArtistsTab() {
+  const [applications, setApplications] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [promoteEmail, setPromoteEmail] = useState("");
+  const [busy, setBusy] = useState("");
+
+  const load = async () => {
+    const [appRes, artistRes] = await Promise.all([
+      supabase.from("artist_applications").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id, full_name, role").eq("role", "artist"),
+    ]);
+    setApplications(appRes.data || []);
+    setArtists(artistRes.data || []);
+  };
+  useEffect(() => { load(); }, []);
+
+  const approve = async (app) => {
+    setBusy(app.id);
+    const { error: roleErr } = await supabase
+      .from("profiles")
+      .update({ role: "artist" })
+      .eq("id", app.user_id);
+    if (roleErr) { alert(roleErr.message); setBusy(""); return; }
+    await supabase.from("artist_applications").update({ status: "approved" }).eq("id", app.id);
+    setBusy("");
+    load();
+  };
+
+  const reject = async (app) => {
+    setBusy(app.id);
+    await supabase.from("artist_applications").update({ status: "rejected" }).eq("id", app.id);
+    setBusy("");
+    load();
+  };
+
+  const revokeArtist = async (profileId) => {
+    if (!confirm("Remove artist role from this user?")) return;
+    const { error } = await supabase.from("profiles").update({ role: "user" }).eq("id", profileId);
+    if (error) alert(error.message); else load();
+  };
+
+  const promoteByEmail = async () => {
+    const email = promoteEmail.trim();
+    if (!email) return;
+    setBusy("promote");
+    const { data: users, error } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .ilike("id", "%");
+    // Find by checking auth — we look up via a direct update by matching email in auth.users
+    // Since we can't query auth.users from client, we use the user_id from artist_applications or ask for user id
+    const { data: appMatch } = await supabase
+      .from("artist_applications")
+      .select("user_id, full_name")
+      .eq("email", email)
+      .maybeSingle();
+    if (!appMatch) {
+      alert("No artist application found for that email. Ask the user to submit an application first, or use the SQL below.");
+      setBusy("");
+      return;
+    }
+    const { error: roleErr } = await supabase
+      .from("profiles")
+      .update({ role: "artist" })
+      .eq("id", appMatch.user_id);
+    if (roleErr) alert(roleErr.message);
+    else { setPromoteEmail(""); load(); }
+    setBusy("");
+  };
+
+  const pending = applications.filter(a => a.status === "pending");
+  const reviewed = applications.filter(a => a.status !== "pending");
+
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      {/* Quick promote by email */}
+      <Card title="Promote by Email">
+        <p style={{ ...muted, marginBottom: 12 }}>
+          Instantly grant artist role to any user who has submitted an application.
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={promoteEmail}
+            onChange={e => setPromoteEmail(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && promoteByEmail()}
+            placeholder="user@email.com"
+            style={{ ...inputStyle, flex: 1 }}
+          />
+          <button onClick={promoteByEmail} disabled={busy === "promote" || !promoteEmail.trim()} style={goldBtnStyle}>
+            {busy === "promote" ? "Promoting…" : "PROMOTE"}
+          </button>
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <div style={{ ...muted, marginBottom: 6 }}>Or run in Supabase SQL Editor to promote yourself directly:</div>
+          <pre style={preStyle}>{`update public.profiles set role = 'artist' where id = auth.uid();`}</pre>
+        </div>
+      </Card>
+
+      {/* Pending applications */}
+      <Card title={`Pending Applications (${pending.length})`}>
+        {pending.length === 0 && <div style={muted}>No pending applications.</div>}
+        {pending.map(app => (
+          <div key={app.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 8, marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{app.full_name}</div>
+                <div style={{ ...muted, marginTop: 2 }}>{app.email} {app.phone ? `· ${app.phone}` : ""}</div>
+                {app.bio && <div style={{ fontSize: 13, color: "#e8e0d0", marginTop: 8, lineHeight: 1.5 }}>{app.bio}</div>}
+                {app.portfolio_url && (
+                  <div style={{ marginTop: 6 }}>
+                    <a href={app.portfolio_url} target="_blank" rel="noreferrer" style={{ color: "#D4AF37", fontSize: 12 }}>View Portfolio ↗</a>
+                  </div>
+                )}
+                {app.sample_image_urls?.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    {app.sample_image_urls.map((url, i) => (
+                      <img key={i} src={url} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 4 }} />
+                    ))}
+                  </div>
+                )}
+                <div style={{ ...muted, marginTop: 6 }}>Applied {new Date(app.created_at).toLocaleString()}</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                <button onClick={() => approve(app)} disabled={busy === app.id} style={goldBtnStyle}>
+                  {busy === app.id ? "…" : "APPROVE"}
+                </button>
+                <button onClick={() => reject(app)} disabled={busy === app.id} style={ghostBtn}>
+                  REJECT
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </Card>
+
+      {/* Current artists */}
+      <Card title={`Active Artists (${artists.length})`}>
+        {artists.length === 0 && <div style={muted}>No approved artists yet.</div>}
+        <table style={tableStyle}>
+          {artists.length > 0 && (
+            <thead><tr>{["Name", "User ID", ""].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
+          )}
+          <tbody>
+            {artists.map(a => (
+              <tr key={a.id} style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
+                <td style={tdStyle}>{a.full_name || "(no name)"}</td>
+                <td style={{ ...tdStyle, ...muted, fontSize: 11 }}>{a.id}</td>
+                <td style={tdStyle}>
+                  <button style={{ ...linkBtn, color: "#ff8a8a" }} onClick={() => revokeArtist(a.id)}>REVOKE</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      {/* Reviewed applications */}
+      {reviewed.length > 0 && (
+        <Card title="Previously Reviewed">
+          <table style={tableStyle}>
+            <thead><tr>{["Name", "Email", "Status", "Date"].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
+            <tbody>
+              {reviewed.map(app => (
+                <tr key={app.id} style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
+                  <td style={tdStyle}>{app.full_name}</td>
+                  <td style={tdStyle}>{app.email}</td>
+                  <td style={tdStyle}>
+                    <span style={chip(app.status === "approved")}>{app.status.toUpperCase()}</span>
+                  </td>
+                  <td style={tdStyle}>{new Date(app.created_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
+    </div>
   );
 }
 

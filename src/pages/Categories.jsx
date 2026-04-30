@@ -61,14 +61,14 @@ export default function Categories() {
         const { data, error } = await supabase
           .from("categories")
           .select("*")
-          .order("name");
+          .order("label");
 
         if (error) throw error;
 
         if (data && data.length > 0) {
           const transformed = data.map((cat) => ({
-            slug: cat.slug || cat.name.toLowerCase().replace(/\s+/g, "-"),
-            name: cat.name,
+            slug: cat.slug || cat.label.toLowerCase().replace(/\s+/g, "-"),
+            name: cat.label,
             description: cat.description || "",
             count: cat.artwork_count
               ? `${cat.artwork_count}+ works`

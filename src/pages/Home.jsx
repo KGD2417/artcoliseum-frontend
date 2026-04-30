@@ -15,6 +15,7 @@ import {
   ShieldIcon,
   SparkIcon,
 } from "../components/Icons";
+import logo from "../assets/logo.png";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
 import i3 from "../assets/i3.png";
@@ -1080,32 +1081,21 @@ export default function Home() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-          <h1 className="hero-h1 hero-h1-reference">
-            <span>Own Timeless </span>
-            <span className="hero-art-accent">Art</span>
-          </h1>
+          <motion.img
+            src={logo}
+            alt="Art Coliseum"
+            className="hero-logo"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          />
           <motion.p
             className="hero-sub"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.4 }}>
-            Discover, collect and cherish extraordinary artworks from talented
-            artists around the world.
+            Timeless and Priceless Art at your space
           </motion.p>
-        </motion.div>
-
-        <motion.div
-          className="hero-buttons"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.55 }}>
-          <motion.button
-            className="btn-primary"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate("/categories")}>
-            EXPLORE GALLERY →
-          </motion.button>
         </motion.div>
 
         <motion.div
@@ -1116,6 +1106,20 @@ export default function Home() {
           <ColiseumCarousel items={heroGallery} />
         </motion.div>
 
+        <motion.div
+          className="hero-buttons hero-buttons-below-carousel"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.9 }}>
+          <motion.button
+            className="btn-primary"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/categories")}>
+            EXPLORE GALLERY →
+          </motion.button>
+        </motion.div>
+        {/* 
         <motion.div
           className="stats-bar hero-stats-bar"
           initial={{ opacity: 0, y: 22 }}
@@ -1128,7 +1132,7 @@ export default function Home() {
               <span className="stat-label">{label}</span>
             </div>
           ))}
-        </motion.div>
+        </motion.div> */}
       </section>
 
       {/* ═══════════════════════════════════════════════

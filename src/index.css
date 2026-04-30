@@ -3691,8 +3691,24 @@ input[type="email"] {
   letter-spacing: 0;
 }
 
+.hero-logo {
+  display: block;
+  margin: 0 auto;
+  width: clamp(220px, 28vw, 420px);
+  filter:
+    drop-shadow(0 0 42px rgba(212, 175, 55, 0.45))
+    drop-shadow(0 4px 28px rgba(0, 0, 0, 0.7));
+}
+
 .hero-section.hero-cyl .hero-buttons {
   margin-top: 26px;
+}
+
+.hero-buttons-below-carousel {
+  margin-top: 28px;
+  margin-bottom: 0;
+  z-index: 5;
+  position: relative;
 }
 
 .hero-section.hero-cyl .btn-primary {
@@ -3730,7 +3746,7 @@ input[type="email"] {
 .hero-stats-bar {
   max-width: 1120px;
   width: min(1120px, calc(100% - 64px));
-  margin-top: -44px;
+  margin-top: 28px;
   background: rgba(4, 4, 3, 0.7);
   border-top-color: rgba(212, 175, 55, 0.22);
   border-bottom: none;

@@ -232,16 +232,23 @@ export default function ArtistPortal() {
       }
 
       if (isArtist && artworkImageUrl) {
+        // Ensure the user has a row in public.artists (FK target for artworks.artist_id)
+        const artistRowId = `artist-${user.id}`;
+        await supabase.from("artists").upsert(
+          { id: artistRowId, name: form.artistName, bio },
+          { onConflict: "id" }
+        );
+
         // Approved artist - create artwork directly
         const artworkId = `art-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const { error: artworkError } = await supabase.from("artworks").insert({
           id: artworkId,
           title: form.title,
           medium: form.subCategory,
-          artist_id: user.id,
+          artist_id: artistRowId,
           artist_name: form.artistName,
           year: new Date().getFullYear().toString(),
-          price: 0, // Price to be set later
+          price: 0,
           size: "medium",
           style: form.category,
           category_id: form.category.toLowerCase().replace(" ", "-"),
