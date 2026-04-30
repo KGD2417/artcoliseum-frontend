@@ -24,6 +24,10 @@ import i5 from "../assets/i5.png";
 import i6 from "../assets/i6.png";
 import i7 from "../assets/i7.png";
 import i8 from "../assets/i8.png";
+import m1 from "../assets/mediums/m1.png";
+import m2 from "../assets/mediums/m2.png";
+import m3 from "../assets/mediums/m3.png";
+import m4 from "../assets/mediums/m4.png";
 import p1 from "../assets/preservation/p1.png";
 import p2 from "../assets/preservation/p2.png";
 import p3 from "../assets/preservation/p3.png";
@@ -141,7 +145,7 @@ const MEDIUMS = [
     sub: "Oil, Acrylic & Watercolor",
     count: "2,400+ works",
     Icon: PaletteIcon,
-    img: "src/assets/mediums/m1.png",
+    img: m1,
   },
   {
     slug: "sculptures",
@@ -149,7 +153,7 @@ const MEDIUMS = [
     sub: "Bronze, Marble & Mixed Media",
     count: "840+ works",
     Icon: ChiselIcon,
-    img: "src/assets/mediums/m2.png",
+    img: m2,
   },
   {
     slug: "photography",
@@ -157,7 +161,7 @@ const MEDIUMS = [
     sub: "Fine Art & Documentary",
     count: "1,200+ works",
     Icon: CameraIcon,
-    img: "src/assets/mediums/m3.png",
+    img: m3,
   },
   {
     slug: "digital",
@@ -165,7 +169,7 @@ const MEDIUMS = [
     sub: "NFT & Generative Canvas",
     count: "3,600+ works",
     Icon: ChipIcon,
-    img: "src/assets/mediums/m4.png",
+    img: m4,
   },
 ];
 
@@ -982,10 +986,10 @@ export default function Home() {
     const fetchData = async () => {
       try {
         // Fetch featured artworks
-        const { data: artworks } = await supabase
-          .from("artworks")
-          .select("id, title, image_url, medium")
-          .limit(8);
+        // const { data: artworks } = await supabase
+        //   .from("artworks")
+        //   .select("id, title, image_url, medium")
+        //   .limit(8);
 
         if (artworks && artworks.length > 0) {
           // Transform artworks for carousel
@@ -1008,30 +1012,30 @@ export default function Home() {
 
         // Fetch stats
         const [{ count: artworkCount }, { count: artistCount }] =
-          await Promise.all([
-            supabase
-              .from("artworks")
-              .select("*", { count: "exact", head: true }),
-            supabase
-              .from("artists")
-              .select("*", { count: "exact", head: true }),
-          ]);
+          // await Promise.all([
+          //   supabase
+          //     .from("artworks")
+          //     .select("*", { count: "exact", head: true }),
+          //   supabase
+          //     .from("artists")
+          //     .select("*", { count: "exact", head: true }),
+          // ]);
 
-        setStats([
-          {
-            Icon: FrameIcon,
-            value: `${artworkCount || 10000}+`,
-            label: "Original Artworks",
-          },
-          {
-            Icon: ArtistFigureIcon,
-            value: `${artistCount || 2500}+`,
-            label: "Talented Artists",
-          },
-          { Icon: GlobeIcon, value: "50+", label: "Countries" },
-          { Icon: ShieldIcon, value: "Secure", label: "Global Delivery" },
-          { Icon: SparkIcon, value: "100%", label: "Authentic Artwork" },
-        ]);
+          setStats([
+            {
+              Icon: FrameIcon,
+              value: `${artworkCount || 10000}+`,
+              label: "Original Artworks",
+            },
+            {
+              Icon: ArtistFigureIcon,
+              value: `${artistCount || 2500}+`,
+              label: "Talented Artists",
+            },
+            { Icon: GlobeIcon, value: "50+", label: "Countries" },
+            { Icon: ShieldIcon, value: "Secure", label: "Global Delivery" },
+            { Icon: SparkIcon, value: "100%", label: "Authentic Artwork" },
+          ]);
       } catch (err) {
         console.error("Error fetching home data:", err);
       } finally {
