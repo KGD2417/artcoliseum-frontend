@@ -1,10 +1,20 @@
 import { useState } from 'react';
+import { supabase } from '../utils/supabase';
 
 export default function Contact() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.from('contact_messages').insert({
+      name: formData.name,
+      email: formData.email,
+      message: formData.message,
+    });
+    setBusy(false);
+    if (error) { alert(error.message); return; }
     alert('Message sent! We will get back to you soon.');
     setFormData({ name: '', email: '', message: '' });
   };

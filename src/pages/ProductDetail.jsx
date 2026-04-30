@@ -1,31 +1,24 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import { useLocale } from "../context/Locale";
-import {
-  HeartIcon,
-  ZoomIcon,
-  SparkIcon,
-  ShieldIcon,
-  CheckIcon,
-} from "../components/Icons";
+import ChatModal from "../components/ChatModal";
+import { addToCart } from "../utils/cartStore";
+import { supabase } from "../utils/supabase";
+import { HeartIcon, ZoomIcon, SparkIcon } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
-import i3 from "../assets/i3.png";
 import i4 from "../assets/i4.png";
-import i5 from "../assets/i5.png";
 import i6 from "../assets/i6.png";
-import i7 from "../assets/i7.png";
 
-const PRODUCTS = {
+// Fallback product for when database is empty
+const FALLBACK_PRODUCT = {
   default: {
     title: "Solstice in Obsidian",
     artist: "Julian Voss",
     year: "2023",
-    price: 42500,
     badge: "PRIVATE COLLECTION",
+    price: 18500,
     images: [i4, i6, i2, i1],
     description:
       'A masterwork of tactile minimalism, "Solstice in Obsidian" explores the intersection of celestial events and terrestrial silence. Each stroke of genuine 24k gold leaf is applied during the first hour of daylight over three lunar cycles.',
@@ -50,12 +43,6 @@ const PRODUCTS = {
     spread:
       "Held in 12 private collections across Berlin, London, New York and Hong Kong. Featured in the 2024 monograph 'Voss: Substance & Silence' (Hatje Cantz). Reviewed by The Art Newspaper, ArtForum, and Frieze. A sister work resides in the permanent collection of the Tate Modern.",
     specs: [
-      {
-        k: "Materials",
-        v: "24k gold leaf, oil, gesso with bone-ash and ground basalt, on Belgian linen",
-      },
-      { k: "Dimensions", v: "180 × 140 cm (70.9 × 55.1 in)" },
-      { k: "Year", v: "2023" },
       { k: "Edition", v: "Unique work, signed verso" },
       {
         k: "Framing",
@@ -66,10 +53,6 @@ const PRODUCTS = {
         v: "Studio of the artist → private commission, Berlin → Aureum Private Collection",
       },
       {
-        k: "Certificate",
-        v: "Aureum Digital Ledger + signed certificate of authenticity by the artist",
-      },
-      {
         k: "Care",
         v: "Dust with soft sable brush. Avoid direct sunlight and humidity above 60%.",
       },
@@ -77,45 +60,128 @@ const PRODUCTS = {
   },
 };
 
-const RELATED = [
-  {
-    id: "rel-1",
-    title: "SILVER RAIN NO. 4",
-    artist: "JULIAN VOSS",
-    price: 18200,
-    img: i5,
-  },
-  {
-    id: "rel-2",
-    title: "NEBULA IN REPOSE",
-    artist: "JULIAN VOSS",
-    price: 24500,
-    img: i3,
-  },
-  {
-    id: "rel-3",
-    title: "ZENITH HORIZON",
-    artist: "JULIAN VOSS",
-    price: 31000,
-    img: i7,
-  },
-];
-
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { formatPrice } = useLocale();
-  const product = PRODUCTS[id] || PRODUCTS.default;
+  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState(null);
   const [activeImg, setActiveImg] = useState(0);
   const [favorited, setFavorited] = useState(false);
-  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
-  const placeOrder = () => {
-    setOrderPlaced(true);
-    setTimeout(() => {
-      setOrderPlaced(false);
-      navigate("/");
-    }, 2400);
+  // Fetch artwork from Supabase
+  useEffect(() => {
+    const fetchArtwork = async () => {
+      setLoading(true);
+      try {
+        // Try to fetch from Supabase
+        const { data: artwork, error } = await supabase
+          .from("artworks")
+          .select(
+            `
+            *,
+            artists:artist_id (
+              name,
+              bio,
+              image_url
+            )
+          `,
+          )
+          .eq("id", id || "default")
+          .single();
+
+        if (error || !artwork) {
+          // Use fallback if not found in DB
+          setProduct(FALLBACK_PRODUCT.default);
+        } else {
+          // Transform Supabase data to match expected format
+          setProduct({
+            title: artwork.title,
+            artist:
+              artwork.artist_name || artwork.artists?.name || "Unknown Artist",
+            year: artwork.year,
+            badge: artwork.in_stock ? "AVAILABLE" : "SOLD OUT",
+            price: artwork.price,
+            images: artwork.image_url
+              ? [artwork.image_url, i1, i2, i6]
+              : [i4, i6, i2, i1],
+            description: artwork.description || "No description available.",
+            medium: artwork.medium || "Mixed Media",
+            dimensions: artwork.size
+              ? `${artwork.size} size`
+              : "Variable dimensions",
+            availability: artwork.in_stock
+              ? "Available for Purchase"
+              : "Sold Out",
+            certificate: "Digital Ledger Authenticity",
+            artistImg:
+              artwork.artists?.image_url ||
+              "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&q=80&auto=format&fit=crop",
+            artistBio:
+              artwork.artists?.bio ||
+              "Contemporary artist working in digital and traditional mediums.",
+            quote: '"Art is not what you see, but what you make others see."',
+            aboutArt: artwork.description || "",
+            origin: "Art Studio",
+            purpose: "Artistic expression",
+            story: "Created with passion and dedication",
+            spread: "Available for collection",
+            specs: [
+              { k: "Edition", v: artwork.in_stock ? "Available" : "Sold Out" },
+              { k: "Medium", v: artwork.medium || "Mixed Media" },
+              { k: "Year", v: artwork.year || "2024" },
+              { k: "Style", v: artwork.style || "Contemporary" },
+            ],
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching artwork:", err);
+        setProduct(FALLBACK_PRODUCT.default);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArtwork();
+  }, [id]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <section
+        style={{
+          padding: "100px 24px 80px",
+          maxWidth: 1280,
+          margin: "0 auto",
+          textAlign: "center",
+        }}>
+        <div
+          style={{
+            color: "#D4AF37",
+            fontFamily: "'Cinzel',serif",
+            fontSize: 14,
+            letterSpacing: "0.2em",
+          }}>
+          LOADING ARTWORK...
+        </div>
+      </section>
+    );
+  }
+
+  // Use fallback if product is null
+  const productData = product || FALLBACK_PRODUCT.default;
+
+  const handleTakeItHome = () => {
+    addToCart({
+      id: id || "default",
+      title: productData.title,
+      artist: productData.artist,
+      desc: `${productData.medium}, ${productData.dimensions}`,
+      img: productData.images[0],
+      price: productData.price,
+    });
+    setChatOpen(false);
+    navigate("/cart");
   };
 
   return (
@@ -140,8 +206,8 @@ export default function ProductDetail() {
               border: "1px solid rgba(212,175,55,0.15)",
             }}>
             <SafeImage
-              src={product.images[activeImg]}
-              alt={product.title}
+              src={productData.images[activeImg]}
+              alt={productData.title}
               fallbackIndex={activeImg}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
@@ -162,7 +228,7 @@ export default function ProductDetail() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-            {product.images.map((img, i) => (
+            {productData.images.map((img, i) => (
               <div
                 key={i}
                 onClick={() => setActiveImg(i)}
@@ -207,7 +273,7 @@ export default function ProductDetail() {
                 letterSpacing: "0.2em",
                 color: "#D4AF37",
               }}>
-              {product.badge}
+              {productData.badge}
             </span>
             <button
               onClick={() => setFavorited((v) => !v)}
@@ -247,7 +313,7 @@ export default function ProductDetail() {
               textTransform: "uppercase",
               marginBottom: 12,
             }}>
-            {product.title}
+            {productData.title}
           </h1>
 
           <div
@@ -257,19 +323,8 @@ export default function ProductDetail() {
               color: "rgba(200,191,160,0.8)",
               marginBottom: 20,
             }}>
-            {product.artist}, <span className="num-value">{product.year}</span>
-          </div>
-
-          <div
-            className="num-value"
-            style={{
-              fontFamily: "'Inter',sans-serif",
-              fontSize: 36,
-              fontWeight: 700,
-              color: "#D4AF37",
-              marginBottom: 28,
-            }}>
-            {formatPrice(product.price, { decimals: 0 })}
+            {productData.artist},{" "}
+            <span className="num-value">{productData.year}</span>
           </div>
 
           <div
@@ -298,7 +353,7 @@ export default function ProductDetail() {
               lineHeight: 1.75,
               marginBottom: 24,
             }}>
-            {product.description}
+            {productData.description}
           </p>
 
           <div
@@ -310,8 +365,8 @@ export default function ProductDetail() {
               paddingTop: 22,
               borderTop: "1px solid rgba(212,175,55,0.18)",
             }}>
-            <Meta label="MEDIUM" value={product.medium} />
-            <Meta label="DIMENSIONS" value={product.dimensions} />
+            <Meta label="MEDIUM" value={productData.medium} />
+            <Meta label="DIMENSIONS" value={productData.dimensions} />
             <Meta
               label="AVAILABILITY"
               value={
@@ -330,17 +385,17 @@ export default function ProductDetail() {
                       display: "inline-block",
                     }}
                   />
-                  {product.availability}
+                  {productData.availability}
                 </span>
               }
             />
-            <Meta label="CERTIFICATE" value={product.certificate} />
+            <Meta label="CERTIFICATE" value={productData.certificate} />
           </div>
 
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={placeOrder}
+            onClick={() => setChatOpen(true)}
             style={{
               width: "100%",
               padding: "16px",
@@ -354,73 +409,58 @@ export default function ProductDetail() {
               cursor: "pointer",
               boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
               marginBottom: 12,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
             }}>
-            BUY NOW
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            ENQUIRE FOR MORE
           </motion.button>
 
-          <div
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleTakeItHome}
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 12,
+              width: "100%",
+              padding: "16px",
+              background: "transparent",
+              color: "#D4AF37",
+              fontFamily: "'Cinzel',serif",
+              fontSize: 12,
+              letterSpacing: "0.2em",
+              border: "1px solid #D4AF37",
+              borderRadius: 999,
+              cursor: "pointer",
+              marginBottom: 12,
+            }}>
+            TAKE IT HOME →
+          </motion.button>
+
+          <button
+            onClick={() => navigate("/ar")}
+            style={{
+              ...pillBtn,
+              width: "100%",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
               marginBottom: 22,
             }}>
-            <button onClick={() => navigate("/cart")} style={pillBtn}>
-              ADD TO CART
-            </button>
-            <button
-              onClick={() => navigate("/ar")}
-              style={{
-                ...pillBtn,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}>
-              <SparkIcon size={14} /> VIEW IN AR
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              padding: "14px 16px",
-              background: "rgba(212,175,55,0.06)",
-              border: "1px solid rgba(212,175,55,0.2)",
-              borderRadius: 8,
-            }}>
-            <span
-              style={{
-                color: "#D4AF37",
-                display: "flex",
-                alignItems: "flex-start",
-              }}>
-              <ShieldIcon size={18} />
-            </span>
-            <div>
-              <div
-                style={{
-                  fontFamily: "'Cinzel',serif",
-                  fontSize: 11,
-                  letterSpacing: "0.16em",
-                  color: "#D4AF37",
-                }}>
-                AUREUM GUARANTEE
-              </div>
-              <div
-                style={{
-                  fontFamily: "'Raleway',sans-serif",
-                  fontSize: 11,
-                  color: "rgba(200,191,160,0.6)",
-                  marginTop: 4,
-                  lineHeight: 1.5,
-                }}>
-                Insured white-glove delivery, expert appraisal documentation,
-                and lifetime curator support.
-              </div>
-            </div>
-          </div>
+            <SparkIcon size={14} /> VIEW IN AR
+          </button>
         </motion.div>
       </div>
 
@@ -444,8 +484,8 @@ export default function ProductDetail() {
         }}
         className="pd-artist">
         <SafeImage
-          src={product.artistImg}
-          alt={product.artist}
+          src={productData.artistImg}
+          alt={productData.artist}
           fallbackIndex={1}
           style={{
             width: 180,
@@ -474,7 +514,7 @@ export default function ProductDetail() {
               color: "#fff",
               marginBottom: 14,
             }}>
-            {product.artist}
+            {productData.artist}
           </h2>
           <div
             style={{
@@ -485,7 +525,7 @@ export default function ProductDetail() {
               marginBottom: 14,
               lineHeight: 1.6,
             }}>
-            {product.quote}
+            {productData.quote}
           </div>
           <p
             style={{
@@ -495,7 +535,7 @@ export default function ProductDetail() {
               lineHeight: 1.7,
               marginBottom: 14,
             }}>
-            {product.artistBio}
+            {productData.artistBio}
           </p>
           <Link
             to="/artists/elena-vance"
@@ -510,151 +550,18 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div
-        style={{
-          marginTop: 60,
-          marginBottom: 30,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          flexWrap: "wrap",
-          gap: 14,
-        }}>
-        <div>
-          <div
-            style={{
-              fontFamily: "'Cinzel',serif",
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              color: "#D4AF37",
-              marginBottom: 8,
-            }}>
-            CURATED RECOMMENDATIONS
-          </div>
-          <h2
-            style={{
-              fontFamily: "'Cormorant Garamond',serif",
-              fontSize: 32,
-              fontWeight: 700,
-              color: "#fff",
-            }}>
-            More from {product.artist.split(" ").slice(-1)[0]}
-          </h2>
-        </div>
-        <Link
-          to="/gallery"
-          style={{
-            fontFamily: "'Cinzel',serif",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            color: "#D4AF37",
-          }}>
-          Browse All →
-        </Link>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gap: 20,
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-        }}>
-        {RELATED.map((r, i) => (
-          <motion.div
-            key={r.id}
-            onClick={() => navigate(`/product/${r.id}`)}
-            whileHover={{ y: -4 }}
-            style={{ cursor: "pointer" }}>
-            <div
-              style={{
-                width: "100%",
-                aspectRatio: "1/1.05",
-                overflow: "hidden",
-                borderRadius: 6,
-                marginBottom: 10,
-              }}>
-              <SafeImage
-                src={r.img}
-                alt={r.title}
-                fallbackIndex={i}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
-            <div
-              style={{
-                fontFamily: "'Cinzel',serif",
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                color: "#f0e8d8",
-                marginBottom: 4,
-              }}>
-              {r.title}
-            </div>
-            <div
-              className="num-value"
-              style={{
-                fontFamily: "'Inter',sans-serif",
-                fontSize: 12,
-                color: "rgba(200,191,160,0.6)",
-              }}>
-              {r.artist} — {formatPrice(r.price)}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* ORDER PLACED MODAL */}
-      <AnimatePresence>
-        {orderPlaced && (
-          <motion.div
-            className="order-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}>
-            <motion.div
-              className="order-modal"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 280, damping: 22 }}>
-              <div className="order-modal-tick">
-                <CheckIcon size={32} />
-              </div>
-              <h2
-                style={{
-                  fontFamily: "'Cormorant Garamond',serif",
-                  fontSize: 32,
-                  fontWeight: 700,
-                  color: "#fff",
-                  marginBottom: 10,
-                }}>
-                Order Placed
-              </h2>
-              <p
-                style={{
-                  fontFamily: "'Raleway',sans-serif",
-                  fontSize: 13,
-                  color: "rgba(200,191,160,0.7)",
-                  lineHeight: 1.65,
-                  marginBottom: 18,
-                }}>
-                Thank you. A confirmation email is on its way to you, and our
-                concierge will reach out within 24 hours to arrange white-glove
-                delivery.
-              </p>
-              <div
-                style={{
-                  fontFamily: "'Cinzel',serif",
-                  fontSize: 10,
-                  letterSpacing: "0.2em",
-                  color: "rgba(200,191,160,0.5)",
-                }}>
-                Returning home…
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ChatModal
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        conversationKey={`admin:${id}`}
+        title="Aureum Support"
+        subtitle={`About: ${product.title}`}
+        avatar="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=200&q=80&auto=format&fit=crop"
+        intro={[
+          `Hello — Aureum support here.`,
+          `Happy to answer anything about "${product.title}" by ${product.artist}.`,
+        ]}
+      />
 
       <style>{`
         @media (max-width: 900px) {
@@ -796,7 +703,7 @@ function CloserLook({ product }) {
       case "about":
         return (
           <>
-            <h3 className="cl-headline">{product.title}</h3>
+            <h3 className="cl-headline">About this work</h3>
             <p className="cl-body">{product.aboutArt}</p>
           </>
         );

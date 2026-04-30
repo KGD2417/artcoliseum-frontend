@@ -1,28 +1,47 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { SearchIcon } from "../components/Icons";
-
-const ARTISTS_LIST = [
-  { id: "elena-vance",   name: "Elena Vance",   role: "DIGITAL NEO-CLASSICAL", bio: "Florence-based painter exploring the intersection of digital abstraction and classical renaissance techniques.", image: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&q=80", works: 142 },
-  { id: "elena-rossi",   name: "Elena Rossi",   role: "DIGITAL SURREALISM",    bio: "Blends classical techniques with digital innovation to create dreamscapes.",                                  image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80", works: 98 },
-  { id: "hideo-tanaka",  name: "Hideo Tanaka",  role: "KINETIC SCULPTURE",     bio: "Creates movement and light using metal, glass, and magnetic forces.",                                          image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80", works: 67 },
-  { id: "aria-voss",     name: "Aria Voss",     role: "DIGITAL SURREALISM",    bio: "Dreamlike compositions exploring the subconscious and human consciousness.",                                  image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80", works: 55 },
-  { id: "chen-wei",      name: "Chen Wei",      role: "FOREST ETHEREAL",       bio: "Captures the spiritual essence of nature in expansive oil and ink works.",                                    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80", works: 89 },
-  { id: "lena-bach",     name: "Lena Bach",     role: "GOLD ABSTRACTIONS",     bio: "Contemporary minimalism fused with metallic textures and geometric form.",                                    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", works: 73 },
-];
+import { supabase } from "../utils/supabase";
 
 export default function Artists() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [artists, setArtists] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("artists")
+        .select("id, name, role, bio, image_url, works_count")
+        .order("name");
+      if (!cancelled) {
+        if (error) console.error(error);
+        setArtists(
+          (data ?? []).map(a => ({
+            id: a.id,
+            name: a.name,
+            role: a.role,
+            bio: a.bio,
+            image: a.image_url,
+            works: a.works_count,
+          }))
+        );
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = useMemo(() => {
     const t = search.trim().toLowerCase();
-    if (!t) return ARTISTS_LIST;
-    return ARTISTS_LIST.filter(a =>
+    if (!t) return artists;
+    return artists.filter(a =>
       `${a.name} ${a.role} ${a.bio}`.toLowerCase().includes(t)
     );
-  }, [search]);
+  }, [search, artists]);
 
   return (
     <section style={{ padding: "120px 24px 100px", maxWidth: 1400, margin: "0 auto" }}>

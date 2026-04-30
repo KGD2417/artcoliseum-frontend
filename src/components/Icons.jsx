@@ -2,9 +2,14 @@
    All icons inherit currentColor so they respect text color. */
 
 const base = (size = 18) => ({
-  width: size, height: size, viewBox: "0 0 24 24",
-  fill: "none", stroke: "currentColor",
-  strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round",
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.6,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
 });
 
 export const ArEyeIcon = ({ size = 18 }) => (
@@ -32,7 +37,9 @@ export const TextureIcon = ({ size = 18 }) => (
 );
 
 export const PlusIcon = ({ size = 16 }) => (
-  <svg {...base(size)}><path d="M12 5v14M5 12h14" /></svg>
+  <svg {...base(size)}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
 );
 
 export const UploadIcon = ({ size = 18 }) => (
@@ -93,7 +100,15 @@ export const CopyIcon = ({ size = 14 }) => (
 );
 
 export const CheckIcon = ({ size = 14 }) => (
-  <svg {...base(size)}><polyline points="20 6 9 17 4 12" /></svg>
+  <svg {...base(size)}>
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+export const MessageIcon = ({ size = 18 }) => (
+  <svg {...base(size)}>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
 );
 
 export const ShieldIcon = ({ size = 16 }) => (
@@ -108,7 +123,7 @@ export const PaletteIcon = ({ size = 22 }) => (
     <path d="M12 2a10 10 0 1 0 0 20c1.66 0 3-1.34 3-3 0-.81-.31-1.55-.83-2.1a1 1 0 0 1 .73-1.69H17a5 5 0 0 0 5-5c0-4.42-4.48-8-10-8z" />
     <circle cx="7.5" cy="10.5" r="1.2" fill="currentColor" />
     <circle cx="10.5" cy="6.5" r="1.2" fill="currentColor" />
-    <circle cx="15"   cy="6.5" r="1.2" fill="currentColor" />
+    <circle cx="15" cy="6.5" r="1.2" fill="currentColor" />
     <circle cx="17.5" cy="10.5" r="1.2" fill="currentColor" />
   </svg>
 );

@@ -18,6 +18,10 @@ import AR from './pages/AR';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Refund from './pages/Refund';
 import HelpDesk from './pages/HelpDesk';
+import Events from './pages/Events';
+import AdminInbox from './pages/AdminInbox';
+import AdminDashboard from './pages/AdminDashboard';
+import ArtistChat from './pages/ArtistChat';
 
 function App() {
   return (
@@ -42,6 +46,10 @@ function App() {
         <Route path="privacy" element={<PrivacyPolicy />} />
         <Route path="refund" element={<Refund />} />
         <Route path="help" element={<HelpDesk />} />
+        <Route path="events" element={<Events />} />
+        <Route path="admin" element={<AdminDashboard />} />
+        <Route path="admin/inbox" element={<AdminInbox />} />
+        <Route path="artist-chat" element={<ArtistChat />} />
       </Route>
     </Routes>
   );
