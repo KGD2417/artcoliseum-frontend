@@ -1,34 +1,25 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { useLocale, LANGS } from "../context/Locale";
 import { CheckIcon } from "../components/Icons";
+import { supabase } from "../utils/supabase";
+import { useAuth } from "../context/Auth";
 import i3 from "../assets/i3.png";
 import i6 from "../assets/i6.png";
 
 const TABS = [
   { id: "details",  label: "Account Details" },
   { id: "orders",   label: "Order Tracking" },
+  { id: "inbox",    label: "Messages" },
   { id: "cart",     label: "Cart Items" },
   { id: "help",     label: "Help Desk" },
   { id: "notifs",   label: "Notifications" },
   { id: "language", label: "Language" },
 ];
 
-const INITIAL_USER = {
-  name: "Kshitij Desai",
-  email: "kshitijdesai179@gmail.com",
-  phone: "+91 98765 43210",
-  address: "Bandra West, Mumbai, India 400050",
-  password: "••••••••••",
-};
-
-const ORDERS = [
-  { id: "AU-99281", item: "Solstice in Obsidian — Julian Voss",  total: 42500, status: "OUT FOR DELIVERY", eta: "Expected today 6 PM" },
-  { id: "AU-99244", item: "Echoes of Silence — Elara Vance",     total: 18400, status: "DELIVERED",        eta: "Mar 22, 2026" },
-  { id: "AU-99201", item: "Structural Gravity II — Julian Marx", total: 12200, status: "IN TRANSIT",       eta: "Apr 3, 2026" },
-];
+const EMPTY_USER = { name: "", email: "", phone: "", address: "", password: "••••••••••" };
 
 const CART = [
   { id: "p-101", title: "Fragmented Memory",  artist: "Soren Klein", price: 8400, img: i6 },
@@ -44,13 +35,166 @@ const NOTIFS = [
 
 export default function Profile() {
   const { lang, setLang } = useLocale();
+  const navigate = useNavigate();
+  const { user: authUser, loading: authLoading, signOut } = useAuth();
   const [tab, setTab] = useState("details");
   const [editing, setEditing] = useState(false);
-  const [user, setUser] = useState(INITIAL_USER);
-  const [draft, setDraft] = useState(INITIAL_USER);
+  const [user, setUser] = useState(EMPTY_USER);
+  const [draft, setDraft] = useState(EMPTY_USER);
+  const [orders, setOrders] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [activeConv, setActiveConv] = useState(null);
+  const [convThread, setConvThread] = useState([]);
+  const [convReply, setConvReply] = useState("");
+
+  useEffect(() => {
+    if (!authLoading && !authUser) {
+      navigate("/signin");
+    }
+  }, [authLoading, authUser, navigate]);
+
+  useEffect(() => {
+    if (!authUser) return;
+    (async () => {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("full_name, phone, avatar_url")
+        .eq("id", authUser.id)
+        .maybeSingle();
+      const next = {
+        name: prof?.full_name || authUser.user_metadata?.full_name || "",
+        email: authUser.email || "",
+        phone: prof?.phone || authUser.user_metadata?.phone || "",
+        address: "",
+        password: "••••••••••",
+      };
+      setUser(next);
+      setDraft(next);
+
+      const { data: ords } = await supabase
+        .from("orders")
+        .select("id, total, status, created_at, order_items(title)")
+        .eq("user_id", authUser.id)
+        .order("created_at", { ascending: false });
+      setOrders(
+        (ords ?? []).map(o => ({
+          id: "AU-" + o.id.slice(0, 6).toUpperCase(),
+          item: o.order_items?.map(i => i.title).join(", ") || "Order",
+          total: Number(o.total),
+          status: (o.status || "pending").toUpperCase(),
+          eta: new Date(o.created_at).toLocaleDateString(),
+        }))
+      );
+
+      const [{ data: msgs }, { data: reads }] = await Promise.all([
+        supabase
+          .from("chat_messages")
+          .select("conversation_key, sender, text, created_at")
+          .eq("user_id", authUser.id)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("chat_reads")
+          .select("conversation_key, last_read_at")
+          .eq("user_id", authUser.id),
+      ]);
+      const readMap = new Map((reads ?? []).map(r => [r.conversation_key, new Date(r.last_read_at)]));
+      const grouped = new Map();
+      for (const m of msgs ?? []) {
+        const cur = grouped.get(m.conversation_key) ?? { conversation_key: m.conversation_key, unread: 0 };
+        cur.last_text = m.text;
+        cur.last_sender = m.sender;
+        cur.last_at = m.created_at;
+        if (m.sender !== "me") {
+          const lastRead = readMap.get(m.conversation_key);
+          if (!lastRead || new Date(m.created_at) > lastRead) cur.unread += 1;
+        }
+        grouped.set(m.conversation_key, cur);
+      }
+      setConversations(
+        [...grouped.values()].sort((a, b) => new Date(b.last_at) - new Date(a.last_at))
+      );
+    })();
+  }, [authUser]);
+
+  // Realtime: append new messages to active thread + bump conversation list.
+  useEffect(() => {
+    if (!authUser) return;
+    const ch = supabase
+      .channel(`profile-inbox:${authUser.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_messages", filter: `user_id=eq.${authUser.id}` },
+        (payload) => {
+          const m = payload.new;
+          setConversations(prev => {
+            const idx = prev.findIndex(c => c.conversation_key === m.conversation_key);
+            const next = idx >= 0 ? [...prev] : [{ conversation_key: m.conversation_key, unread: 0 }, ...prev];
+            const target = idx >= 0 ? { ...next[idx] } : next[0];
+            target.last_text = m.text;
+            target.last_sender = m.sender;
+            target.last_at = m.created_at;
+            if (m.sender !== "me" && (!activeConv || activeConv !== m.conversation_key)) {
+              target.unread = (target.unread || 0) + 1;
+            }
+            if (idx >= 0) next[idx] = target; else next[0] = target;
+            return next.sort((a, b) => new Date(b.last_at) - new Date(a.last_at));
+          });
+          if (activeConv === m.conversation_key) {
+            setConvThread(prev => prev.find(x => x.created_at === m.created_at && x.text === m.text) ? prev : [...prev, m]);
+          }
+        }
+      )
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }, [authUser, activeConv]);
+
+  const openConversation = async (key) => {
+    setActiveConv(key);
+    setConvReply("");
+    const { data } = await supabase
+      .from("chat_messages")
+      .select("id, sender, text, created_at")
+      .eq("user_id", authUser.id)
+      .eq("conversation_key", key)
+      .order("created_at", { ascending: true });
+    setConvThread(data ?? []);
+    // mark as read
+    await supabase.from("chat_reads").upsert({
+      user_id: authUser.id,
+      conversation_key: key,
+      last_read_at: new Date().toISOString(),
+    }, { onConflict: "user_id,conversation_key" });
+    setConversations(prev => prev.map(c => c.conversation_key === key ? { ...c, unread: 0 } : c));
+  };
+
+  const sendConvReply = async () => {
+    const text = convReply.trim();
+    if (!text || !activeConv) return;
+    setConvReply("");
+    const { error } = await supabase.from("chat_messages").insert({
+      user_id: authUser.id,
+      conversation_key: activeConv,
+      sender: "me",
+      text,
+    });
+    if (error) alert(error.message);
+  };
 
   const startEdit = () => { setDraft(user); setEditing(true); };
-  const save = () => { setUser(draft); setEditing(false); };
+  const save = async () => {
+    if (authUser) {
+      await supabase
+        .from("profiles")
+        .update({ full_name: draft.name, phone: draft.phone })
+        .eq("id", authUser.id);
+    }
+    setUser(draft);
+    setEditing(false);
+  };
+  const handleSignOut = async () => { await signOut(); navigate("/"); };
+
+  const CART = [];
+  const NOTIFS = [];
 
   return (
     <section style={{ padding: "100px 24px 80px", maxWidth: 1200, margin: "0 auto" }}>
@@ -82,22 +226,32 @@ export default function Profile() {
           border: "1px solid rgba(212,175,55,0.12)",
           borderRadius: 12, padding: "20px 14px", height: "fit-content",
         }}>
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                display: "block", width: "100%", textAlign: "left",
-                padding: "12px 16px", marginBottom: 4,
-                background: tab === t.id ? "rgba(212,175,55,0.10)" : "transparent",
-                border: "none", borderRadius: 8, cursor: "pointer",
-                fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em",
-                color: tab === t.id ? "#D4AF37" : "rgba(200,191,160,0.65)",
-                transition: "all 0.2s",
-              }}>
-              {t.label.toUpperCase()}
-            </button>
-          ))}
+          {TABS.map(t => {
+            const unread = t.id === "inbox" ? conversations.reduce((s, c) => s + (c.unread || 0), 0) : 0;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  width: "100%", textAlign: "left",
+                  padding: "12px 16px", marginBottom: 4,
+                  background: tab === t.id ? "rgba(212,175,55,0.10)" : "transparent",
+                  border: "none", borderRadius: 8, cursor: "pointer",
+                  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em",
+                  color: tab === t.id ? "#D4AF37" : "rgba(200,191,160,0.65)",
+                  transition: "all 0.2s",
+                }}>
+                <span>{t.label.toUpperCase()}</span>
+                {unread > 0 && (
+                  <span style={{
+                    background: "#D4AF37", color: "#111", borderRadius: 999,
+                    padding: "2px 8px", fontSize: 10, fontWeight: 700,
+                  }}>{unread}</span>
+                )}
+              </button>
+            );
+          })}
         </aside>
 
         {/* content */}
@@ -119,13 +273,17 @@ export default function Profile() {
                   <Field label="Phone"    value={editing ? draft.phone    : user.phone}    editing={editing} onChange={v => setDraft({ ...draft, phone: v })} type="tel" />
                   <Field label="Address"  value={editing ? draft.address  : user.address}  editing={editing} onChange={v => setDraft({ ...draft, address: v })} />
                   <Field label="Password" value={editing ? draft.password : user.password} editing={editing} onChange={v => setDraft({ ...draft, password: v })} type="password" />
+                  <button onClick={handleSignOut} className="btn-outline" style={{ marginTop: 8, padding: "10px 22px", fontSize: 11 }}>SIGN OUT</button>
                 </Card>
               )}
 
               {tab === "orders" && (
                 <Card title="Order Tracking">
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {ORDERS.map(o => (
+                    {orders.length === 0 && (
+                      <div style={{ padding: 24, textAlign: "center", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.55)" }}>No orders yet.</div>
+                    )}
+                    {orders.map(o => (
                       <div key={o.id} style={{
                         padding: "18px 20px",
                         border: "1px solid rgba(212,175,55,0.12)",
@@ -150,6 +308,82 @@ export default function Profile() {
                       </div>
                     ))}
                   </div>
+                </Card>
+              )}
+
+              {tab === "inbox" && (
+                <Card title="Messages">
+                  {conversations.length === 0 ? (
+                    <div style={{ padding: 24, textAlign: "center", color: "rgba(200,191,160,0.5)", fontFamily: "'Raleway',sans-serif", fontSize: 13 }}>
+                      No conversations yet. Open an artist or product page and tap the chat to start one.
+                    </div>
+                  ) : activeConv ? (
+                    <div>
+                      <button onClick={() => setActiveConv(null)} style={{
+                        background: "transparent", border: "1px solid rgba(212,175,55,0.25)",
+                        color: "#D4AF37", padding: "6px 14px", borderRadius: 999,
+                        fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer", marginBottom: 14,
+                      }}>← BACK</button>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 10 }}>{activeConv}</div>
+                      <div style={{ maxHeight: 380, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8, marginBottom: 12 }}>
+                        {convThread.map(m => (
+                          <div key={m.id || m.created_at} style={{ alignSelf: m.sender === "me" ? "flex-end" : "flex-start", maxWidth: "75%" }}>
+                            <div style={{
+                              padding: "8px 12px", borderRadius: 12,
+                              background: m.sender === "me" ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(255,255,255,0.06)",
+                              color: m.sender === "me" ? "#111" : "#e8e0d0",
+                              fontFamily: "'Raleway',sans-serif", fontSize: 13,
+                            }}>{m.text}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input
+                          value={convReply}
+                          onChange={e => setConvReply(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") sendConvReply(); }}
+                          placeholder="Reply…"
+                          style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 999, padding: "10px 16px", color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" }}
+                        />
+                        <button onClick={sendConvReply} disabled={!convReply.trim()}
+                          style={{ padding: "0 22px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", cursor: convReply.trim() ? "pointer" : "not-allowed" }}>
+                          SEND
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {conversations.map(c => (
+                        <button
+                          key={c.conversation_key}
+                          onClick={() => openConversation(c.conversation_key)}
+                          style={{
+                            textAlign: "left", padding: "14px 16px", cursor: "pointer",
+                            background: "rgba(255,255,255,0.02)",
+                            border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8,
+                            color: "#e8e0d0",
+                          }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: "#D4AF37" }}>
+                              {c.conversation_key}
+                            </span>
+                            {c.unread > 0 && (
+                              <span style={{
+                                background: "#D4AF37", color: "#111", borderRadius: 999,
+                                padding: "2px 8px", fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700,
+                              }}>{c.unread}</span>
+                            )}
+                          </div>
+                          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {c.last_sender !== "me" && c.last_sender ? `${c.last_sender}: ` : ""}{c.last_text}
+                          </div>
+                          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", marginTop: 4 }}>
+                            {c.last_at ? new Date(c.last_at).toLocaleString() : ""}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </Card>
               )}
 

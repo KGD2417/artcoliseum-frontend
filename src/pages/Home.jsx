@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import ColiseumCarousel from "../components/ColiseumCarousel";
+import { supabase } from "../utils/supabase";
 import {
   PaletteIcon,
   ChiselIcon,
@@ -36,6 +37,49 @@ import b2 from "../assets/3images/b2.png";
 import e1 from "../assets/events/e1.png";
 import e2 from "../assets/events/e2.png";
 import e3 from "../assets/events/e3.png";
+
+// Fallback data when database is empty
+const FALLBACK_HERO_GALLERY = [
+  { image: i1, text: "Golden Horizon" },
+  { image: i2, text: "Eternal Grace" },
+  { image: i6, text: "Cosmic Flow" },
+  { image: i4, text: "The Golden Tree" },
+  { image: i5, text: "Whispers of Silence" },
+  {
+    image:
+      "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop",
+    text: "Crimson Reverie",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?w=900&q=80&auto=format&fit=crop",
+    text: "Velvet Mirage",
+  },
+  { image: i8, text: "Renaissance Study" },
+  {
+    image:
+      "https://images.unsplash.com/photo-1549887534-1541e9326642?w=900&q=80&auto=format&fit=crop",
+    text: "Crimson Tides",
+  },
+  { image: i3, text: "Azure Dreams" },
+  {
+    image:
+      "https://images.unsplash.com/photo-1551913902-c92207136625?w=900&q=80&auto=format&fit=crop",
+    text: "Solstice",
+  },
+  { image: i7, text: "Ocean Depths" },
+];
+
+const FALLBACK_CAROUSEL = [
+  { img: p1, title: "Golden Horizon", medium: "Acrylic on Canvas" },
+  { img: p4, title: "Eternal Grace", medium: "Bronze Sculpture" },
+  { img: p6, title: "Cosmic Flow", medium: "Mixed Media" },
+  { img: p7, title: "The Golden Tree", medium: "Oil on Canvas" },
+  { img: p5, title: "Whispers of Silence", medium: "Oil on Canvas" },
+  { img: p3, title: "Azure Dreams", medium: "Mixed Media" },
+  { img: p8, title: "Renaissance Study", medium: "Oil on Panel" },
+  { img: p2, title: "Ocean Depths", medium: "Digital Print" },
+];
 
 /* ── Hero gallery ────────────────────────────────────────────────── */
 const HERO_GALLERY = [
@@ -850,13 +894,6 @@ function AnimatedPreservation({ navigate }) {
             onClick={() => navigate("/contact")}>
             CONTACT US →
           </motion.button>
-          <motion.button
-            className="btn-secondary"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate("/about")}>
-            LEARN MORE
-          </motion.button>
         </div>
       </motion.div>
     </div>
@@ -934,6 +971,75 @@ function TiltCard({ event, index, onRegister }) {
 ═══════════════════════════════════════════════════════════════════ */
 export default function Home() {
   const navigate = useNavigate();
+  const [heroGallery, setHeroGallery] = useState(FALLBACK_HERO_GALLERY);
+  const [carouselItems, setCarouselItems] = useState(FALLBACK_CAROUSEL);
+  const [stats, setStats] = useState(HERO_STATS);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch featured artworks
+        const { data: artworks } = await supabase
+          .from("artworks")
+          .select("id, title, image_url, medium")
+          .limit(8);
+
+        if (artworks && artworks.length > 0) {
+          // Transform artworks for carousel
+          const transformedCarousel = artworks.map((a) => ({
+            img: a.image_url || p1,
+            title: a.title,
+            medium: a.medium || "Artwork",
+          }));
+          setCarouselItems(transformedCarousel);
+
+          // Transform artworks for hero gallery
+          const transformedHero = artworks.slice(0, 12).map((a) => ({
+            image: a.image_url || i1,
+            text: a.title,
+          }));
+          if (transformedHero.length > 0) {
+            setHeroGallery(transformedHero);
+          }
+        }
+
+        // Fetch stats
+        const [{ count: artworkCount }, { count: artistCount }] =
+          await Promise.all([
+            supabase
+              .from("artworks")
+              .select("*", { count: "exact", head: true }),
+            supabase
+              .from("artists")
+              .select("*", { count: "exact", head: true }),
+          ]);
+
+        setStats([
+          {
+            Icon: FrameIcon,
+            value: `${artworkCount || 10000}+`,
+            label: "Original Artworks",
+          },
+          {
+            Icon: ArtistFigureIcon,
+            value: `${artistCount || 2500}+`,
+            label: "Talented Artists",
+          },
+          { Icon: GlobeIcon, value: "50+", label: "Countries" },
+          { Icon: ShieldIcon, value: "Secure", label: "Global Delivery" },
+          { Icon: SparkIcon, value: "100%", label: "Authentic Artwork" },
+        ]);
+      } catch (err) {
+        console.error("Error fetching home data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
   const [email, setEmail] = useState("");
 
   // Register form state
@@ -983,8 +1089,8 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.4 }}>
-            Discover, collect and cherish extraordinary artworks from
-            talented artists around the world.
+            Discover, collect and cherish extraordinary artworks from talented
+            artists around the world.
           </motion.p>
         </motion.div>
 
@@ -1007,7 +1113,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="circ-gallery-wrap">
-          <ColiseumCarousel items={HERO_GALLERY} />
+          <ColiseumCarousel items={heroGallery} />
         </motion.div>
 
         <motion.div
@@ -1130,7 +1236,7 @@ export default function Home() {
           italic="Highlights"
           sub="A rotating selection of the most coveted works in our collection — drag the cylinder to explore."
         />
-        <CylinderCarousel items={CAROUSEL_ITEMS} navigate={navigate} />
+        <CylinderCarousel items={carouselItems} navigate={navigate} />
       </section>
 
       {/* ═══════════════════════════════════════════════

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import ChatModal from "../components/ChatModal";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
 import i3 from "../assets/i3.png";
@@ -48,7 +47,6 @@ export default function ArtistProfile() {
   const artist = ARTISTS[id] || ARTISTS["elena-vance"];
   const [filter, setFilter] = useState("all");
   const [email, setEmail] = useState("");
-  const [chatOpen, setChatOpen] = useState(false);
 
   const filtered = WORKS.filter(w =>
     filter === "all" ? true : filter === "available" ? w.status === "available" : w.status !== "available"
@@ -97,25 +95,6 @@ export default function ArtistProfile() {
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <motion.button
-              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-              onClick={() => setChatOpen(true)}
-              style={{
-                padding: "13px 32px",
-                background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                color: "#111",
-                fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
-                border: "none",
-                borderRadius: 999, cursor: "pointer",
-                display: "inline-flex", alignItems: "center", gap: 10,
-              }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              CHAT WITH {artist.name.split(" ")[0].toUpperCase()}
-            </motion.button>
-          </div>
         </motion.div>
       </div>
 
@@ -205,23 +184,6 @@ export default function ArtistProfile() {
         </div>
       </div>
 
-      <ChatModal
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        title={artist.name}
-        subtitle={artist.location}
-        avatar={artist.image}
-        intro={[
-          `Hi — ${artist.name.split(" ")[0]} here. Thanks for reaching out.`,
-          "Tell me a bit about what drew you to my work — happy to share more about any piece.",
-        ]}
-        botReplies={[
-          "That's a beautiful question. The piece you're asking about took shape over several months in the studio.",
-          "I'd love to share the story behind it — would you like me to send a short studio film?",
-          "Yes, that one is still available. I usually arrange a private viewing for serious enquiries.",
-          "Thank you — feel free to ask anything else, no pressure.",
-        ]}
-      />
 
       <style>{`
         @media (max-width: 800px) {

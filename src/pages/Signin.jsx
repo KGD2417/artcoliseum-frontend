@@ -1,18 +1,38 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/Auth';
 
 export default function SignIn() {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert(isLogin ? `Welcome back!` : `Account created for ${name}`);
-    navigate('/profile');
+    setError('');
+    setBusy(true);
+    try {
+      const { error } = isLogin
+        ? await signIn({ email, password })
+        : await signUp({ email, password, fullName: name, phone });
+      if (error) {
+        setError(error.message);
+      } else if (isLogin) {
+        navigate('/profile');
+      } else {
+        setError('Account created. Check your email to confirm, then sign in.');
+        setIsLogin(true);
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   const inputStyle = {
@@ -58,36 +78,53 @@ export default function SignIn() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {!isLogin && (
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
+              style={inputStyle}
+            />
+          )}
           <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={e => setName(e.target.value)}
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             required
             style={inputStyle}
           />
-          <input
-            type="tel"
-            inputMode="tel"
-            placeholder="Phone Number"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            required
-            style={phoneInputStyle}
-          />
+          {!isLogin && (
+            <input
+              type="tel"
+              inputMode="tel"
+              placeholder="Phone Number"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              style={phoneInputStyle}
+            />
+          )}
           <input
             type="password"
             placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
+            minLength={6}
             style={inputStyle}
           />
 
+          {error && (
+            <p style={{ color: '#ff8a8a', fontFamily: "'Raleway',sans-serif", fontSize: 12, margin: 0 }}>{error}</p>
+          )}
+
           <motion.button
             type="submit"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            disabled={busy}
+            whileHover={{ scale: busy ? 1 : 1.02 }}
+            whileTap={{ scale: busy ? 1 : 0.98 }}
             style={{
               marginTop: 10,
               height: 44,
@@ -99,10 +136,11 @@ export default function SignIn() {
               letterSpacing: '0.16em',
               border: 'none',
               borderRadius: 999,
-              cursor: 'pointer',
+              cursor: busy ? 'wait' : 'pointer',
+              opacity: busy ? 0.7 : 1,
               boxShadow: '0 8px 24px rgba(212,175,55,0.25)',
             }}>
-            {isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}
+            {busy ? 'PLEASE WAIT…' : isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}
           </motion.button>
         </form>
 

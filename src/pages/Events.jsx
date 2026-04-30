@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
+import { supabase } from "../utils/supabase";
 import e4 from "../assets/events/e4.png";
 import e5 from "../assets/events/e5.png";
 import e6 from "../assets/events/e6.png";
@@ -8,7 +9,7 @@ import e7 from "../assets/events/e7.png";
 import e8 from "../assets/events/e8.png";
 import e9 from "../assets/events/e9.png";
 
-const ONGOING = [
+const FALLBACK_ONGOING = [
   {
     title: "The Golden Age Exhibition",
     date: "May 15 – June 30, 2025",
@@ -38,7 +39,7 @@ const ONGOING = [
   },
 ];
 
-const UPCOMING = [
+const FALLBACK_UPCOMING = [
   {
     title: "Digital Frontiers",
     date: "July 1 – August 15, 2026",
@@ -124,6 +125,34 @@ export default function Events() {
   const [activeMode, setActiveMode] = useState("register");
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [done, setDone] = useState(false);
+  const [ongoing, setOngoing] = useState(FALLBACK_ONGOING);
+  const [upcoming, setUpcoming] = useState(FALLBACK_UPCOMING);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("events")
+        .select("id, title, description, status, starts_at, ends_at, location, image_url");
+      if (error) { console.error(error); return; }
+      const fmt = (s, e) => {
+        if (!s) return "";
+        const d1 = new Date(s).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+        const d2 = e ? new Date(e).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
+        return d2 ? `${d1} – ${d2}` : d1;
+      };
+      const map = (r) => ({
+        id: r.id,
+        title: r.title,
+        date: fmt(r.starts_at, r.ends_at),
+        time: "",
+        location: r.location,
+        desc: r.description,
+        img: r.image_url,
+      });
+      setOngoing(data.filter(r => r.status === "ongoing").map(map));
+      setUpcoming(data.filter(r => r.status === "upcoming").map(map));
+    })();
+  }, []);
 
   const open = (event, mode) => {
     setActiveEvent(event);
@@ -133,8 +162,18 @@ export default function Events() {
   };
   const close = () => { if (!done) setActiveEvent(null); };
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    if (activeEvent?.id) {
+      const { error } = await supabase.from("event_registrations").insert({
+        event_id: activeEvent.id,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        message: form.message,
+      });
+      if (error) { alert(error.message); return; }
+    }
     setDone(true);
     setTimeout(() => { setActiveEvent(null); setDone(false); }, 2400);
   };
@@ -174,14 +213,14 @@ export default function Events() {
           onClick={() => setTab("ongoing")}>
           <span className="ev-section-dot ev-section-dot-on" />
           ONGOING
-          <span className="ev-tab-count">{ONGOING.length}</span>
+          <span className="ev-tab-count">{ongoing.length}</span>
         </button>
         <button
           className={`ev-tab ${tab === "upcoming" ? "is-active" : ""}`}
           onClick={() => setTab("upcoming")}>
           <span className="ev-section-dot ev-section-dot-up" />
           UPCOMING
-          <span className="ev-tab-count">{UPCOMING.length}</span>
+          <span className="ev-tab-count">{upcoming.length}</span>
         </button>
       </div>
 
@@ -194,7 +233,7 @@ export default function Events() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
           <div className="ev-page-grid">
-            {(tab === "ongoing" ? ONGOING : UPCOMING).map((ev, i) => (
+            {(tab === "ongoing" ? ongoing : upcoming).map((ev, i) => (
               <EventCard
                 key={ev.title}
                 event={ev}

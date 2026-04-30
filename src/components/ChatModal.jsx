@@ -1,20 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../utils/supabase";
+import { useAuth } from "../context/Auth";
 
 /**
- * Reusable chat modal.
+ * Realtime chat modal. Messages persist in Supabase and stream in via
+ * Supabase Realtime. Requires the user to be signed in.
  *
- * Props:
- *  - open: bool
- *  - onClose: () => void
- *  - title: string             (header title — e.g. artist name or curator)
- *  - subtitle: string          (small line under title)
- *  - avatar: string            (image url)
- *  - intro: string[]           (initial bot greeting messages)
- *  - botReplies: string[]      (cycled responses to user messages)
- *  - showTakeItHome: bool      (renders the gold "Take it home" CTA)
- *  - takeItHomeLabel?: string  (defaults to "Take it home →")
- *  - onTakeItHome: () => void  (cb when CTA clicked)
+ * Required prop:
+ *  - conversationKey: string  e.g. "artist:elena-vance" or "curator:p1"
+ *
+ * Other props (UI):
+ *  open, onClose, title, subtitle, avatar, intro[], botReplies[],
+ *  showTakeItHome, takeItHomeLabel, onTakeItHome
  */
 export default function ChatModal({
   open,
@@ -27,34 +25,82 @@ export default function ChatModal({
   showTakeItHome = false,
   takeItHomeLabel = "Take it home →",
   onTakeItHome,
+  conversationKey,
 }) {
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
   const replyIdx = useRef(0);
 
+  // Load history + subscribe to realtime when opened.
   useEffect(() => {
-    if (!open) return;
-    setMessages([]);
-    setInput("");
-    replyIdx.current = 0;
+    if (!open || !user || !conversationKey) return;
     let cancelled = false;
-    const seed = async () => {
-      for (let i = 0; i < intro.length; i++) {
-        if (cancelled) return;
-        setTyping(true);
-        await new Promise((r) => setTimeout(r, 700));
-        if (cancelled) return;
-        setTyping(false);
-        setMessages((m) => [...m, { from: "bot", text: intro[i] }]);
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .select("id, sender, text, created_at")
+        .eq("user_id", user.id)
+        .eq("conversation_key", conversationKey)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      if (error) { console.error(error); return; }
+
+      if (data.length === 0) {
+        // Seed intro into DB so first-time chat shows greeting.
+        if (intro.length) {
+          const rows = intro.map(t => ({
+            user_id: user.id,
+            conversation_key: conversationKey,
+            sender: "bot",
+            text: t,
+          }));
+          await supabase.from("chat_messages").insert(rows);
+        }
+      } else {
+        setMessages(data.map(m => ({ id: m.id, from: m.sender === "me" ? "me" : "bot", text: m.text })));
       }
-    };
-    seed();
+    })();
+
+    const channel = supabase
+      .channel(`chat:${user.id}:${conversationKey}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `conversation_key=eq.${conversationKey}`,
+        },
+        (payload) => {
+          const m = payload.new;
+          if (m.user_id !== user.id) return;
+          setMessages(prev => {
+            if (prev.find(x => x.id === m.id)) return prev;
+            return [...prev, { id: m.id, from: m.sender === "me" ? "me" : "bot", text: m.text }];
+          });
+        }
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
-  }, [open, intro]);
+  }, [open, user, conversationKey]);
+
+  // Reset on close
+  useEffect(() => {
+    if (!open) {
+      setMessages([]);
+      setInput("");
+      replyIdx.current = 0;
+    }
+  }, [open]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -62,18 +108,19 @@ export default function ChatModal({
     }
   }, [messages, typing]);
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim();
-    if (!text) return;
-    setMessages((m) => [...m, { from: "me", text }]);
+    if (!text || sending || !user || !conversationKey) return;
+    setSending(true);
     setInput("");
-    setTyping(true);
-    const reply = botReplies[replyIdx.current % botReplies.length];
-    replyIdx.current += 1;
-    setTimeout(() => {
-      setTyping(false);
-      setMessages((m) => [...m, { from: "bot", text: reply }]);
-    }, 900);
+    const { error } = await supabase.from("chat_messages").insert({
+      user_id: user.id,
+      conversation_key: conversationKey,
+      sender: "me",
+      text,
+    });
+    setSending(false);
+    if (error) alert(error.message);
   };
 
   return (
@@ -107,8 +154,13 @@ export default function ChatModal({
             </div>
 
             <div className="chat-body" ref={scrollRef}>
-              {messages.map((m, i) => (
-                <div key={i} className={`chat-row chat-row-${m.from}`}>
+              {!user && (
+                <div style={{ padding: 20, textAlign: "center", color: "rgba(200,191,160,0.7)", fontFamily: "'Raleway',sans-serif", fontSize: 13 }}>
+                  Please sign in to start a chat.
+                </div>
+              )}
+              {messages.map((m) => (
+                <div key={m.id} className={`chat-row chat-row-${m.from}`}>
                   <div className={`chat-bubble chat-bubble-${m.from}`}>{m.text}</div>
                 </div>
               ))}
@@ -132,12 +184,15 @@ export default function ChatModal({
             <div className="chat-composer">
               <input
                 className="chat-input"
-                placeholder="Write a message…"
+                placeholder={user ? "Write a message…" : "Sign in to chat"}
                 value={input}
+                disabled={!user || sending}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") send(); }}
               />
-              <button className="chat-send" onClick={send}>Send</button>
+              <button className="chat-send" onClick={send} disabled={!user || sending}>
+                {sending ? "…" : "Send"}
+              </button>
             </div>
           </motion.div>
         </motion.div>

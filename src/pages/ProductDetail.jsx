@@ -1,21 +1,18 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import ChatModal from "../components/ChatModal";
 import { addToCart } from "../utils/cartStore";
-import {
-  HeartIcon,
-  ZoomIcon,
-  SparkIcon,
-} from "../components/Icons";
+import { supabase } from "../utils/supabase";
+import { HeartIcon, ZoomIcon, SparkIcon } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
 import i4 from "../assets/i4.png";
 import i6 from "../assets/i6.png";
 
-const PRODUCTS = {
+// Fallback product for when database is empty
+const FALLBACK_PRODUCT = {
   default: {
     title: "Solstice in Obsidian",
     artist: "Julian Voss",
@@ -66,19 +63,122 @@ const PRODUCTS = {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const product = PRODUCTS[id] || PRODUCTS.default;
+  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState(null);
   const [activeImg, setActiveImg] = useState(0);
   const [favorited, setFavorited] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
+  // Fetch artwork from Supabase
+  useEffect(() => {
+    const fetchArtwork = async () => {
+      setLoading(true);
+      try {
+        // Try to fetch from Supabase
+        const { data: artwork, error } = await supabase
+          .from("artworks")
+          .select(
+            `
+            *,
+            artists:artist_id (
+              name,
+              bio,
+              image_url
+            )
+          `,
+          )
+          .eq("id", id || "default")
+          .single();
+
+        if (error || !artwork) {
+          // Use fallback if not found in DB
+          setProduct(FALLBACK_PRODUCT.default);
+        } else {
+          // Transform Supabase data to match expected format
+          setProduct({
+            title: artwork.title,
+            artist:
+              artwork.artist_name || artwork.artists?.name || "Unknown Artist",
+            year: artwork.year,
+            badge: artwork.in_stock ? "AVAILABLE" : "SOLD OUT",
+            price: artwork.price,
+            images: artwork.image_url
+              ? [artwork.image_url, i1, i2, i6]
+              : [i4, i6, i2, i1],
+            description: artwork.description || "No description available.",
+            medium: artwork.medium || "Mixed Media",
+            dimensions: artwork.size
+              ? `${artwork.size} size`
+              : "Variable dimensions",
+            availability: artwork.in_stock
+              ? "Available for Purchase"
+              : "Sold Out",
+            certificate: "Digital Ledger Authenticity",
+            artistImg:
+              artwork.artists?.image_url ||
+              "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&q=80&auto=format&fit=crop",
+            artistBio:
+              artwork.artists?.bio ||
+              "Contemporary artist working in digital and traditional mediums.",
+            quote: '"Art is not what you see, but what you make others see."',
+            aboutArt: artwork.description || "",
+            origin: "Art Studio",
+            purpose: "Artistic expression",
+            story: "Created with passion and dedication",
+            spread: "Available for collection",
+            specs: [
+              { k: "Edition", v: artwork.in_stock ? "Available" : "Sold Out" },
+              { k: "Medium", v: artwork.medium || "Mixed Media" },
+              { k: "Year", v: artwork.year || "2024" },
+              { k: "Style", v: artwork.style || "Contemporary" },
+            ],
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching artwork:", err);
+        setProduct(FALLBACK_PRODUCT.default);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArtwork();
+  }, [id]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <section
+        style={{
+          padding: "100px 24px 80px",
+          maxWidth: 1280,
+          margin: "0 auto",
+          textAlign: "center",
+        }}>
+        <div
+          style={{
+            color: "#D4AF37",
+            fontFamily: "'Cinzel',serif",
+            fontSize: 14,
+            letterSpacing: "0.2em",
+          }}>
+          LOADING ARTWORK...
+        </div>
+      </section>
+    );
+  }
+
+  // Use fallback if product is null
+  const productData = product || FALLBACK_PRODUCT.default;
+
   const handleTakeItHome = () => {
     addToCart({
       id: id || "default",
-      title: product.title,
-      artist: product.artist,
-      desc: `${product.medium}, ${product.dimensions}`,
-      img: product.images[0],
-      price: product.price,
+      title: productData.title,
+      artist: productData.artist,
+      desc: `${productData.medium}, ${productData.dimensions}`,
+      img: productData.images[0],
+      price: productData.price,
     });
     setChatOpen(false);
     navigate("/cart");
@@ -106,8 +206,8 @@ export default function ProductDetail() {
               border: "1px solid rgba(212,175,55,0.15)",
             }}>
             <SafeImage
-              src={product.images[activeImg]}
-              alt={product.title}
+              src={productData.images[activeImg]}
+              alt={productData.title}
               fallbackIndex={activeImg}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
@@ -128,7 +228,7 @@ export default function ProductDetail() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-            {product.images.map((img, i) => (
+            {productData.images.map((img, i) => (
               <div
                 key={i}
                 onClick={() => setActiveImg(i)}
@@ -173,7 +273,7 @@ export default function ProductDetail() {
                 letterSpacing: "0.2em",
                 color: "#D4AF37",
               }}>
-              {product.badge}
+              {productData.badge}
             </span>
             <button
               onClick={() => setFavorited((v) => !v)}
@@ -213,7 +313,7 @@ export default function ProductDetail() {
               textTransform: "uppercase",
               marginBottom: 12,
             }}>
-            {product.title}
+            {productData.title}
           </h1>
 
           <div
@@ -223,7 +323,8 @@ export default function ProductDetail() {
               color: "rgba(200,191,160,0.8)",
               marginBottom: 20,
             }}>
-            {product.artist}, <span className="num-value">{product.year}</span>
+            {productData.artist},{" "}
+            <span className="num-value">{productData.year}</span>
           </div>
 
           <div
@@ -252,7 +353,7 @@ export default function ProductDetail() {
               lineHeight: 1.75,
               marginBottom: 24,
             }}>
-            {product.description}
+            {productData.description}
           </p>
 
           <div
@@ -264,8 +365,8 @@ export default function ProductDetail() {
               paddingTop: 22,
               borderTop: "1px solid rgba(212,175,55,0.18)",
             }}>
-            <Meta label="MEDIUM" value={product.medium} />
-            <Meta label="DIMENSIONS" value={product.dimensions} />
+            <Meta label="MEDIUM" value={productData.medium} />
+            <Meta label="DIMENSIONS" value={productData.dimensions} />
             <Meta
               label="AVAILABILITY"
               value={
@@ -284,11 +385,11 @@ export default function ProductDetail() {
                       display: "inline-block",
                     }}
                   />
-                  {product.availability}
+                  {productData.availability}
                 </span>
               }
             />
-            <Meta label="CERTIFICATE" value={product.certificate} />
+            <Meta label="CERTIFICATE" value={productData.certificate} />
           </div>
 
           <motion.button
@@ -308,12 +409,43 @@ export default function ProductDetail() {
               cursor: "pointer",
               boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
               marginBottom: 12,
-              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
             }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
             ENQUIRE FOR MORE
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleTakeItHome}
+            style={{
+              width: "100%",
+              padding: "16px",
+              background: "transparent",
+              color: "#D4AF37",
+              fontFamily: "'Cinzel',serif",
+              fontSize: 12,
+              letterSpacing: "0.2em",
+              border: "1px solid #D4AF37",
+              borderRadius: 999,
+              cursor: "pointer",
+              marginBottom: 12,
+            }}>
+            TAKE IT HOME →
           </motion.button>
 
           <button
@@ -352,8 +484,8 @@ export default function ProductDetail() {
         }}
         className="pd-artist">
         <SafeImage
-          src={product.artistImg}
-          alt={product.artist}
+          src={productData.artistImg}
+          alt={productData.artist}
           fallbackIndex={1}
           style={{
             width: 180,
@@ -382,7 +514,7 @@ export default function ProductDetail() {
               color: "#fff",
               marginBottom: 14,
             }}>
-            {product.artist}
+            {productData.artist}
           </h2>
           <div
             style={{
@@ -393,7 +525,7 @@ export default function ProductDetail() {
               marginBottom: 14,
               lineHeight: 1.6,
             }}>
-            {product.quote}
+            {productData.quote}
           </div>
           <p
             style={{
@@ -403,7 +535,7 @@ export default function ProductDetail() {
               lineHeight: 1.7,
               marginBottom: 14,
             }}>
-            {product.artistBio}
+            {productData.artistBio}
           </p>
           <Link
             to="/artists/elena-vance"
@@ -421,21 +553,14 @@ export default function ProductDetail() {
       <ChatModal
         open={chatOpen}
         onClose={() => setChatOpen(false)}
-        title="Aureum Curator"
+        conversationKey={`admin:${id}`}
+        title="Aureum Support"
         subtitle={`About: ${product.title}`}
         avatar="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=200&q=80&auto=format&fit=crop"
         intro={[
-          `Hello — I'm one of the curators at Aureum.`,
-          `I'd be happy to share more about "${product.title}" by ${product.artist}. What would you like to know — provenance, condition, dimensions, or something else?`,
+          `Hello — Aureum support here.`,
+          `Happy to answer anything about "${product.title}" by ${product.artist}.`,
         ]}
-        botReplies={[
-          "Great question. The work is in pristine condition with a complete provenance dossier.",
-          "Yes, the artist has signed verso and the certificate is included. Framing can be arranged on request.",
-          "Of course — we offer white-glove delivery and AR preview before purchase.",
-          "Whenever you're ready, you can take it home directly from this conversation.",
-        ]}
-        showTakeItHome
-        onTakeItHome={handleTakeItHome}
       />
 
       <style>{`
