@@ -4,12 +4,12 @@ import { supabase } from "../utils/supabase";
 
 const FAQS = [
   {
-    q: "How is authenticity verified on Aureum?",
+    q: "How is authenticity verified on Art Coliseum?",
     a: "Every artwork is paired with a Digital Ledger Certificate that records provenance, the artist's signature, and chain-of-custody from studio to vault. Originals are physically inspected by our in-house curators before being listed.",
   },
   {
     q: "How long does white-glove delivery take?",
-    a: "Domestic shipments are scheduled within 3–5 business days; international shipments typically arrive within 7–14 business days, fully insured and crated by Aureum Private Logistics.",
+    a: "Domestic shipments are scheduled within 3–5 business days; international shipments typically arrive within 7–14 business days, fully insured and crated by Art Coliseum Logistics.",
   },
   {
     q: "Can I view a piece in AR before purchasing?",
@@ -21,7 +21,7 @@ const FAQS = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "All major credit cards, ACH/wire transfers for acquisitions over $10,000, and select digital ledger settlements. All transactions are encrypted by the Aureum Security Protocol.",
+    a: "All major credit cards, ACH/wire transfers for acquisitions over $10,000, and select digital ledger settlements. All transactions are encrypted by Art Coliseum Security Protocol.",
   },
 ];
 

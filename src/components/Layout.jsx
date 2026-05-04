@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navigation from './Navigation';
+import ChatbotWidget from './ChatbotWidget';
 import logo from '../assets/logo.png';
 
 export default function Layout() {
@@ -11,6 +12,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <ChatbotWidget />
     </div>
   );
 }

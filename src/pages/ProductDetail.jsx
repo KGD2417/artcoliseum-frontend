@@ -2,16 +2,28 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import ChatModal from "../components/ChatModal";
-import { addToCart } from "../utils/cartStore";
-import { supabase } from "../utils/supabase";
 import { HeartIcon, ZoomIcon, SparkIcon } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
+import i3 from "../assets/i3.png";
 import i4 from "../assets/i4.png";
+import i5 from "../assets/i5.png";
 import i6 from "../assets/i6.png";
+import i7 from "../assets/i7.png";
+import i8 from "../assets/i8.png";
 
-// Fallback product for when database is empty
+const ARTWORK_MAP = {
+  p1: { title: "Ethereal Horizon", artist: "Marcus Thomas", year: "2024", price: 8400, images: [i1, i6, i4, i2], medium: "Acrylic on Canvas", dimensions: "120 × 90 cm", description: "A sweeping composition that dissolves the boundary between sky and sea, evoking an infinite sense of calm and possibility." },
+  p2: { title: "Fractured Silence", artist: "Elena Vance", year: "2023", price: 12500, images: [i7, i1, i6, i4], medium: "Mixed Media", dimensions: "100 × 80 cm", description: "Layered textures and torn paper fragments coalesce into a meditation on memory and the spaces between sound." },
+  p3: { title: "Obsidian Flow", artist: "Julian Aris", year: "2024", price: 16800, images: [i6, i4, i1, i2], medium: "Acrylic & Oil", dimensions: "150 × 100 cm", description: "Dark pigments pour and solidify across the canvas, channelling the raw energy of volcanic geology." },
+  p4: { title: "The Infinite Stair", artist: "Soren Klein", year: "2024", price: 22000, images: [i3, i6, i1, i4], medium: "Bronze Sculpture", dimensions: "40 × 40 × 60 cm", description: "A cast bronze staircase that spirals inward with no apparent beginning or end, questioning the nature of progress." },
+  p5: { title: "Cosmic Flow", artist: "Hideo Tanaka", year: "2024", price: 9800, images: [i6, i7, i1, i4], medium: "Mixed Media with Gold Leaf", dimensions: "60 × 60 cm", description: "Gold leaf and iridescent pigment capture the swirling motion of nebulae in a surprisingly intimate format." },
+  p6: { title: "The Golden Tree", artist: "Chen Wei", year: "2024", price: 14200, images: [i4, i6, i1, i2], medium: "Oil on Canvas", dimensions: "90 × 70 cm", description: "An ancient tree rendered in luminous gold and amber, standing as a symbol of endurance and quiet majesty." },
+  p7: { title: "Whispers of Silence", artist: "Lena Bach", year: "2025", price: 7600, images: [i5, i1, i6, i4], medium: "Oil on Canvas", dimensions: "50 × 50 cm", description: "A near-monochromatic study where barely perceptible brushwork creates an atmosphere of profound stillness." },
+  p8: { title: "Renaissance Study", artist: "Elena Rossi", year: "2023", price: 19500, images: [i8, i6, i1, i4], medium: "Oil on Panel", dimensions: "80 × 60 cm", description: "Old-master technique meets contemporary subject matter — a daring recontextualisation of 15th century portraiture." },
+  p9: { title: "Ocean Depths", artist: "Hideo Tanaka", year: "2024", price: 5400, images: [i7, i6, i1, i4], medium: "Archival Digital Print", dimensions: "70 × 50 cm", description: "Algorithmically generated depth maps transformed into a high-definition archival print, evoking the abyssal ocean floor." },
+};
+
 const FALLBACK_PRODUCT = {
   default: {
     title: "Solstice in Obsidian",
@@ -37,7 +49,7 @@ const FALLBACK_PRODUCT = {
     origin:
       "Berlin, Germany — completed at Voss's Mitte studio after a three-month period of seclusion. Studio assistants and visitors were not permitted during the gold-leaf application phase.",
     purpose:
-      "Created as the centrepiece of a private 2024 commission, later re-released to the Aureum Private Collection at the artist's discretion. Voss describes the work as 'a quiet altar — somewhere to look, when there is nothing left to say.'",
+      "Created as the centrepiece of a private 2024 commission, later re-released to the Art Coliseum Private Collection at the artist's discretion. Voss describes the work as 'a quiet altar — somewhere to look, when there is nothing left to say.'",
     story:
       "The work was begun on the winter solstice of 2022. Voss lit a single candle each morning, then allowed himself one hour of natural daylight to apply gold leaf — never longer. Over three lunar cycles, layer upon layer of leaf was burnished onto a gesso prepared with bone-ash and ground basalt. The resulting surface holds a depth that camera lenses struggle to capture.",
     spread:
@@ -50,7 +62,7 @@ const FALLBACK_PRODUCT = {
       },
       {
         k: "Provenance",
-        v: "Studio of the artist → private commission, Berlin → Aureum Private Collection",
+        v: "Studio of the artist → private commission, Berlin → Art Coliseum Private Collection",
       },
       {
         k: "Care",
@@ -63,126 +75,59 @@ const FALLBACK_PRODUCT = {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [product, setProduct] = useState(null);
   const [activeImg, setActiveImg] = useState(0);
   const [favorited, setFavorited] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [enquiryStep, setEnquiryStep] = useState(0); // 0=closed, 1-4=steps
+  const [enquiryForm, setEnquiryForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [customForm, setCustomForm] = useState({
+    size: "Standard (as listed)",
+    material: "Original medium",
+    frame: "No frame",
+    palette: "As created",
+    finish: "Satin varnish",
+    notes: "",
+  });
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
-  // Fetch artwork from Supabase
-  useEffect(() => {
-    const fetchArtwork = async () => {
-      setLoading(true);
-      try {
-        // Try to fetch from Supabase
-        // const { data: artwork, error } = await supabase
-        //   .from("artworks")
-        //   .select(
-        //     `
-        //     *,
-        //     artists:artist_id (
-        //       name,
-        //       bio,
-        //       image_url
-        //     )
-        //   `,
-        //   )
-        //   .eq("id", id || "default")
-        //   .single();
-
-        if (error || !artwork) {
-          // Use fallback if not found in DB
-          setProduct(FALLBACK_PRODUCT.default);
-        } else {
-          // Transform Supabase data to match expected format
-          setProduct({
-            title: artwork.title,
-            artist:
-              artwork.artist_name || artwork.artists?.name || "Unknown Artist",
-            year: artwork.year,
-            badge: artwork.in_stock ? "AVAILABLE" : "SOLD OUT",
-            price: artwork.price,
-            images: artwork.image_url
-              ? [artwork.image_url, i1, i2, i6]
-              : [i4, i6, i2, i1],
-            description: artwork.description || "No description available.",
-            medium: artwork.medium || "Mixed Media",
-            dimensions: artwork.size
-              ? `${artwork.size} size`
-              : "Variable dimensions",
-            availability: artwork.in_stock
-              ? "Available for Purchase"
-              : "Sold Out",
-            certificate: "Digital Ledger Authenticity",
-            artistImg:
-              artwork.artists?.image_url ||
-              "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&q=80&auto=format&fit=crop",
-            artistBio:
-              artwork.artists?.bio ||
-              "Contemporary artist working in digital and traditional mediums.",
-            quote: '"Art is not what you see, but what you make others see."',
-            aboutArt: artwork.description || "",
-            origin: "Art Studio",
-            purpose: "Artistic expression",
-            story: "Created with passion and dedication",
-            spread: "Available for collection",
-            specs: [
-              { k: "Edition", v: artwork.in_stock ? "Available" : "Sold Out" },
-              { k: "Medium", v: artwork.medium || "Mixed Media" },
-              { k: "Year", v: artwork.year || "2024" },
-              { k: "Style", v: artwork.style || "Contemporary" },
-            ],
-          });
-        }
-      } catch (err) {
-        console.error("Error fetching artwork:", err);
-        setProduct(FALLBACK_PRODUCT.default);
-      } finally {
-        setLoading(false);
+  const matched = id && ARTWORK_MAP[id];
+  const productData = matched
+    ? {
+        ...FALLBACK_PRODUCT.default,
+        ...matched,
+        badge: "AVAILABLE FOR ENQUIRY",
+        availability: "Available for Enquiry",
+        certificate: "Digital Ledger Authenticity",
+        artistImg: FALLBACK_PRODUCT.default.artistImg,
+        artistBio: FALLBACK_PRODUCT.default.artistBio,
+        quote: FALLBACK_PRODUCT.default.quote,
+        aboutArt: matched.description,
+        origin: FALLBACK_PRODUCT.default.origin,
+        purpose: FALLBACK_PRODUCT.default.purpose,
+        story: FALLBACK_PRODUCT.default.story,
+        spread: FALLBACK_PRODUCT.default.spread,
+        specs: [
+          { k: "Edition", v: "Unique work, signed verso" },
+          { k: "Medium", v: matched.medium },
+          { k: "Dimensions", v: matched.dimensions },
+          { k: "Year", v: matched.year },
+        ],
       }
-    };
+    : FALLBACK_PRODUCT.default;
 
-    fetchArtwork();
+  useEffect(() => {
+    setActiveImg(0);
+    setEnquiryStep(0);
   }, [id]);
 
-  // Show loading state
-  if (loading) {
-    return (
-      <section
-        style={{
-          padding: "100px 24px 80px",
-          maxWidth: 1280,
-          margin: "0 auto",
-          textAlign: "center",
-        }}>
-        <div
-          style={{
-            color: "#D4AF37",
-            fontFamily: "'Cinzel',serif",
-            fontSize: 14,
-            letterSpacing: "0.2em",
-          }}>
-          LOADING ARTWORK...
-        </div>
-      </section>
-    );
-  }
+  const FRAME_MARKUP = { "No frame": 0, "Simple Wood": 8, "Hand-finished Walnut": 15, "Museum Grade UV Glass": 25, "Custom Gilded": 40 };
+  const baseEstimate = productData?.price || 12000;
+  const frameUpcharge = (FRAME_MARKUP[customForm.frame] || 0) / 100;
+  const finalEstimate = Math.round(baseEstimate * (1 + frameUpcharge));
+  const fmtPrice = (n) => "$" + n.toLocaleString("en-US");
 
-  // Use fallback if product is null
-  const productData = product || FALLBACK_PRODUCT.default;
-
-  const handleTakeItHome = () => {
-    addToCart({
-      id: id || "default",
-      title: productData.title,
-      artist: productData.artist,
-      desc: `${productData.medium}, ${productData.dimensions}`,
-      img: productData.images[0],
-      price: productData.price,
-    });
-    setChatOpen(false);
-    navigate("/cart");
-  };
+  const handleEnquirySubmit = (e) => { e.preventDefault(); setEnquiryStep(2); };
+  const handleCustomSubmit = (e) => { e.preventDefault(); setEnquiryStep(3); };
+  const handlePlaceOrder = () => { setEnquiryStep(4); setTimeout(() => { setOrderPlaced(true); }, 400); };
 
   return (
     <section
@@ -395,7 +340,7 @@ export default function ProductDetail() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setChatOpen(true)}
+            onClick={() => setEnquiryStep(1)}
             style={{
               width: "100%",
               padding: "16px",
@@ -414,38 +359,10 @@ export default function ProductDetail() {
               justifyContent: "center",
               gap: 10,
             }}>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            ENQUIRE FOR MORE
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleTakeItHome}
-            style={{
-              width: "100%",
-              padding: "16px",
-              background: "transparent",
-              color: "#D4AF37",
-              fontFamily: "'Cinzel',serif",
-              fontSize: 12,
-              letterSpacing: "0.2em",
-              border: "1px solid #D4AF37",
-              borderRadius: 999,
-              cursor: "pointer",
-              marginBottom: 12,
-            }}>
-            TAKE IT HOME →
+            ENQUIRE NOW
           </motion.button>
 
           <button
@@ -467,7 +384,7 @@ export default function ProductDetail() {
       {/* ═══════════════════════════════════════════════
           DEEP CONTEXT — interactive tabbed view with side imagery
       ═══════════════════════════════════════════════ */}
-      <CloserLook product={product} />
+      <CloserLook product={productData} />
 
       {/* artist block */}
       <div
@@ -550,18 +467,141 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <ChatModal
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        conversationKey={`admin:${id}`}
-        title="Aureum Support"
-        subtitle={`About: ${product.title}`}
-        avatar="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=200&q=80&auto=format&fit=crop"
-        intro={[
-          `Hello — Aureum support here.`,
-          `Happy to answer anything about "${product.title}" by ${product.artist}.`,
-        ]}
-      />
+      {/* ── Multi-step Enquiry Modal ── */}
+      <AnimatePresence>
+        {enquiryStep > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setEnquiryStep(0)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 280, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: "#0e0c0a", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 16, width: "100%", maxWidth: 560, padding: 40, maxHeight: "90vh", overflowY: "auto" }}>
+
+              {/* Steps indicator */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 32 }}>
+                {["Enquire", "Customise", "Review", "Confirmed"].map((s, i) => (
+                  <div key={s} style={{ flex: 1 }}>
+                    <div style={{ height: 3, borderRadius: 99, background: enquiryStep > i ? "#D4AF37" : "rgba(212,175,55,0.2)", transition: "background 0.4s" }} />
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.15em", color: enquiryStep > i ? "#D4AF37" : "rgba(200,191,160,0.4)", marginTop: 5 }}>{s}</div>
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={() => setEnquiryStep(0)} style={{ position: "absolute", top: 20, right: 20, background: "transparent", border: "none", color: "rgba(200,191,160,0.55)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+
+              {/* Step 1: Enquiry details */}
+              {enquiryStep === 1 && (
+                <form onSubmit={handleEnquirySubmit}>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>ENQUIRY</div>
+                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 6 }}>Tell us about yourself</h3>
+                  <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 24, lineHeight: 1.7 }}>Submit your enquiry for <em style={{ color: "rgba(200,191,160,0.9)" }}>{productData.title}</em>. We'll guide you through customisation and provide a personalised quote.</p>
+                  {[["Full Name", "name", "text"], ["Email Address", "email", "email"], ["Phone (optional)", "phone", "tel"]].map(([placeholder, key, type]) => (
+                    <input key={key} type={type} required={key !== "phone"} placeholder={placeholder} value={enquiryForm[key]} onChange={e => setEnquiryForm(f => ({ ...f, [key]: e.target.value }))}
+                      style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, marginBottom: 12, boxSizing: "border-box", outline: "none" }} />
+                  ))}
+                  <textarea placeholder="What draws you to this piece? Any questions for the artist?" value={enquiryForm.message} onChange={e => setEnquiryForm(f => ({ ...f, message: e.target.value }))} rows={3}
+                    style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, marginBottom: 20, boxSizing: "border-box", resize: "vertical", outline: "none" }} />
+                  <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    style={{ width: "100%", padding: "15px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.18em", border: "none", borderRadius: 999, cursor: "pointer" }}>
+                    CONTINUE TO CUSTOMISE →
+                  </motion.button>
+                </form>
+              )}
+
+              {/* Step 2: Customisation */}
+              {enquiryStep === 2 && (
+                <form onSubmit={handleCustomSubmit}>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>CUSTOMISE</div>
+                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 6 }}>Make it yours</h3>
+                  <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 24, lineHeight: 1.7 }}>Every detail can be tailored. Configure your piece below — exact pricing will be revealed once you review your selection.</p>
+                  {[
+                    ["SIZE", "size", ["Standard (as listed)", "Small (50%)", "Large (150%)", "Custom — specify in notes"]],
+                    ["MATERIAL / MEDIUM", "material", ["Original medium", "Oil on Canvas", "Acrylic on Canvas", "Watercolor on Paper", "Giclée Print", "Bronze cast (sculptures)"]],
+                    ["FRAME", "frame", ["No frame", "Simple Wood", "Hand-finished Walnut", "Museum Grade UV Glass", "Custom Gilded"]],
+                    ["COLOUR PALETTE", "palette", ["As created", "Warmer tones", "Cooler tones", "Monochrome", "Custom — specify in notes"]],
+                    ["FINISH", "finish", ["Satin varnish", "Matte", "High gloss", "Unvarnished"]],
+                  ].map(([label, key, opts]) => (
+                    <div key={key} style={{ marginBottom: 16 }}>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 6 }}>{label}</div>
+                      <select value={customForm[key]} onChange={e => setCustomForm(f => ({ ...f, [key]: e.target.value }))}
+                        style={{ width: "100%", padding: "11px 14px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, cursor: "pointer", outline: "none" }}>
+                        {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                  <textarea placeholder="Additional notes or special requests…" value={customForm.notes} onChange={e => setCustomForm(f => ({ ...f, notes: e.target.value }))} rows={2}
+                    style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, marginBottom: 20, boxSizing: "border-box", resize: "vertical", outline: "none" }} />
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <button type="button" onClick={() => setEnquiryStep(1)} style={{ flex: 1, padding: "14px", background: "transparent", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 999, color: "#D4AF37", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", cursor: "pointer" }}>← BACK</button>
+                    <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ flex: 2, padding: "14px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", border: "none", borderRadius: 999, cursor: "pointer" }}>
+                      REVEAL PRICE →
+                    </motion.button>
+                  </div>
+                </form>
+              )}
+
+              {/* Step 3: Price reveal + order */}
+              {enquiryStep === 3 && (
+                <div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>YOUR QUOTE</div>
+                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 20 }}>Your personalised configuration</h3>
+                  <div style={{ background: "rgba(212,175,55,0.05)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, padding: 24, marginBottom: 20 }}>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#fff", marginBottom: 12 }}>{productData.title}</div>
+                    {[["Artist", productData.artist], ["Size", customForm.size], ["Material", customForm.material], ["Frame", customForm.frame], ["Palette", customForm.palette], ["Finish", customForm.finish]].map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(212,175,55,0.08)", fontFamily: "'Raleway',sans-serif", fontSize: 12 }}>
+                        <span style={{ color: "rgba(200,191,160,0.55)", letterSpacing: "0.08em" }}>{k}</span>
+                        <span style={{ color: "rgba(200,191,160,0.85)" }}>{v}</span>
+                      </div>
+                    ))}
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(212,175,55,0.25)" }}>
+                      <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", color: "#D4AF37" }}>TOTAL ESTIMATE</span>
+                      <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#D4AF37", fontWeight: 700 }}>{fmtPrice(finalEstimate)}</span>
+                    </div>
+                    <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.45)", marginTop: 10, lineHeight: 1.6 }}>This is a personalised estimate. Final pricing is confirmed by the artist within 48 hours. No payment is taken at this stage.</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <button onClick={() => setEnquiryStep(2)} style={{ flex: 1, padding: "14px", background: "transparent", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 999, color: "#D4AF37", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", cursor: "pointer" }}>← EDIT</button>
+                    <motion.button onClick={handlePlaceOrder} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ flex: 2, padding: "14px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", border: "none", borderRadius: 999, cursor: "pointer" }}>
+                      PLACE ORDER →
+                    </motion.button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Order confirmed + tracking */}
+              {enquiryStep === 4 && (
+                <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "20px 0" }}>
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}
+                    style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(212,175,55,0.15)", border: "2px solid #D4AF37", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 28, color: "#D4AF37" }}>✓</motion.div>
+                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 30, color: "#fff", marginBottom: 10 }}>Order Submitted</h3>
+                  <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.75, marginBottom: 28 }}>Your enquiry for <em style={{ color: "rgba(200,191,160,0.9)" }}>{productData.title}</em> has been received. The artist will confirm your configuration within 48 hours. A full tracking link will be sent to <strong style={{ color: "#D4AF37" }}>{enquiryForm.email}</strong>.</p>
+                  <div style={{ background: "rgba(212,175,55,0.05)", border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, padding: "20px 24px", marginBottom: 24, textAlign: "left" }}>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 14 }}>ORDER TRACKING</div>
+                    {[["Enquiry Received", true], ["Artist Review", false], ["In Production", false], ["Quality Check", false], ["Shipped", false], ["Delivered", false]].map(([stage, done]) => (
+                      <div key={stage} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: done ? "#D4AF37" : "rgba(212,175,55,0.2)", flexShrink: 0 }} />
+                        <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: done ? "rgba(200,191,160,0.85)" : "rgba(200,191,160,0.4)" }}>{stage}</span>
+                        {done && <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: "#D4AF37", marginLeft: "auto" }}>✓</span>}
+                      </div>
+                    ))}
+                  </div>
+                  <motion.button onClick={() => setEnquiryStep(0)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    style={{ padding: "14px 32px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", border: "none", borderRadius: 999, cursor: "pointer" }}>
+                    DONE
+                  </motion.button>
+                </motion.div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         @media (max-width: 900px) {

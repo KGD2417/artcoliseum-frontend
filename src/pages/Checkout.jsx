@@ -1363,7 +1363,7 @@ function HistoryModal({ open, onClose, orderId, trackingId }) {
     {
       time: "+2 days",
       title: "Dispatched",
-      detail: `Handed to Aureum Private Logistics. Tracking ID: ${trackingId}.`,
+      detail: `Handed to Art Coliseum Logistics. Tracking ID: ${trackingId}.`,
     },
   ];
   return (

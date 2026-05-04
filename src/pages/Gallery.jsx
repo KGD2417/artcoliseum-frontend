@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import ArtworkHoverCard from "../components/ArtworkHoverCard";
 import { SearchIcon } from "../components/Icons";
 import i1 from "../assets/i1.png";
 import i3 from "../assets/i3.png";
@@ -12,15 +13,60 @@ import i7 from "../assets/i7.png";
 import i8 from "../assets/i8.png";
 
 const GALLERY_ITEMS = [
-  { id: "p1", title: "Ethereal Horizon",    medium: "Acrylic on Canvas", artist: "MARCUS THOMAS", year: "2024", price: 12400, size: "medium", style: "Abstract",      category: "oil",       img: i1 },
-  { id: "p2", title: "Fractured Silence",   medium: "Mixed Media",       artist: "ELENA VANCE",   year: "2023", price: 8900,  size: "medium", style: "Abstract",      category: "mixed",     img: i7 },
-  { id: "p3", title: "Obsidian Flow",       medium: "Acrylic & Oil",     artist: "JULIAN ARIS",   year: "2024", price: 15500, size: "medium", style: "Abstract",      category: "oil",       img: i6 },
-  { id: "p4", title: "The Infinite Stair",  medium: "Sculpture",         artist: "SOREN KLEIN",   year: "2024", price: 4200,  size: "small",  style: "Minimalism",    category: "sculpture", img: i3 },
-  { id: "p5", title: "Cosmic Flow",         medium: "Mixed Media",       artist: "HIDEO TANAKA",  year: "2024", price: 1950,  size: "small",  style: "Impressionist", category: "mixed",     img: i6 },
-  { id: "p6", title: "The Golden Tree",     medium: "Oil on Canvas",     artist: "CHEN WEI",      year: "2024", price: 2100,  size: "medium", style: "Impressionist", category: "oil",       img: i4 },
-  { id: "p7", title: "Whispers of Silence", medium: "Oil on Canvas",     artist: "LENA BACH",     year: "2025", price: 1700,  size: "small",  style: "Minimalism",    category: "oil",       img: i5 },
-  { id: "p8", title: "Renaissance Study",   medium: "Oil on Panel",      artist: "ELENA ROSSI",   year: "2023", price: 5800,  size: "medium", style: "Digital Fusion", category: "oil",      img: i8 },
-  { id: "p9", title: "Ocean Depths",        medium: "Digital Print",     artist: "HIDEO TANAKA",  year: "2024", price: 1200,  size: "small",  style: "Digital Fusion", category: "digital",  img: i7 },
+  {
+    id: "p1", title: "Ethereal Horizon", medium: "Acrylic on Canvas", artist: "MARCUS THOMAS",
+    year: "2024", size: "medium", style: "Abstract", category: "oil", img: i1,
+    dimensions: "120 × 90 cm",
+    description: "A sweeping composition that dissolves the boundary between sky and sea, evoking an infinite sense of calm and possibility.",
+  },
+  {
+    id: "p2", title: "Fractured Silence", medium: "Mixed Media", artist: "ELENA VANCE",
+    year: "2023", size: "medium", style: "Abstract", category: "mixed", img: i7,
+    dimensions: "100 × 80 cm",
+    description: "Layered textures and torn paper fragments coalesce into a meditation on memory and the spaces between sound.",
+  },
+  {
+    id: "p3", title: "Obsidian Flow", medium: "Acrylic & Oil", artist: "JULIAN ARIS",
+    year: "2024", size: "medium", style: "Abstract", category: "oil", img: i6,
+    dimensions: "150 × 100 cm",
+    description: "Dark pigments pour and solidify across the canvas, channelling the raw energy of volcanic geology.",
+  },
+  {
+    id: "p4", title: "The Infinite Stair", medium: "Sculpture", artist: "SOREN KLEIN",
+    year: "2024", size: "small", style: "Minimalism", category: "sculpture", img: i3,
+    dimensions: "40 × 40 × 60 cm",
+    description: "A cast bronze staircase that spirals inward with no apparent beginning or end, questioning the nature of progress.",
+  },
+  {
+    id: "p5", title: "Cosmic Flow", medium: "Mixed Media", artist: "HIDEO TANAKA",
+    year: "2024", size: "small", style: "Impressionist", category: "mixed", img: i6,
+    dimensions: "60 × 60 cm",
+    description: "Gold leaf and iridescent pigment capture the swirling motion of nebulae in a surprisingly intimate format.",
+  },
+  {
+    id: "p6", title: "The Golden Tree", medium: "Oil on Canvas", artist: "CHEN WEI",
+    year: "2024", size: "medium", style: "Impressionist", category: "oil", img: i4,
+    dimensions: "90 × 70 cm",
+    description: "An ancient tree rendered in luminous gold and amber, standing as a symbol of endurance and quiet majesty.",
+  },
+  {
+    id: "p7", title: "Whispers of Silence", medium: "Oil on Canvas", artist: "LENA BACH",
+    year: "2025", size: "small", style: "Minimalism", category: "oil", img: i5,
+    dimensions: "50 × 50 cm",
+    description: "A near-monochromatic study where barely perceptible brushwork creates an atmosphere of profound stillness.",
+  },
+  {
+    id: "p8", title: "Renaissance Study", medium: "Oil on Panel", artist: "ELENA ROSSI",
+    year: "2023", size: "medium", style: "Digital Fusion", category: "oil", img: i8,
+    dimensions: "80 × 60 cm",
+    description: "Old-master technique meets contemporary subject matter — a daring recontextualisation of 15th century portraiture.",
+  },
+  {
+    id: "p9", title: "Ocean Depths", medium: "Digital Print", artist: "HIDEO TANAKA",
+    year: "2024", size: "small", style: "Digital Fusion", category: "digital", img: i7,
+    dimensions: "70 × 50 cm",
+    description: "Algorithmically generated depth maps transformed into a high-definition archival print, evoking the abyssal ocean floor.",
+  },
 ];
 
 const STYLES = [
@@ -174,31 +220,55 @@ export default function Gallery() {
             {filtered.map((item, i) => (
               <motion.div
                 key={item.id}
-                onClick={() => navigate(`/product/${item.id}`)}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ duration: 0.5, delay: (i % 3) * 0.07 }}
-                whileHover={{ y: -6 }}
                 style={{ cursor: "pointer" }}>
-                <div style={{
-                  width: "100%", aspectRatio: "1/1",
-                  borderRadius: 6, overflow: "hidden",
-                  background: "rgba(255,255,255,0.03)",
-                }}>
-                  <SafeImage src={item.img} alt={item.title} fallbackIndex={i}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block",
-                             transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)" }}
-                    onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
-                    onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
-                  />
-                </div>
+                {/* Thumbnail wrapped in hover card */}
+                <ArtworkHoverCard artwork={item}>
+                  <div style={{
+                    width: "100%", aspectRatio: "1/1",
+                    borderRadius: 6, overflow: "hidden",
+                    background: "rgba(255,255,255,0.03)",
+                  }}>
+                    <SafeImage
+                      src={item.img}
+                      alt={item.title}
+                      fallbackIndex={i}
+                      style={{
+                        width: "100%", height: "100%", objectFit: "cover", display: "block",
+                        transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)",
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
+                      onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+                    />
+                  </div>
+                </ArtworkHoverCard>
+
+                {/* Card footer — title, artist, enquire link */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{item.title}</div>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{item.artist}</div>
                   </div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600, color: "#D4AF37", whiteSpace: "nowrap", alignSelf: "center" }}>ENQUIRE →</div>
+                  <button
+                    onClick={() => navigate(`/product/${item.id}`)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      fontFamily: "'Cinzel',serif",
+                      fontSize: 10,
+                      letterSpacing: "0.16em",
+                      fontWeight: 600,
+                      color: "#D4AF37",
+                      whiteSpace: "nowrap",
+                      alignSelf: "center",
+                      cursor: "pointer",
+                      padding: 0,
+                    }}>
+                    ENQUIRE →
+                  </button>
                 </div>
               </motion.div>
             ))}

@@ -280,7 +280,7 @@ export default function ArtistPortal() {
           alert(error.message);
         } else {
           alert(
-            `Welcome aboard! You're now an Aureum artist. You can chat with other artists now.`,
+            `Welcome aboard! You're now an Art Coliseum artist. You can chat with other artists now.`,
           );
           navigate("/artist-chat");
         }
@@ -337,7 +337,7 @@ export default function ArtistPortal() {
               maxWidth: 460,
               lineHeight: 1.6,
             }}>
-            Curate your portfolio and monitor your presence within the Aureum
+            Curate your portfolio and monitor your presence within the Art Coliseum
             digital ecosystem.
           </p>
         </div>

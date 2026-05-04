@@ -14,14 +14,18 @@ const LINKS = [
   { label: "HOME", to: "/" },
   { label: "ARTISTS", to: "/artists" },
   { label: "COLLECTION", to: "/categories" },
+  { label: "COMMUNITY", to: "/community" },
   { label: "EVENTS", to: "/events" },
-  { label: "HELP DESK", to: "/help" },
+  { label: "CHAT", to: "/chat" },
+  { label: "AR VIEWER", to: "/ar" },
 ];
 
 const ALL_LINKS = [
   ...LINKS,
   { label: "GALLERY", to: "/gallery" },
+  { label: "ESTIMATE", to: "/estimate" },
   { label: "CONTACT", to: "/contact" },
+  { label: "HELP DESK", to: "/help" },
 ];
 
 /* ── universal search index ── */
@@ -152,8 +156,11 @@ const SEARCH_INDEX = [
     to: "/refund",
   },
   { type: "PAGE", title: "Profile", sub: "Collector profile", to: "/profile" },
-  { type: "PAGE", title: "About Aureum", sub: "Our story", to: "/about" },
+  { type: "PAGE", title: "About Art Coliseum", sub: "Our story", to: "/about" },
   { type: "PAGE", title: "Contact", sub: "Get in touch", to: "/contact" },
+  { type: "PAGE", title: "Community", sub: "Artists & collectors hub", to: "/community" },
+  { type: "PAGE", title: "Chat Rooms", sub: "Art discussion rooms", to: "/chat" },
+  { type: "PAGE", title: "Estimate Calculator", sub: "Get artwork price estimate", to: "/estimate" },
 ];
 
 function NavSearch() {

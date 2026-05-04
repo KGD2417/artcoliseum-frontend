@@ -6,7 +6,7 @@ import ArtistProfile from './pages/ArtistProfile';
 import ArtistPortal from './pages/ArtistPortal';
 import Gallery from './pages/Gallery';
 import Categories from './pages/Categories';
-import SubCategories from './pages/SubCategories';
+import ArtTypeDescription from './pages/ArtTypeDescription';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
@@ -22,6 +22,9 @@ import Events from './pages/Events';
 import AdminInbox from './pages/AdminInbox';
 import AdminDashboard from './pages/AdminDashboard';
 import ArtistChat from './pages/ArtistChat';
+import Community from './pages/Community';
+import ChatRooms from './pages/ChatRooms';
+import Estimate from './pages/Estimate';
 
 function App() {
   return (
@@ -33,7 +36,7 @@ function App() {
         <Route path="become-artist" element={<ArtistPortal />} />
         <Route path="gallery" element={<Gallery />} />
         <Route path="categories" element={<Categories />} />
-        <Route path="categories/:medium" element={<SubCategories />} />
+        <Route path="categories/:medium" element={<ArtTypeDescription />} />
         <Route path="categories/:medium/:sub" element={<Gallery />} />
         <Route path="product/:id" element={<ProductDetail />} />
         <Route path="cart" element={<Cart />} />
@@ -50,6 +53,9 @@ function App() {
         <Route path="admin" element={<AdminDashboard />} />
         <Route path="admin/inbox" element={<AdminInbox />} />
         <Route path="artist-chat" element={<ArtistChat />} />
+        <Route path="community" element={<Community />} />
+        <Route path="chat" element={<ChatRooms />} />
+        <Route path="estimate" element={<Estimate />} />
       </Route>
     </Routes>
   );

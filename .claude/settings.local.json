@@ -6,11 +6,13 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5175/)",
       "Bash(timeout 8 npx vite --port 5181)",
       "Bash(timeout 8 npx vite)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(grep -n \"price\\\\|Price\\\\|\\\\$\\\\|cost\\\\|Cost\" /Users/kshitijdesai/Documents/ColiWebsite/artcoliseum-frontend/src/pages/ProductDetail.jsx)",
+      "Bash(npx vite *)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "code-review-graph"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

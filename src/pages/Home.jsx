@@ -281,7 +281,7 @@ const FLOAT_PARAMS = FLOAT_ART.map((_, i) => ({
 
 const TESTIMONIALS = [
   {
-    text: "Aureum is the only platform where I trust the provenance as much as the curation. My living room has never looked more deliberate.",
+    text: "Art Coliseum is the only platform where I trust the provenance as much as the curation. My living room has never looked more deliberate.",
     name: "Isabella Moreau",
     role: "Private Collector, Paris",
     image:
@@ -345,7 +345,7 @@ const TESTIMONIALS = [
     fbIdx: 0,
   },
   {
-    text: "The strict curation cuts through the noise. Every piece on Aureum has earned its place.",
+    text: "The strict curation cuts through the noise. Every piece on Art Coliseum has earned its place.",
     name: "Emilia Conti",
     role: "Museum Trustee, Milan",
     image:
@@ -1193,10 +1193,10 @@ export default function Home() {
               />
             </div>
             <h2 className="ar-heading">
-              About <em>Arrt Coliseum</em>
+              About <em>Art Coliseum</em>
             </h2>
             <p className="ar-desc" style={{ marginBottom: 18 }}>
-              Arrt Coliseum is not a marketplace — it is a sanctuary for art. We
+              Art Coliseum is not a marketplace — it is a sanctuary for art. We
               believe that great art does not need a price tag to prove its
               worth; it speaks through silence, through texture, through the
               quiet authority of a well-considered composition.
@@ -1327,7 +1327,7 @@ export default function Home() {
           tag="Voices"
           title="Stories we"
           italic="carry"
-          sub="What our private collectors and curators say about acquiring art with Aureum."
+          sub="What our private collectors and curators say about acquiring art with Art Coliseum."
         />
         <div className="tcols-wrap">
           <TestimonialColumn items={col1} duration={22} />
