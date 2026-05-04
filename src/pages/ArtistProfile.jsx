@@ -47,10 +47,31 @@ export default function ArtistProfile() {
   const artist = ARTISTS[id] || ARTISTS["elena-vance"];
   const [filter, setFilter] = useState("all");
   const [email, setEmail] = useState("");
+  const [search, setSearch] = useState("");
+  const [shareCopied, setShareCopied] = useState(false);
 
-  const filtered = WORKS.filter(w =>
-    filter === "all" ? true : filter === "available" ? w.status === "available" : w.status !== "available"
-  );
+  const handleShare = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: artist.name, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 1800);
+      }
+    } catch (_) {}
+  };
+
+  const filtered = WORKS.filter(w => {
+    const statusMatch = filter === "all" ? true : filter === "available" ? w.status === "available" : w.status !== "available";
+    if (!statusMatch) return false;
+    if (search.trim()) {
+      const t = search.trim().toLowerCase();
+      return `${w.title} ${w.medium}`.toLowerCase().includes(t);
+    }
+    return true;
+  });
 
   return (
     <section style={{ padding: "100px 24px 60px", maxWidth: 1200, margin: "0 auto" }}>
@@ -73,6 +94,36 @@ export default function ArtistProfile() {
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
             <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37" }}>FEATURED ARTIST</span>
             <div style={{ flex: 1, maxWidth: 60, height: 1, background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
+            <motion.button
+              onClick={handleShare}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
+              title="Copy profile link"
+              style={{
+                background: "rgba(212,175,55,0.08)",
+                border: "1px solid rgba(212,175,55,0.3)",
+                color: "#D4AF37",
+                width: 36, height: 36, borderRadius: "50%",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", position: "relative",
+              }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+              {shareCopied && (
+                <span style={{
+                  position: "absolute", top: "calc(100% + 8px)", right: 0,
+                  background: "#0e0c0a", border: "1px solid rgba(212,175,55,0.3)",
+                  color: "#D4AF37", padding: "4px 10px", borderRadius: 4,
+                  fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em",
+                  whiteSpace: "nowrap",
+                }}>LINK COPIED</span>
+              )}
+            </motion.button>
           </div>
 
           <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(46px,6vw,72px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: 22 }}>
@@ -103,10 +154,31 @@ export default function ArtistProfile() {
       {/* selected works */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#fff", lineHeight: 1 }}>Selected Works</h2>
+          <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#fff", lineHeight: 1 }}>Curated Showcase</h2>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "#D4AF37", marginTop: 8 }}>{artist.period}</div>
         </div>
-        <div style={{ display: "flex", gap: 22 }}>
+        <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "8px 14px",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(212,175,55,0.22)",
+            borderRadius: 999,
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search works…"
+              style={{
+                background: "transparent", border: "none", outline: "none",
+                color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12,
+                width: 160,
+              }}
+            />
+          </div>
           {FILTERS.map(f => (
             <button
               key={f.id}

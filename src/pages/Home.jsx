@@ -1097,8 +1097,20 @@ export default function Home() {
             className="hero-sub"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.4 }}>
-            Timeless and Priceless Art at your space
+            transition={{ duration: 0.7, delay: 0.4 }}
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontStyle: "italic",
+              fontSize: "clamp(16px, 1.45vw, 22px)",
+              letterSpacing: "0.18em",
+              lineHeight: 1.7,
+              color: "rgba(246,242,234,0.85)",
+              marginTop: 18,
+              padding: "0 18px",
+            }}>
+            <span style={{ color: "#D4AF37" }}>Timeless</span> &nbsp;and&nbsp;{" "}
+            <span style={{ color: "#D4AF37" }}>Priceless</span> Art &nbsp;at
+            your space
           </motion.p>
         </motion.div>
 
@@ -1240,27 +1252,11 @@ export default function Home() {
         }}>
         <SectionHeader
           tag="Curator's Picks"
-          title="Gallery"
-          italic="Highlights"
+          title="Art of"
+          italic="Seasons"
           sub="A rotating selection of the most coveted works in our collection — drag the cylinder to explore."
         />
         <CylinderCarousel items={carouselItems} navigate={navigate} />
-      </section>
-
-      {/* ═══════════════════════════════════════════════
-          MEDIUMS
-      ═══════════════════════════════════════════════ */}
-      <section className="section-pad">
-        <SectionHeader
-          tag="Browse by Medium"
-          title="The"
-          italic="Mediums"
-          sub="Click a medium to expand it — click again to enter the collection."
-        />
-        <InteractiveMediums
-          items={MEDIUMS}
-          onPick={(m) => navigate(`/categories/${m.slug}`)}
-        />
       </section>
 
       {/* ═══════════════════════════════════════════════
@@ -1293,7 +1289,7 @@ export default function Home() {
         }}>
         <SectionHeader
           tag="Ongoing & Upcoming"
-          title="Art"
+          title=""
           italic="Events"
           sub="Immersive exhibitions and curated experiences from across the globe."
         />
@@ -1329,8 +1325,8 @@ export default function Home() {
         }}>
         <SectionHeader
           tag="Voices"
-          title="Collectors'"
-          italic="Reflections"
+          title="Stories we"
+          italic="carry"
           sub="What our private collectors and curators say about acquiring art with Aureum."
         />
         <div className="tcols-wrap">

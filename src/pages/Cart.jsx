@@ -48,7 +48,7 @@ export default function Cart() {
             Discover masterpieces curated by our specialist team.
           </p>
           <Link to="/categories" className="btn-gold-main" style={{ textDecoration: "none", padding: "14px 30px", fontSize: 12 }}>
-            BROWSE MARKETPLACE
+            BROWSE COLLECTION
           </Link>
         </div>
       ) : (

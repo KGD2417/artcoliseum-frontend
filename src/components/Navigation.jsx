@@ -13,8 +13,9 @@ import i6 from "../assets/i6.png";
 const LINKS = [
   { label: "HOME", to: "/" },
   { label: "ARTISTS", to: "/artists" },
-  { label: "MARKETPLACE", to: "/categories" },
+  { label: "COLLECTION", to: "/categories" },
   { label: "EVENTS", to: "/events" },
+  { label: "HELP DESK", to: "/help" },
 ];
 
 const ALL_LINKS = [

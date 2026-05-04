@@ -76,7 +76,7 @@ export default function SubCategories() {
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
         style={{ marginBottom: 38 }}>
         <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 14 }}>
-          <Link to="/categories" style={{ color: "rgba(200,191,160,0.55)" }}>Marketplace</Link>
+          <Link to="/categories" style={{ color: "rgba(200,191,160,0.55)" }}>Collection</Link>
           <span style={{ margin: "0 8px" }}>›</span>
           <span style={{ color: "#D4AF37" }}>{data.title}</span>
         </div>

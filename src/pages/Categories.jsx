@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { supabase } from "../utils/supabase";
+import m1 from "../assets/mediums/m1.png";
+import m2 from "../assets/mediums/m2.png";
+import m3 from "../assets/mediums/m3.png";
+import m4 from "../assets/mediums/m4.png";
 
 const FALLBACK_CATEGORIES = [
   {
@@ -10,28 +14,28 @@ const FALLBACK_CATEGORIES = [
     name: "Paintings",
     description: "Oil, Acrylic & Watercolor masterpieces",
     count: "2,400+ works",
-    img: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=900&q=80&auto=format&fit=crop",
+    img: m1,
   },
   {
     slug: "sculptures",
     name: "Sculptures",
     description: "Bronze, Marble & Mixed Media",
     count: "840+ works",
-    img: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=900&q=80&auto=format&fit=crop",
+    img: m2,
   },
   {
     slug: "photography",
     name: "Photography",
     description: "Fine Art & Documentary",
     count: "1,200+ works",
-    img: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=900&q=80&auto=format&fit=crop",
+    img: m3,
   },
   {
     slug: "digital",
     name: "Digital",
     description: "NFT & Generative Canvas",
     count: "3,600+ works",
-    img: "https://images.unsplash.com/photo-1633437039415-f3d6611db4d5?w=900&q=80&auto=format&fit=crop",
+    img: m4,
   },
   {
     slug: "drawings",
@@ -89,7 +93,13 @@ export default function Categories() {
     fetchCategories();
   }, []);
 
-  const visible = showAll ? categories : categories.slice(0, 4);
+  const [search, setSearch] = useState("");
+  const filteredCats = categories.filter((c) =>
+    !search.trim()
+      ? true
+      : `${c.name} ${c.description}`.toLowerCase().includes(search.trim().toLowerCase())
+  );
+  const visible = showAll ? filteredCats : filteredCats.slice(0, 4);
 
   return (
     <section
@@ -115,7 +125,7 @@ export default function Categories() {
           />
         </div>
         <h2 className="section-heading">
-          <span className="bold-white">Marketplace</span> <em>Mediums</em>
+          <span className="bold-white">Collection</span> <em>Mediums</em>
         </h2>
         <p
           style={{
@@ -129,6 +139,29 @@ export default function Categories() {
           Choose a medium to explore its sub-categories and curated collections.
         </p>
       </motion.div>
+
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 36 }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "10px 18px",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(212,175,55,0.25)",
+          borderRadius: 999, width: "100%", maxWidth: 460,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search mediums…"
+            style={{
+              flex: 1, background: "transparent", border: "none", outline: "none",
+              color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13,
+            }}
+          />
+        </div>
+      </div>
 
       <div
         style={{

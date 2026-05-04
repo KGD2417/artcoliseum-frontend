@@ -739,7 +739,7 @@ export default function Checkout() {
               fontSize: 11,
               letterSpacing: "0.18em",
             }}>
-            BROWSE MARKETPLACE
+            BROWSE COLLECTION
           </button>
         </div>
       ) : (

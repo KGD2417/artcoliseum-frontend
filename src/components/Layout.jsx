@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navigation from './Navigation';
+import logo from '../assets/logo.png';
 
 export default function Layout() {
   return (
@@ -73,74 +74,58 @@ const LEGAL_LINKS = [
 
 function Footer() {
   return (
-    <footer className="footer-root">
-      <div className="footer-inner">
-
-        {/* top grid: brand | navigation | connect */}
-        <div className="footer-top">
-
-          {/* brand */}
-          <div>
-            <div className="footer-brand-name">ART COLISEUM</div>
-            <p className="footer-brand-tagline">
-              A curated sanctuary where extraordinary art finds its home.
-              Connecting creators with collectors across the world.
-            </p>
-            {/* gold divider line */}
-            <div style={{
-              width: 48, height: 1,
-              background: "linear-gradient(90deg,#D4AF37,transparent)",
-              margin: "20px 0",
-            }} />
-            <div className="footer-socials">
-              {SOCIALS.map(({ icon, label }) => (
-                <motion.button
-                  key={label}
-                  className="footer-social-btn"
-                  title={label}
-                  whileHover={{ scale: 1.12 }}
-                  whileTap={{ scale: 0.92 }}>
-                  {icon}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-
-          {/* navigation */}
-          <div>
-            <div className="footer-col-title">Navigation</div>
-            <nav className="footer-links">
-              {NAV_LINKS.map(({ label, href }) => (
-                <a key={label} href={href} className="footer-link">{label}</a>
-              ))}
-            </nav>
-          </div>
-
-          {/* connect */}
-          <div>
-            <div className="footer-col-title">Connect</div>
-            <div className="footer-links">
-              <a href="mailto:hello@artcoliseum.com" className="footer-link">hello@artcoliseum.com</a>
-              <span className="footer-link" style={{ cursor: "default" }}>+1 (212) 555-0192</span>
-              <span className="footer-link" style={{ cursor: "default", lineHeight: 1.6, color: "rgba(138,128,112,0.45)" }}>
-                123 Museum Mile<br />New York, NY 10028
-              </span>
-            </div>
-          </div>
+    <footer
+      style={{
+        borderTop: "1px solid rgba(212,175,55,0.12)",
+        padding: "24px 32px",
+        background: "#080808",
+      }}>
+      <div
+        style={{
+          maxWidth: 1280,
+          margin: "0 auto",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 16,
+        }}>
+        <img
+          src={logo}
+          alt="Art Coliseum"
+          style={{ height: 38, width: "auto", display: "block" }}
+        />
+        <div
+          style={{
+            display: "flex",
+            gap: 22,
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}>
+          {LEGAL_LINKS.map(({ label, href }) => (
+            <a
+              key={label}
+              href={href}
+              style={{
+                fontFamily: "'Raleway', sans-serif",
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                color: "rgba(200,191,160,0.55)",
+                textDecoration: "none",
+              }}>
+              {label}
+            </a>
+          ))}
         </div>
-
-        {/* bottom bar */}
-        <div className="footer-bottom">
-          <div className="footer-copy num-value">
-            © 2026 Made by <span style={{ color: "#D4AF37", letterSpacing: "0.18em" }}>TRISPARC</span>. All Rights Reserved.
-          </div>
-          <div className="footer-bottom-links">
-            {LEGAL_LINKS.map(({ label, href }) => (
-              <a key={label} href={href} className="footer-link" style={{ fontSize: "11px" }}>{label}</a>
-            ))}
-          </div>
+        <div
+          style={{
+            fontFamily: "'Raleway', sans-serif",
+            fontSize: 11,
+            letterSpacing: "0.12em",
+            color: "rgba(138,128,112,0.55)",
+          }}>
+          @ 2026 Trisparc
         </div>
-
       </div>
     </footer>
   );

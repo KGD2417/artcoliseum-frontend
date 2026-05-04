@@ -69,7 +69,7 @@ const FALLBACK_UPCOMING = [
   },
 ];
 
-function EventCard({ event, index, status, onAction }) {
+function EventCard({ event, index, status, onAction, onOpenDetail }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
@@ -77,6 +77,8 @@ function EventCard({ event, index, status, onAction }) {
     <motion.div
       ref={ref}
       className="ev-page-card"
+      onClick={() => status === "ONGOING" && onOpenDetail && onOpenDetail(event)}
+      style={{ cursor: status === "ONGOING" ? "pointer" : "default" }}
       initial={{ opacity: 0, y: 40 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.7, delay: (index % 3) * 0.12, ease: [0.22, 1, 0.36, 1] }}>
@@ -98,15 +100,26 @@ function EventCard({ event, index, status, onAction }) {
               className="btn-primary ev-page-btn"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => onAction(event, "register")}>
+              onClick={(e) => { e.stopPropagation(); onAction(event, "register"); }}>
               REGISTER →
             </motion.button>
             <motion.button
               className="btn-secondary ev-page-btn"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => onAction(event, "enquire")}>
+              onClick={(e) => { e.stopPropagation(); onAction(event, "enquire"); }}>
               ENQUIRE
+            </motion.button>
+          </div>
+        )}
+        {status === "ONGOING" && (
+          <div className="ev-page-actions">
+            <motion.button
+              className="btn-secondary ev-page-btn"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={(e) => { e.stopPropagation(); onOpenDetail && onOpenDetail(event); }}>
+              VIEW DETAILS →
             </motion.button>
           </div>
         )}
@@ -127,6 +140,8 @@ export default function Events() {
   const [done, setDone] = useState(false);
   const [ongoing, setOngoing] = useState(FALLBACK_ONGOING);
   const [upcoming, setUpcoming] = useState(FALLBACK_UPCOMING);
+  const [detailEvent, setDetailEvent] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -207,6 +222,29 @@ export default function Events() {
         </motion.p>
       </div>
 
+      <div style={{ display: "flex", justifyContent: "center", margin: "0 auto 28px", maxWidth: 460, padding: "0 24px" }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10, width: "100%",
+          padding: "10px 18px",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(212,175,55,0.25)",
+          borderRadius: 999,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search events…"
+            style={{
+              flex: 1, background: "transparent", border: "none", outline: "none",
+              color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13,
+            }}
+          />
+        </div>
+      </div>
+
       <div className="ev-tabs">
         <button
           className={`ev-tab ${tab === "ongoing" ? "is-active" : ""}`}
@@ -233,15 +271,24 @@ export default function Events() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
           <div className="ev-page-grid">
-            {(tab === "ongoing" ? ongoing : upcoming).map((ev, i) => (
-              <EventCard
-                key={ev.title}
-                event={ev}
-                index={i}
-                status={tab === "ongoing" ? "ONGOING" : "UPCOMING"}
-                onAction={open}
-              />
-            ))}
+            {(tab === "ongoing" ? ongoing : upcoming)
+              .filter((ev) =>
+                !search.trim()
+                  ? true
+                  : `${ev.title} ${ev.location} ${ev.desc || ""}`
+                      .toLowerCase()
+                      .includes(search.trim().toLowerCase())
+              )
+              .map((ev, i) => (
+                <EventCard
+                  key={ev.title}
+                  event={ev}
+                  index={i}
+                  status={tab === "ongoing" ? "ONGOING" : "UPCOMING"}
+                  onAction={open}
+                  onOpenDetail={setDetailEvent}
+                />
+              ))}
           </div>
         </motion.section>
       </AnimatePresence>
@@ -255,6 +302,63 @@ export default function Events() {
           EXPLORE THE COLLECTION →
         </motion.button>
       </div>
+
+      {/* DETAIL MODAL (Ongoing) */}
+      <AnimatePresence>
+        {detailEvent && (
+          <motion.div
+            className="reg-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setDetailEvent(null)}>
+            <motion.div
+              className="reg-modal"
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 280, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 640 }}>
+              <div className="reg-modal-header">
+                <button className="reg-modal-close" onClick={() => setDetailEvent(null)}>×</button>
+                <div className="reg-modal-tag">ONGOING EXHIBITION</div>
+                <h3 className="reg-modal-title">{detailEvent.title}</h3>
+                <div className="reg-modal-meta">
+                  {detailEvent.location} · {detailEvent.date}
+                </div>
+                {detailEvent.time && (
+                  <div className="reg-modal-meta" style={{ color: "rgba(212,175,55,0.85)" }}>
+                    {detailEvent.time}
+                  </div>
+                )}
+              </div>
+              <div style={{ padding: "0 28px 28px" }}>
+                {detailEvent.img && (
+                  <div style={{ width: "100%", borderRadius: 8, overflow: "hidden", marginBottom: 18, aspectRatio: "16/9" }}>
+                    <img src={detailEvent.img} alt={detailEvent.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                )}
+                <p style={{
+                  fontFamily: "'Raleway',sans-serif", fontSize: 14,
+                  color: "rgba(220,210,190,0.75)", lineHeight: 1.75, marginBottom: 16,
+                }}>
+                  {detailEvent.desc}
+                </p>
+                {detailEvent.curator && (
+                  <div style={{
+                    fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
+                    color: "#D4AF37",
+                  }}>
+                    Curated by <span style={{ color: "#fff" }}>{detailEvent.curator}</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* MODAL */}
       <AnimatePresence>
