@@ -11,18 +11,18 @@ import i5 from "../assets/i5.png";
 import i6 from "../assets/i6.png";
 
 const LINKS = [
-  { label: "HOME", to: "/" },
   { label: "ARTISTS", to: "/artists" },
   { label: "COLLECTION", to: "/categories" },
   { label: "COMMUNITY", to: "/community" },
   { label: "EVENTS", to: "/events" },
-  { label: "CHAT", to: "/chat" },
-  { label: "AR VIEWER", to: "/ar" },
 ];
 
 const ALL_LINKS = [
+  { label: "HOME", to: "/" },
   ...LINKS,
   { label: "GALLERY", to: "/gallery" },
+  { label: "AR VIEWER", to: "/ar" },
+  { label: "CHAT", to: "/chat" },
   { label: "ESTIMATE", to: "/estimate" },
   { label: "CONTACT", to: "/contact" },
   { label: "HELP DESK", to: "/help" },
@@ -292,6 +292,13 @@ function GlobeIcon() {
     </svg>
   );
 }
+function SparkBolt() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
 function ProfileIcon() {
   return (
     <svg
@@ -463,11 +470,19 @@ function MobileSearch({ onSelect }) {
 
 export default function Navigation() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <>
-      <nav className="nav-container">
+      <nav className={"nav-container" + (scrolled ? " is-scrolled" : "")}>
         <div className="nav-inner">
           <div className="nav-left">
             <motion.img
@@ -500,10 +515,21 @@ export default function Navigation() {
             <NavSearch />
 
             <motion.button
+              className="nav-ar-pill"
+              onClick={() => navigate("/ar")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.96 }}
+              title="View art in your space">
+              <SparkBolt /> AR
+            </motion.button>
+
+            <span className="nav-divider" aria-hidden />
+
+            <motion.button
               title="Cart"
               onClick={() => navigate("/cart")}
               className="nav-icon-btn"
-              whileHover={{ scale: 1.18, color: "#D4AF37" }}
+              whileHover={{ scale: 1.15, color: "#D4AF37" }}
               whileTap={{ scale: 0.92 }}>
               <CartIcon />
             </motion.button>
@@ -514,7 +540,7 @@ export default function Navigation() {
               title="Profile"
               onClick={() => navigate("/signin")}
               className="nav-icon-btn"
-              whileHover={{ scale: 1.18, color: "#D4AF37" }}
+              whileHover={{ scale: 1.15, color: "#D4AF37" }}
               whileTap={{ scale: 0.92 }}>
               <ProfileIcon />
             </motion.button>

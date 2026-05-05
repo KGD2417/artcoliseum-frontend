@@ -408,8 +408,28 @@ function SectionHeader({ tag, title, italic, sub }) {
 function CylinderCarousel({ items, navigate }) {
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [dims, setDims] = useState({ w: 240, h: 320, r: 420 });
+  const wrapRef = useRef(null);
   const startX = useRef(0);
   const startRot = useRef(0);
+
+  // Recompute card and ring radius from viewport so the cylinder always fits
+  useEffect(() => {
+    const recompute = () => {
+      const vw = window.innerWidth;
+      // available width for the cylinder (minus a little gutter)
+      const avail = Math.min(vw - 32, 1100);
+      // card width: ~38% of available, clamped
+      const w = Math.round(Math.max(130, Math.min(240, avail * 0.38)));
+      const h = Math.round(w * (320 / 240));
+      // radius = half the available width minus half a card so the front card sits inside the viewport
+      const r = Math.max(180, Math.round(avail / 2 - w * 0.45));
+      setDims({ w, h, r });
+    };
+    recompute();
+    window.addEventListener("resize", recompute);
+    return () => window.removeEventListener("resize", recompute);
+  }, []);
 
   useEffect(() => {
     let raf;
@@ -438,12 +458,13 @@ function CylinderCarousel({ items, navigate }) {
 
   return (
     <motion.div
+      ref={wrapRef}
       initial={{ opacity: 0, y: 70 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
       className="carousel-wrap"
-      style={{ cursor: isDragging ? "grabbing" : "grab" }}
+      style={{ cursor: isDragging ? "grabbing" : "grab", height: dims.h + 120 }}
       onMouseDown={handleDown}
       onMouseMove={handleMove}
       onMouseUp={handleUp}
@@ -454,8 +475,8 @@ function CylinderCarousel({ items, navigate }) {
       <div
         style={{
           position: "relative",
-          width: 240,
-          height: 320,
+          width: dims.w,
+          height: dims.h,
           transformStyle: "preserve-3d",
           transform: `rotateY(${rotation}deg)`,
           transition: isDragging ? "none" : "transform 0.1s linear",
@@ -465,7 +486,9 @@ function CylinderCarousel({ items, navigate }) {
             key={i}
             className="carousel-card"
             style={{
-              transform: `rotateY(${(360 / items.length) * i}deg) translateZ(420px)`,
+              width: dims.w,
+              height: dims.h,
+              transform: `rotateY(${(360 / items.length) * i}deg) translateZ(${dims.r}px)`,
             }}>
             <img
               src={item.img}
@@ -651,6 +674,76 @@ function StackedCardsInteraction({ images }) {
         );
       })}
     </div>
+  );
+}
+
+/* ═══════════════ STORY ROW (one ARRIVALS item per section, alternating) ═══ */
+function StoryRow({ item, index, navigate }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const flipped = index % 2 === 1;
+
+  const bg =
+    index === 1
+      ? "linear-gradient(180deg,#080808 0%,#0d0a06 50%,#080808 100%)"
+      : "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)";
+
+  return (
+    <section ref={ref} className="section-pad" style={{ background: bg }}>
+      <div className={`story-row ${flipped ? "story-row--flip" : ""}`}>
+        <motion.div
+          className="story-image-col"
+          initial={{ opacity: 0, x: flipped ? 50 : -50 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="story-image-frame">
+            <img src={item.image} alt={item.titleItalic} />
+            <div className="story-image-glow" />
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="story-content-col"
+          initial={{ opacity: 0, x: flipped ? -40 : 40 }}
+          animate={inView ? { opacity: 1, x: 0 } : {}}
+          transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="gold-rule" style={{ marginBottom: 18 }}>
+            <div
+              className="grl"
+              style={{ background: "linear-gradient(90deg,transparent,#D4AF37)", maxWidth: 60 }}
+            />
+            <span className="grt">{item.tag}</span>
+            <div
+              className="grl"
+              style={{ background: "linear-gradient(90deg,#D4AF37,transparent)", maxWidth: 60 }}
+            />
+          </div>
+          <h2 className="ar-heading">
+            {item.titleBold && <>{item.titleBold} </>}
+            <em>{item.titleItalic}</em>
+          </h2>
+          {item.sub && <p className="ar-sub">{item.sub}</p>}
+          <p className="ar-desc">{item.desc}</p>
+          {item.bullets && (
+            <ul className="ar-bullets">
+              {item.bullets.map((b, i) => (
+                <li key={i} className="ar-bullet">
+                  <span className="ar-bullet-mark" />
+                  <span className="ar-bullet-text">{b}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <motion.button
+            className="btn-secondary"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate(item.to)}>
+            {item.cta}
+          </motion.button>
+        </motion.div>
+      </div>
+    </section>
   );
 }
 
@@ -1249,6 +1342,7 @@ export default function Home() {
         style={{
           background:
             "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
+          overflowX: "hidden",
         }}>
         <SectionHeader
           tag="Curator's Picks"
@@ -1260,9 +1354,11 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          NEW ARRIVALS (3-card rotator)
+          THREE STORY SECTIONS (alternating layout)
       ═══════════════════════════════════════════════ */}
-      <NewArrivalsSection items={ARRIVALS} navigate={navigate} />
+      {ARRIVALS.map((item, i) => (
+        <StoryRow key={i} item={item} index={i} navigate={navigate} />
+      ))}
 
       {/* ═══════════════════════════════════════════════
           PRESERVATION OF ART (floating images)
