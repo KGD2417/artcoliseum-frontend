@@ -89,7 +89,14 @@ function EventCard({ event, index, status, onAction, onOpenDetail }) {
       </div>
       <div className="ev-page-body">
         <div className="ev-page-date">{event.date}</div>
-        <div className="ev-page-time">{event.time}</div>
+        {event.time && (
+          <div className="ev-page-time">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {event.time}
+          </div>
+        )}
         <div className="ev-page-title">{event.title}</div>
         <div className="ev-page-location">{event.location}</div>
         <div className="ev-page-desc">{event.desc}</div>
@@ -155,11 +162,24 @@ export default function Events() {
         const d2 = e ? new Date(e).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
         return d2 ? `${d1} – ${d2}` : d1;
       };
+      const fmtTime = (s, e) => {
+        if (!s) return "";
+        const t1 = new Date(s);
+        const t2 = e ? new Date(e) : null;
+        const mins1 = t1.getHours() * 60 + t1.getMinutes();
+        if (mins1 === 0) return "";
+        const str1 = t1.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+        if (!t2) return str1;
+        const mins2 = t2.getHours() * 60 + t2.getMinutes();
+        if (mins2 === 0) return str1;
+        const str2 = t2.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+        return `${str1} – ${str2}`;
+      };
       const map = (r) => ({
         id: r.id,
         title: r.title,
         date: fmt(r.starts_at, r.ends_at),
-        time: "",
+        time: fmtTime(r.starts_at, r.ends_at),
         location: r.location,
         desc: r.description,
         img: r.image_url,

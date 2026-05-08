@@ -1,22 +1,17 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-/* ─── Data ─────────────────────────────────────────── */
 const SAMPLE_POSTS = [
   {
     id: 1,
     author: "Elena Vance",
-    role: "Artist",
     avatar: "EV",
     avatarColor: "#8B4513",
     time: "2 hours ago",
-    category: "Artists",
     text: "Just finished the underpainting for my latest oil piece — 'Amber Threshold'. The warm ochre ground is doing something magical with the cadmium layers. There's a quality of light I haven't achieved before. Can't sleep. Posting the first look tomorrow morning.",
     image: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=700&q=80",
     likes: 142,
     comments: 18,
-    shares: 7,
     liked: false,
     commentsList: [
       { author: "Daniel Hoffmann", text: "The ochre ground trick is everything. Rembrandt knew it too." },
@@ -26,35 +21,29 @@ const SAMPLE_POSTS = [
   {
     id: 2,
     author: "Daniel Hoffmann",
-    role: "Collector",
     avatar: "DH",
     avatarColor: "#2C4A6E",
     time: "5 hours ago",
-    category: "All Posts",
-    text: "I recently acquired a 1.2m bronze figure and I'm genuinely struggling with placement in my apartment. The light by the east window seems too harsh in the morning, and the corner feels like it diminishes the work. Any collectors here with experience placing monumental sculpture in residential spaces? Deeply grateful for any guidance.",
+    text: "I recently acquired a 1.2m bronze figure and I'm genuinely struggling with placement in my apartment. The light by the east window seems too harsh in the morning, and the corner feels like it diminishes the work. Any collectors here with experience placing monumental sculpture in residential spaces?",
     image: null,
     likes: 67,
     comments: 24,
-    shares: 3,
     liked: false,
     commentsList: [
-      { author: "Chen Wei", text: "I had the same challenge. Indirect northern light completely transformed my Brâncuși-influenced piece. Try the north wall if you have one." },
-      { author: "Elena Vance", text: "I'd suggest a small focused spotlight from below — it creates extraordinary shadow play without the harshness." },
+      { author: "Chen Wei", text: "Indirect northern light completely transformed my Brâncuși-influenced piece. Try the north wall if you have one." },
+      { author: "Elena Vance", text: "A small focused spotlight from below — it creates extraordinary shadow play without the harshness." },
     ],
   },
   {
     id: 3,
     author: "Chen Wei",
-    role: "Artist",
     avatar: "CW",
     avatarColor: "#4A2C6E",
     time: "1 day ago",
-    category: "Events",
     text: "Thrilled to announce my solo exhibition 'Meridian Lines' opens in Florence on May 15th. Three years of work distilled into 22 paintings and 4 sculptures. If you're in Italy — or if this is the reason to go — I would love to see you there. DM for private preview invitations.",
     image: "https://images.unsplash.com/photo-1566438480900-0609be27a4be?w=700&q=80",
     likes: 334,
     comments: 41,
-    shares: 58,
     liked: false,
     commentsList: [
       { author: "Aria Patel", text: "Florence! The perfect backdrop for your work. Congratulations, Chen." },
@@ -64,35 +53,29 @@ const SAMPLE_POSTS = [
   {
     id: 4,
     author: "Aria Patel",
-    role: "Curator",
     avatar: "AP",
     avatarColor: "#2C6E4A",
     time: "1 day ago",
-    category: "Collections",
-    text: "I've been thinking about the 'post-digital' moment we're in. The most interesting artists I'm seeing right now are those who use digital tools but deliberately reintroduce physical imperfection — grain, handwriting, material texture. It's as if they're mourning something that hasn't quite died yet. What's everyone's take?",
+    text: "I've been thinking about the 'post-digital' moment we're in. The most interesting artists I'm seeing right now are those who use digital tools but deliberately reintroduce physical imperfection — grain, handwriting, material texture. It's as if they're mourning something that hasn't quite died yet.",
     image: null,
     likes: 211,
     comments: 52,
-    shares: 23,
     liked: false,
     commentsList: [
-      { author: "Elena Vance", text: "The yearning for the haptic is real. I catch myself running my hands over screens sometimes. It's an uncanny age." },
+      { author: "Elena Vance", text: "The yearning for the haptic is real. I catch myself running my hands over screens sometimes." },
       { author: "Daniel Hoffmann", text: "As a collector, I notice it too. The most sought-after digital pieces have a deliberate 'flaw' language." },
     ],
   },
   {
     id: 5,
     author: "Marcus Reyes",
-    role: "Artist",
     avatar: "MR",
     avatarColor: "#6E2C2C",
     time: "2 days ago",
-    category: "Artists",
     text: "Six months of making nothing. Not a block — more like waiting for something to clarify. Then this week, three drawings in a row that felt right. I think the silence was necessary. There's something to be said for trusting the fallow period.",
     image: "https://images.unsplash.com/photo-1520420097861-e4959843b682?w=700&q=80",
     likes: 178,
     comments: 29,
-    shares: 14,
     liked: false,
     commentsList: [
       { author: "Aria Patel", text: "The fallow period is where the real work happens. Six months is nothing in the arc of a serious practice." },
@@ -101,282 +84,275 @@ const SAMPLE_POSTS = [
   {
     id: 6,
     author: "Yuki Tanaka",
-    role: "Collector",
     avatar: "YT",
     avatarColor: "#2C5A6E",
     time: "3 days ago",
-    category: "Collections",
-    text: "My Art Coliseum collection now spans 12 works across 4 mediums. What started as a single impulse purchase — a small graphite drawing — has become something I genuinely build my life around. The framing consultation service was exceptional. Sharing my full collection for the first time.",
+    text: "My Art Coliseum collection now spans 12 works across 4 mediums. What started as a single impulse purchase — a small graphite drawing — has become something I genuinely build my life around. Sharing my full collection for the first time.",
     image: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=700&q=80",
     likes: 89,
     comments: 11,
-    shares: 5,
     liked: false,
     commentsList: [
       { author: "Chen Wei", text: "This is beautiful. A collection with integrity and intention." },
     ],
   },
-  {
-    id: 7,
-    author: "Sophia Brennan",
-    role: "Artist",
-    avatar: "SB",
-    avatarColor: "#6E4A2C",
-    time: "4 days ago",
-    category: "Artists",
-    text: "Experimenting with cyanotype this month — the sun does the work and the results are haunting. There's something deeply poetic about a photographic process that requires actual sunlight. My studio smells of chemistry and old libraries. Absolutely obsessed.",
-    image: "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=700&q=80",
-    likes: 124,
-    comments: 16,
-    shares: 9,
-    liked: false,
-    commentsList: [
-      { author: "Marcus Reyes", text: "The smell of chemistry in a studio is one of the great underrated pleasures." },
-    ],
-  },
-  {
-    id: 8,
-    author: "Aria Patel",
-    role: "Curator",
-    avatar: "AP",
-    avatarColor: "#2C6E4A",
-    time: "5 days ago",
-    category: "Events",
-    text: "Our panel 'The Value of Uncertainty in Art Markets' is confirmed for the Art Coliseum Summer Forum, July 12th. I'll be in conversation with three artists and two collectors about what drives intrinsic versus speculative value. Tickets available through the events page. It promises to be a spirited afternoon.",
-    image: null,
-    likes: 156,
-    comments: 22,
-    shares: 31,
-    liked: false,
-    commentsList: [
-      { author: "Daniel Hoffmann", text: "Registered. This is the conversation the art world is having behind closed doors — glad it's finally in the open." },
-    ],
-  },
 ];
 
-const FEATURED_ARTISTS = [
-  { name: "Elena Vance", specialty: "Oil & Mixed Media", avatar: "EV", avatarColor: "#8B4513", followers: "2.4k" },
-  { name: "Chen Wei", specialty: "Sculpture & Painting", avatar: "CW", avatarColor: "#4A2C6E", followers: "1.8k" },
-  { name: "Marcus Reyes", specialty: "Drawing & Charcoal", avatar: "MR", avatarColor: "#6E2C2C", followers: "1.1k" },
-  { name: "Sophia Brennan", specialty: "Photography & Print", avatar: "SB", avatarColor: "#6E4A2C", followers: "940" },
-];
 
-const UPCOMING_EVENTS = [
-  { name: "Meridian Lines — Solo Exhibition", date: "May 15, 2026", location: "Florence, Italy" },
-  { name: "Art Coliseum Summer Forum", date: "July 12, 2026", location: "London, UK" },
-  { name: "Digital Frontiers Opening Night", date: "July 1, 2026", location: "Berlin, Germany" },
-];
-
-const TABS = ["All Posts", "Artists", "Events", "Collections"];
-
-/* ─── Sub-components ────────────────────────────────── */
-function Avatar({ initials, color, size = 42 }) {
+function Avatar({ initials, color, size = 40 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
-      background: color,
-      border: "1.5px solid rgba(212,175,55,0.3)",
+      background: color, border: "1.5px solid rgba(212,175,55,0.25)",
       display: "flex", alignItems: "center", justifyContent: "center",
       fontFamily: "'Cinzel',serif", fontSize: size * 0.28,
-      color: "#fff", fontWeight: 700, flexShrink: 0,
-      letterSpacing: "0.05em",
+      color: "#fff", fontWeight: 700, flexShrink: 0, letterSpacing: "0.05em",
     }}>
       {initials}
     </div>
   );
 }
 
-function RoleBadge({ role }) {
-  const colors = {
-    Artist: { bg: "rgba(139,69,19,0.18)", border: "rgba(139,69,19,0.4)", text: "#c8956a" },
-    Collector: { bg: "rgba(44,74,110,0.18)", border: "rgba(44,74,110,0.4)", text: "#6fa0c8" },
-    Curator: { bg: "rgba(44,110,74,0.18)", border: "rgba(44,110,74,0.4)", text: "#6fc8a0" },
-  };
-  const c = colors[role] || colors.Collector;
-  return (
-    <span style={{
-      fontFamily: "'Cinzel',serif", fontSize: 8,
-      letterSpacing: "0.14em", padding: "3px 10px",
-      background: c.bg, border: `1px solid ${c.border}`,
-      borderRadius: 999, color: c.text,
-    }}>
-      {role.toUpperCase()}
-    </span>
-  );
-}
-
-function ActionBtn({ icon, count, active, onClick }) {
-  return (
-    <button onClick={onClick} style={{
-      display: "flex", alignItems: "center", gap: 6,
-      background: "none", border: "none", cursor: "pointer",
-      fontFamily: "'Raleway',sans-serif", fontSize: 12,
-      color: active ? "#D4AF37" : "rgba(200,191,160,0.5)",
-      padding: "6px 10px", borderRadius: 999,
-      transition: "all 0.2s",
-    }}>
-      {icon}
-      <span>{count}</span>
-    </button>
-  );
-}
-
-function PostCard({ post, onLike }) {
+function PostCard({ post, onLike, onDelete, onEdit, onChat }) {
   const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ duration: 0.45 }}
+      transition={{ duration: 0.4 }}
       style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(212,175,55,0.12)",
-        borderRadius: 16, overflow: "hidden",
-        marginBottom: 20,
+        background: "rgba(255,255,255,0.022)",
+        border: "1px solid rgba(212,175,55,0.1)",
+        borderRadius: 14,
+        overflow: "hidden",
+        marginBottom: 18,
+        position: "relative",
       }}>
+
       {/* Header */}
-      <div style={{ padding: "20px 24px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ padding: "18px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div
+          style={{ display: "flex", alignItems: "center", gap: 12, cursor: post.author !== "You" ? "pointer" : "default" }}
+          onClick={() => post.author !== "You" && onChat({ name: post.author, avatar: post.avatar, avatarColor: post.avatarColor })}>
           <Avatar initials={post.avatar} color={post.avatarColor} />
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{
-                fontFamily: "'Cormorant Garamond',serif", fontSize: 17,
-                fontWeight: 600, color: "#fff",
-              }}>{post.author}</span>
-              <RoleBadge role={post.role} />
-            </div>
             <div style={{
-              fontFamily: "'Raleway',sans-serif", fontSize: 11,
-              color: "rgba(200,191,160,0.4)", marginTop: 2,
-            }}>{post.time}</div>
+              fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 600, color: "#f0e8d8",
+              transition: "color 0.2s",
+            }}
+              onMouseEnter={e => { if (post.author !== "You") e.currentTarget.style.color = "#D4AF37"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "#f0e8d8"; }}>
+              {post.author}
+            </div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.38)", marginTop: 1 }}>
+              {post.time}
+            </div>
           </div>
         </div>
-        <button style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(200,191,160,0.4)" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-          </svg>
-        </button>
+
+        {/* Three-dot menu — only on own posts */}
+        <div style={{ position: "relative", visibility: post.author === "You" ? "visible" : "hidden", pointerEvents: post.author === "You" ? "auto" : "none" }}>
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "rgba(200,191,160,0.4)", padding: "4px 8px", borderRadius: 6,
+              transition: "color 0.2s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = "#D4AF37"}
+            onMouseLeave={e => e.currentTarget.style.color = "rgba(200,191,160,0.4)"}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+            </svg>
+          </button>
+
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                transition={{ duration: 0.15 }}
+                style={{
+                  position: "absolute", right: 0, top: "calc(100% + 6px)",
+                  background: "#1a1712", border: "1px solid rgba(212,175,55,0.2)",
+                  borderRadius: 10, overflow: "hidden", zIndex: 10, minWidth: 130,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                }}>
+                <button
+                  onClick={() => { setMenuOpen(false); onEdit(post); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, width: "100%",
+                    padding: "11px 16px", background: "none", border: "none",
+                    cursor: "pointer", color: "rgba(200,191,160,0.7)",
+                    fontFamily: "'Raleway',sans-serif", fontSize: 12, transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(212,175,55,0.08)"; e.currentTarget.style.color = "#D4AF37"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "rgba(200,191,160,0.7)"; }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  Edit Post
+                </button>
+                <div style={{ height: 1, background: "rgba(212,175,55,0.08)", margin: "0 10px" }} />
+                <button
+                  onClick={() => { setMenuOpen(false); onDelete(post.id); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, width: "100%",
+                    padding: "11px 16px", background: "none", border: "none",
+                    cursor: "pointer", color: "rgba(220,80,80,0.7)",
+                    fontFamily: "'Raleway',sans-serif", fontSize: 12, transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(220,80,80,0.08)"; e.currentTarget.style.color = "#e05555"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "rgba(220,80,80,0.7)"; }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                  </svg>
+                  Delete Post
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: "16px 24px" }}>
+      {/* Text */}
+      <div style={{ padding: "14px 20px" }}>
         <p style={{
           fontFamily: "'Cormorant Garamond',serif", fontSize: 17,
-          color: "rgba(200,191,160,0.85)", lineHeight: 1.8,
+          color: "rgba(200,191,160,0.82)", lineHeight: 1.8, margin: 0,
         }}>
           {post.text}
         </p>
       </div>
 
-      {/* Image */}
-      {post.image && (
-        <div style={{ margin: "0 24px 16px", borderRadius: 10, overflow: "hidden", maxHeight: 320 }}>
-          <img src={post.image} alt="Post" style={{ width: "100%", objectFit: "cover", display: "block" }} />
+      {/* Images */}
+      {post.images && post.images.length > 0 && (
+        <div style={{ margin: "0 20px 14px" }}>
+          {post.images.length === 1 ? (
+            <div style={{ borderRadius: 10, overflow: "hidden", maxHeight: 320 }}>
+              <img src={post.images[0]} alt="" style={{ width: "100%", objectFit: "cover", display: "block" }} />
+            </div>
+          ) : (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: post.images.length === 2 ? "1fr 1fr" : post.images.length === 3 ? "1fr 1fr 1fr" : "1fr 1fr",
+              gap: 4, borderRadius: 10, overflow: "hidden",
+            }}>
+              {post.images.map((src, i) => (
+                <div key={i} style={{ aspectRatio: "1", overflow: "hidden" }}>
+                  <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Legacy single image support */}
+      {!post.images && post.image && (
+        <div style={{ margin: "0 20px 14px", borderRadius: 10, overflow: "hidden", maxHeight: 300 }}>
+          <img src={post.image} alt="" style={{ width: "100%", objectFit: "cover", display: "block" }} />
         </div>
       )}
 
       {/* Actions */}
       <div style={{
-        padding: "12px 24px",
-        borderTop: "1px solid rgba(212,175,55,0.08)",
-        display: "flex", alignItems: "center", gap: 4,
+        padding: "10px 14px",
+        borderTop: "1px solid rgba(212,175,55,0.07)",
+        display: "flex", gap: 2,
       }}>
-        <ActionBtn
-          active={post.liked}
+        {/* Like */}
+        <button
           onClick={() => onLike(post.id)}
-          count={post.likes}
-          icon={
-            <svg width="15" height="15" viewBox="0 0 24 24" fill={post.liked ? "#D4AF37" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-          }
-        />
-        <ActionBtn
-          count={post.comments}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, background: "none",
+            border: "none", cursor: "pointer", fontFamily: "'Raleway',sans-serif",
+            fontSize: 12, color: post.liked ? "#D4AF37" : "rgba(200,191,160,0.45)",
+            padding: "6px 12px", borderRadius: 999, transition: "all 0.2s",
+          }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={post.liked ? "#D4AF37" : "none"}
+            stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+          {post.likes}
+        </button>
+
+        {/* Comment */}
+        <button
           onClick={() => setShowComments(v => !v)}
-          icon={
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          }
-        />
-        <ActionBtn
-          count={post.shares}
-          onClick={() => {}}
-          icon={
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-          }
-        />
+          style={{
+            display: "flex", alignItems: "center", gap: 6, background: "none",
+            border: "none", cursor: "pointer", fontFamily: "'Raleway',sans-serif",
+            fontSize: 12, color: "rgba(200,191,160,0.45)",
+            padding: "6px 12px", borderRadius: 999, transition: "all 0.2s",
+          }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          {post.comments}
+        </button>
       </div>
 
-      {/* Comments */}
+      {/* Comments panel */}
       <AnimatePresence>
         {showComments && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{
-              padding: "0 24px 20px",
-              borderTop: "1px solid rgba(212,175,55,0.08)",
-              overflow: "hidden",
-            }}>
-            <div style={{ paddingTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            transition={{ duration: 0.28 }}
+            style={{ overflow: "hidden", borderTop: "1px solid rgba(212,175,55,0.07)" }}>
+            <div style={{ padding: "14px 20px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
               {post.commentsList.map((c, i) => (
                 <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <div style={{
-                    width: 28, height: 28, borderRadius: "50%",
-                    background: "rgba(212,175,55,0.15)",
-                    border: "1px solid rgba(212,175,55,0.25)",
+                    width: 26, height: 26, borderRadius: "50%",
+                    background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.2)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "'Cinzel',serif", fontSize: 9, color: "#D4AF37",
-                    flexShrink: 0,
+                    fontFamily: "'Cinzel',serif", fontSize: 8, color: "#D4AF37", flexShrink: 0,
                   }}>
                     {c.author.split(" ").map(s => s[0]).join("")}
                   </div>
                   <div style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(212,175,55,0.1)",
-                    borderRadius: 10, padding: "10px 14px", flex: 1,
+                    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(212,175,55,0.08)",
+                    borderRadius: 9, padding: "9px 13px", flex: 1,
                   }}>
-                    <div style={{
-                      fontFamily: "'Raleway',sans-serif", fontSize: 11,
-                      color: "#D4AF37", marginBottom: 4,
-                    }}>{c.author}</div>
-                    <div style={{
-                      fontFamily: "'Cormorant Garamond',serif", fontSize: 15,
-                      color: "rgba(200,191,160,0.8)", lineHeight: 1.6,
-                    }}>{c.text}</div>
+                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "#D4AF37", marginBottom: 3 }}>
+                      {c.author}
+                    </div>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "rgba(200,191,160,0.78)", lineHeight: 1.6 }}>
+                      {c.text}
+                    </div>
                   </div>
                 </div>
               ))}
-              {/* Comment input */}
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 <input
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
                   placeholder="Add a comment…"
                   style={{
                     flex: 1, background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(212,175,55,0.18)",
-                    borderRadius: 999, padding: "9px 16px",
-                    color: "#e8e0d0", fontFamily: "'Raleway',sans-serif",
-                    fontSize: 13, outline: "none",
+                    border: "1px solid rgba(212,175,55,0.15)", borderRadius: 999,
+                    padding: "8px 14px", color: "#e8e0d0",
+                    fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none",
                   }}
                 />
                 <button style={{
-                  padding: "9px 20px",
-                  background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                  color: "#0e0c0a", border: "none",
-                  borderRadius: 999,
-                  fontFamily: "'Cinzel',serif", fontSize: 9,
-                  letterSpacing: "0.14em", cursor: "pointer",
-                }}>REPLY</button>
+                  padding: "8px 18px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+                  color: "#0e0c0a", border: "none", borderRadius: 999,
+                  fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", cursor: "pointer",
+                }}>
+                  REPLY
+                </button>
               </div>
             </div>
           </motion.div>
@@ -386,79 +362,131 @@ function PostCard({ post, onLike }) {
   );
 }
 
-/* ─── Create Post Modal ─────────────────────────────── */
-function CreatePostModal({ onClose }) {
-  const [text, setText] = useState("");
+function CreatePostModal({ onClose, onPost, editingPost }) {
+  const [text, setText] = useState(editingPost?.text || "");
+  const [images, setImages] = useState(editingPost?.images || []);
+
+  const handleFiles = (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => setImages(prev => [...prev, ev.target.result]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removeImage = (i) => setImages(prev => prev.filter((_, idx) => idx !== i));
+
+  const canPost = text.trim() || images.length > 0;
+
+  const handlePost = () => {
+    if (!canPost) return;
+    onPost({ text, images });
+    onClose();
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
         background: "rgba(0,0,0,0.75)", display: "flex",
-        alignItems: "center", justifyContent: "center",
-        padding: 24,
+        alignItems: "center", justifyContent: "center", padding: 24,
       }}
       onClick={onClose}>
       <motion.div
-        initial={{ scale: 0.92, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.92, y: 20 }}
+        initial={{ scale: 0.93, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.93, y: 20 }}
         onClick={e => e.stopPropagation()}
         style={{
-          background: "#12100d",
-          border: "1px solid rgba(212,175,55,0.25)",
-          borderRadius: 20, padding: "36px 40px",
-          width: "100%", maxWidth: 580,
+          background: "#11100d", border: "1px solid rgba(212,175,55,0.22)",
+          borderRadius: 18, padding: "28px 32px", width: "100%", maxWidth: 580,
+          maxHeight: "90vh", overflowY: "auto",
         }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <h3 style={{
-            fontFamily: "'Cormorant Garamond',serif", fontSize: 26,
-            fontWeight: 700, color: "#fff",
-          }}>Share with the Community</h3>
-          <button onClick={onClose} style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "rgba(200,191,160,0.5)", fontSize: 22, lineHeight: 1,
-          }}>×</button>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+          <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, fontWeight: 700, color: "#fff", margin: 0 }}>
+            {editingPost ? "Edit Post" : "Share with the Community"}
+          </h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(200,191,160,0.45)", fontSize: 22, lineHeight: 1 }}>×</button>
         </div>
+
+        {/* Text */}
         <textarea
           value={text}
           onChange={e => setText(e.target.value)}
-          rows={5}
+          rows={4}
           placeholder="Share a thought, a process, a question — anything that connects to the world of art…"
           style={{
             width: "100%", background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(212,175,55,0.2)",
-            borderRadius: 10, padding: "14px 16px",
-            color: "#e8e0d0", fontFamily: "'Cormorant Garamond',serif",
-            fontSize: 16, lineHeight: 1.7, resize: "vertical", outline: "none",
+            border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10,
+            padding: "13px 15px", color: "#e8e0d0",
+            fontFamily: "'Cormorant Garamond',serif", fontSize: 16,
+            lineHeight: 1.7, resize: "none", outline: "none", boxSizing: "border-box",
           }}
         />
-        <div style={{
-          display: "flex", justifyContent: "space-between",
-          alignItems: "center", marginTop: 20,
-        }}>
-          <span style={{
-            fontFamily: "'Raleway',sans-serif", fontSize: 11,
-            color: "rgba(200,191,160,0.35)",
-          }}>{text.length} characters</span>
+
+        {/* Image previews */}
+        {images.length > 0 && (
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: images.length === 1 ? "1fr" : images.length === 3 ? "1fr 1fr 1fr" : "1fr 1fr",
+            gap: 6, marginTop: 12, borderRadius: 10, overflow: "hidden",
+          }}>
+            {images.map((src, i) => (
+              <div key={i} style={{ position: "relative", aspectRatio: "1", overflow: "hidden", borderRadius: 8 }}>
+                <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <button
+                  onClick={() => removeImage(i)}
+                  style={{
+                    position: "absolute", top: 6, right: 6,
+                    width: 22, height: 22, borderRadius: "50%",
+                    background: "rgba(0,0,0,0.65)", border: "none",
+                    color: "#fff", fontSize: 14, lineHeight: 1,
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Bottom bar */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
+          {/* Add images button */}
+          <label style={{
+            display: "flex", alignItems: "center", gap: 7,
+            cursor: "pointer", color: "rgba(200,191,160,0.5)",
+            fontFamily: "'Raleway',sans-serif", fontSize: 12,
+            padding: "8px 14px", borderRadius: 999,
+            border: "1px solid rgba(212,175,55,0.15)",
+            background: "rgba(255,255,255,0.03)",
+            transition: "all 0.2s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = "#D4AF37"; e.currentTarget.style.borderColor = "rgba(212,175,55,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "rgba(200,191,160,0.5)"; e.currentTarget.style.borderColor = "rgba(212,175,55,0.15)"; }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            {images.length > 0 ? `${images.length} image${images.length > 1 ? "s" : ""} added` : "Add Images"}
+            <input type="file" accept="image/*" multiple onChange={handleFiles} style={{ display: "none" }} />
+          </label>
+
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={onClose} style={{
-              padding: "11px 24px", background: "transparent",
-              color: "rgba(200,191,160,0.6)",
-              border: "1px solid rgba(212,175,55,0.2)", borderRadius: 999,
-              fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em",
-              cursor: "pointer",
+              padding: "10px 20px", background: "transparent",
+              color: "rgba(200,191,160,0.55)", border: "1px solid rgba(212,175,55,0.18)",
+              borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 9,
+              letterSpacing: "0.14em", cursor: "pointer",
             }}>CANCEL</button>
-            <button onClick={onClose} style={{
-              padding: "11px 28px",
-              background: text.trim() ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.2)",
-              color: text.trim() ? "#0e0c0a" : "rgba(200,191,160,0.4)",
-              border: "none", borderRadius: 999,
-              fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em",
-              cursor: text.trim() ? "pointer" : "not-allowed",
-            }}>POST</button>
+            <button onClick={handlePost} style={{
+              padding: "10px 26px",
+              background: canPost ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.15)",
+              color: canPost ? "#0e0c0a" : "rgba(200,191,160,0.3)",
+              border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif",
+              fontSize: 9, letterSpacing: "0.14em", cursor: canPost ? "pointer" : "not-allowed",
+            }}>{editingPost ? "SAVE" : "POST"}</button>
           </div>
         </div>
       </motion.div>
@@ -466,39 +494,186 @@ function CreatePostModal({ onClose }) {
   );
 }
 
-/* ─── Main ──────────────────────────────────────────── */
+function DirectChat({ user, onClose }) {
+  const [messages, setMessages] = useState([
+    { id: 1, from: "them", text: `Hi! Thanks for reaching out.`, time: "Just now" },
+  ]);
+  const [input, setInput] = useState("");
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const send = () => {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    setMessages(prev => [...prev, { id: Date.now(), from: "me", text: trimmed, time: "Just now" }]);
+    setInput("");
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 9998,
+        background: "rgba(0,0,0,0.65)",
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+      }}
+      onClick={onClose}>
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 30, scale: 0.95 }}
+      transition={{ duration: 0.25 }}
+      onClick={e => e.stopPropagation()}
+      style={{
+        width: "100%", maxWidth: 420, background: "#12100d",
+        border: "1px solid rgba(212,175,55,0.22)", borderRadius: 18,
+        boxShadow: "0 24px 64px rgba(0,0,0,0.7)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+      }}>
+
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "14px 16px", borderBottom: "1px solid rgba(212,175,55,0.1)",
+        background: "rgba(255,255,255,0.03)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Avatar initials={user.avatar} color={user.avatarColor} size={34} />
+          <div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, fontWeight: 600, color: "#f0e8d8" }}>
+              {user.name}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4caf7d" }} />
+              <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>Online</span>
+            </div>
+          </div>
+        </div>
+        <button onClick={onClose} style={{
+          background: "none", border: "none", cursor: "pointer",
+          color: "rgba(200,191,160,0.4)", fontSize: 20, lineHeight: 1, transition: "color 0.2s",
+        }}
+          onMouseEnter={e => e.currentTarget.style.color = "#D4AF37"}
+          onMouseLeave={e => e.currentTarget.style.color = "rgba(200,191,160,0.4)"}>
+          ×
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 8px", maxHeight: 300, display: "flex", flexDirection: "column", gap: 10 }}>
+        {messages.map(msg => (
+          <div key={msg.id} style={{ display: "flex", justifyContent: msg.from === "me" ? "flex-end" : "flex-start" }}>
+            <div style={{
+              maxWidth: "78%", padding: "9px 13px", borderRadius: msg.from === "me" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+              background: msg.from === "me" ? "linear-gradient(135deg,#D4AF37,#c9a52e)" : "rgba(255,255,255,0.06)",
+              border: msg.from === "me" ? "none" : "1px solid rgba(212,175,55,0.12)",
+              color: msg.from === "me" ? "#0e0c0a" : "rgba(200,191,160,0.85)",
+              fontFamily: "'Cormorant Garamond',serif", fontSize: 15, lineHeight: 1.5,
+            }}>
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{
+        display: "flex", gap: 8, padding: "10px 12px",
+        borderTop: "1px solid rgba(212,175,55,0.1)", background: "rgba(0,0,0,0.2)",
+      }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && send()}
+          placeholder="Type a message…"
+          style={{
+            flex: 1, background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(212,175,55,0.15)", borderRadius: 999,
+            padding: "8px 14px", color: "#e8e0d0",
+            fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none",
+          }}
+        />
+        <button onClick={send} style={{
+          width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+          background: input.trim() ? "linear-gradient(135deg,#D4AF37,#c9a52e)" : "rgba(212,175,55,0.15)",
+          border: "none", cursor: input.trim() ? "pointer" : "default",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.2s",
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? "#0e0c0a" : "rgba(212,175,55,0.4)"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </motion.div>
+    </motion.div>
+  );
+}
+
 export default function Community() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("All Posts");
   const [posts, setPosts] = useState(SAMPLE_POSTS);
   const [showModal, setShowModal] = useState(false);
-  const [following, setFollowing] = useState({});
+  const [editingPost, setEditingPost] = useState(null);
+  const [chatUser, setChatUser] = useState(null);
 
   const handleLike = (id) => {
     setPosts(prev => prev.map(p =>
-      p.id === id
-        ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 }
-        : p
+      p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p
     ));
   };
 
-  const filtered = posts.filter(p =>
-    activeTab === "All Posts" ? true : p.category === activeTab
-  );
+  const handlePost = ({ text, images }) => {
+    const newPost = {
+      id: Date.now(),
+      author: "You",
+      avatar: "YO",
+      avatarColor: "#4A3728",
+      time: "Just now",
+      text,
+      images: images.length > 0 ? images : undefined,
+      likes: 0,
+      comments: 0,
+      liked: false,
+      commentsList: [],
+    };
+    setPosts(prev => [newPost, ...prev]);
+  };
+
+  const handleDelete = (id) => {
+    setPosts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleEdit = (post) => {
+    setEditingPost(post);
+    setShowModal(true);
+  };
+
+  const handleEditSave = ({ text, images }) => {
+    setPosts(prev => prev.map(p =>
+      p.id === editingPost.id
+        ? { ...p, text, images: images.length > 0 ? images : p.images }
+        : p
+    ));
+    setEditingPost(null);
+  };
 
   return (
     <div style={{ background: "#080808", minHeight: "100vh" }}>
-      {/* HERO */}
-      <div style={{
+
+      {/* Hero */}
+      <div className="community-hero" style={{
         background: "linear-gradient(180deg, #0e0c0a 0%, #080808 100%)",
-        borderBottom: "1px solid rgba(212,175,55,0.12)",
-        padding: "100px 48px 60px",
+        borderBottom: "1px solid rgba(212,175,55,0.1)",
+        padding: "140px 48px 60px",
         textAlign: "center",
       }}>
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}>
+        <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
           <div className="gold-rule" style={{ justifyContent: "center" }}>
             <div className="grl" style={{ background: "linear-gradient(90deg, transparent, #D4AF37)" }} />
             <span className="grt">Connecting Collectors & Artists</span>
@@ -509,231 +684,53 @@ export default function Community() {
           </h1>
           <p style={{
             fontFamily: "'Raleway',sans-serif", fontSize: 15,
-            color: "rgba(200,191,160,0.6)", maxWidth: 560, margin: "16px auto 0", lineHeight: 1.7,
+            color: "rgba(200,191,160,0.55)", maxWidth: 520,
+            margin: "14px auto 0", lineHeight: 1.75,
           }}>
-            A gathering place for artists, collectors, and curators — where great works and
-            great conversations begin.
+            A gathering place for artists, collectors, and curators — where great works and great conversations begin.
           </p>
         </motion.div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 48px 100px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 40 }}>
-
-          {/* ── MAIN FEED ── */}
-          <div>
-            {/* Filter tabs + Create Post */}
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              marginBottom: 28, flexWrap: "wrap", gap: 16,
+      {/* Body */}
+      <div className="community-body" style={{ maxWidth: 760, margin: "0 auto", padding: "44px 48px 100px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
+          <motion.button
+            whileHover={{ scale: 1.04, boxShadow: "0 8px 24px rgba(212,175,55,0.22)" }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowModal(true)}
+            style={{
+              padding: "10px 22px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+              color: "#0e0c0a", border: "none", borderRadius: 999,
+              fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em",
+              cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 8,
             }}>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {TABS.map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{
-                      padding: "9px 18px",
-                      background: activeTab === tab ? "rgba(212,175,55,0.12)" : "transparent",
-                      color: activeTab === tab ? "#D4AF37" : "rgba(200,191,160,0.5)",
-                      border: `1px solid ${activeTab === tab ? "rgba(212,175,55,0.35)" : "rgba(212,175,55,0.12)"}`,
-                      borderRadius: 999,
-                      fontFamily: "'Cinzel',serif", fontSize: 9,
-                      letterSpacing: "0.16em", cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}>
-                    {tab.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.04, boxShadow: "0 8px 24px rgba(212,175,55,0.25)" }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setShowModal(true)}
-                style={{
-                  padding: "10px 22px",
-                  background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                  color: "#0e0c0a", border: "none",
-                  borderRadius: 999,
-                  fontFamily: "'Cinzel',serif", fontSize: 9,
-                  letterSpacing: "0.18em", cursor: "pointer", fontWeight: 600,
-                  display: "flex", alignItems: "center", gap: 8,
-                }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                CREATE POST
-              </motion.button>
-            </div>
-
-            {/* Posts */}
-            <AnimatePresence mode="popLayout">
-              {filtered.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  style={{
-                    textAlign: "center", padding: "60px 0",
-                    color: "rgba(200,191,160,0.35)",
-                    fontFamily: "'Raleway',sans-serif", fontSize: 14,
-                  }}>
-                  No posts in this category yet.
-                </motion.div>
-              ) : (
-                filtered.map(post => (
-                  <PostCard key={post.id} post={post} onLike={handleLike} />
-                ))
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* ── RIGHT SIDEBAR ── */}
-          <div>
-            {/* Featured Artists */}
-            <div style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(212,175,55,0.12)",
-              borderRadius: 16, padding: "24px",
-              marginBottom: 24,
-            }}>
-              <div style={{
-                fontFamily: "'Cinzel',serif", fontSize: 10,
-                letterSpacing: "0.2em", color: "#D4AF37",
-                marginBottom: 20,
-              }}>FEATURED ARTISTS</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {FEATURED_ARTISTS.map(a => (
-                  <div key={a.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <Avatar initials={a.avatar} color={a.avatarColor} size={38} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        fontFamily: "'Cormorant Garamond',serif", fontSize: 16,
-                        color: "#fff", lineHeight: 1.2,
-                      }}>{a.name}</div>
-                      <div style={{
-                        fontFamily: "'Raleway',sans-serif", fontSize: 11,
-                        color: "rgba(200,191,160,0.45)",
-                      }}>{a.specialty}</div>
-                    </div>
-                    <button
-                      onClick={() => setFollowing(p => ({ ...p, [a.name]: !p[a.name] }))}
-                      style={{
-                        padding: "6px 14px",
-                        background: following[a.name] ? "rgba(212,175,55,0.1)" : "transparent",
-                        color: following[a.name] ? "#D4AF37" : "rgba(200,191,160,0.6)",
-                        border: `1px solid ${following[a.name] ? "rgba(212,175,55,0.35)" : "rgba(212,175,55,0.2)"}`,
-                        borderRadius: 999,
-                        fontFamily: "'Cinzel',serif", fontSize: 8,
-                        letterSpacing: "0.14em", cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}>
-                      {following[a.name] ? "FOLLOWING" : "FOLLOW"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Upcoming Events */}
-            <div style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(212,175,55,0.12)",
-              borderRadius: 16, padding: "24px",
-              marginBottom: 24,
-            }}>
-              <div style={{
-                fontFamily: "'Cinzel',serif", fontSize: 10,
-                letterSpacing: "0.2em", color: "#D4AF37",
-                marginBottom: 20,
-              }}>UPCOMING EVENTS</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {UPCOMING_EVENTS.map((ev, i) => (
-                  <div key={i} style={{
-                    paddingBottom: i < UPCOMING_EVENTS.length - 1 ? 16 : 0,
-                    borderBottom: i < UPCOMING_EVENTS.length - 1 ? "1px solid rgba(212,175,55,0.08)" : "none",
-                  }}>
-                    <div style={{
-                      fontFamily: "'Cormorant Garamond',serif", fontSize: 15,
-                      color: "#fff", marginBottom: 4, lineHeight: 1.3,
-                    }}>{ev.name}</div>
-                    <div style={{
-                      fontFamily: "'Raleway',sans-serif", fontSize: 11,
-                      color: "#D4AF37", marginBottom: 2,
-                    }}>{ev.date}</div>
-                    <div style={{
-                      fontFamily: "'Raleway',sans-serif", fontSize: 11,
-                      color: "rgba(200,191,160,0.4)",
-                    }}>{ev.location}</div>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => navigate("/events")}
-                style={{
-                  marginTop: 20, width: "100%", padding: "10px",
-                  background: "transparent",
-                  color: "rgba(200,191,160,0.5)",
-                  border: "1px solid rgba(212,175,55,0.15)",
-                  borderRadius: 999,
-                  fontFamily: "'Cinzel',serif", fontSize: 9,
-                  letterSpacing: "0.16em", cursor: "pointer",
-                }}>
-                VIEW ALL EVENTS
-              </button>
-            </div>
-
-            {/* Who to Follow */}
-            <div style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(212,175,55,0.12)",
-              borderRadius: 16, padding: "24px",
-            }}>
-              <div style={{
-                fontFamily: "'Cinzel',serif", fontSize: 10,
-                letterSpacing: "0.2em", color: "#D4AF37",
-                marginBottom: 20,
-              }}>WHO TO FOLLOW</div>
-              {[
-                { name: "Aria Patel", role: "Curator", avatar: "AP", avatarColor: "#2C6E4A" },
-                { name: "Daniel Hoffmann", role: "Collector", avatar: "DH", avatarColor: "#2C4A6E" },
-                { name: "Yuki Tanaka", role: "Collector", avatar: "YT", avatarColor: "#2C5A6E" },
-              ].map(p => (
-                <div key={p.name} style={{
-                  display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
-                }}>
-                  <Avatar initials={p.avatar} color={p.avatarColor} size={34} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "#fff",
-                    }}>{p.name}</div>
-                    <div style={{
-                      fontFamily: "'Raleway',sans-serif", fontSize: 10,
-                      color: "rgba(200,191,160,0.4)",
-                    }}>{p.role}</div>
-                  </div>
-                  <button
-                    onClick={() => setFollowing(f => ({ ...f, [p.name]: !f[p.name] }))}
-                    style={{
-                      padding: "5px 12px",
-                      background: "transparent",
-                      color: "rgba(200,191,160,0.55)",
-                      border: "1px solid rgba(212,175,55,0.18)",
-                      borderRadius: 999,
-                      fontFamily: "'Cinzel',serif", fontSize: 8,
-                      letterSpacing: "0.12em", cursor: "pointer",
-                    }}>
-                    {following[p.name] ? "✓" : "+"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            CREATE POST
+          </motion.button>
         </div>
+
+        <AnimatePresence mode="popLayout">
+          {posts.map(post => (
+            <PostCard key={post.id} post={post} onLike={handleLike} onDelete={handleDelete} onEdit={handleEdit} onChat={setChatUser} />
+          ))}
+        </AnimatePresence>
       </div>
 
-      {/* Modal */}
       <AnimatePresence>
-        {showModal && <CreatePostModal onClose={() => setShowModal(false)} />}
+        {showModal && (
+          <CreatePostModal
+            onClose={() => { setShowModal(false); setEditingPost(null); }}
+            onPost={editingPost ? handleEditSave : handlePost}
+            editingPost={editingPost}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {chatUser && <DirectChat user={chatUser} onClose={() => setChatUser(null)} />}
       </AnimatePresence>
     </div>
   );

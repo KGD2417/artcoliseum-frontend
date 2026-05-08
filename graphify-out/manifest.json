@@ -1,0 +1,554 @@
+{
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/vite.config.js": {
+    "mtime": 1777015113.0,
+    "hash": "88439104b3c207f17d33ef3160e3b080"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/eslint.config.js": {
+    "mtime": 1777015113.0,
+    "hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/artist_role.sql": {
+    "mtime": 1777525510.245649,
+    "hash": "f2a757b6e3aaef3d2d3921a7b83e7921"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/seed.sql": {
+    "mtime": 1777481195.0165882,
+    "hash": "7ec95c935bd8bab7814fc5d823c10d7d"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/production_upgrade.sql": {
+    "mtime": 1777485769.8749905,
+    "hash": "c8967cb8c52409e8251f409b3fde4d7b"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/schema.sql": {
+    "mtime": 1777481158.116822,
+    "hash": "5fb5e5670ca65a6ece811fb7b38e4eba"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/chat.sql": {
+    "mtime": 1777481665.5009217,
+    "hash": "0cb0d5ab76f0d4b7ffe3edf7b875f3c5"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/chat_admin.sql": {
+    "mtime": 1777481865.9561687,
+    "hash": "900eb76038e739e6f08fc0e71726c7e6"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/admin_panel.sql": {
+    "mtime": 1777526085.1532283,
+    "hash": "2e2497621545ca1cb1a54a46bc883ee1"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/functions/create-payment/index.ts": {
+    "mtime": 1777485771.1770809,
+    "hash": "171410394356461391c19a815e2046eb"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/functions/verify-payment/index.ts": {
+    "mtime": 1777485771.17705,
+    "hash": "e24a864d33b82437333a37a86f31e676"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2html": {
+    "mtime": 1777550634.5115492,
+    "hash": "49605f79b1d28900335f3021c1a221d3"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/Activate.ps1": {
+    "mtime": 1761074215.4350173,
+    "hash": "c32677ff1a8444fc54b6dfa2c40c4f84"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/dotenv": {
+    "mtime": 1777550631.2705112,
+    "hash": "f59a9ed3b314e38ed5ec7f2a9a3fb41a"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/docket": {
+    "mtime": 1777550641.6935487,
+    "hash": "a860fd1ee37bd526124b2c51fe534887"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/typer": {
+    "mtime": 1777550641.0612807,
+    "hash": "a8de792f04326be41b133b47b3d8814a"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2xml": {
+    "mtime": 1777550634.5128264,
+    "hash": "e6eca3597f8979d1f20e0c0666cf87d6"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/docutils": {
+    "mtime": 1777550634.5113814,
+    "hash": "93cf0b3cfbd75cb04ecd4197835f99f0"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/pipx": {
+    "mtime": 1777550682.3433309,
+    "hash": "727b8ef1257bff638b223890905bdea9"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/pip3": {
+    "mtime": 1777550620.415026,
+    "hash": "cd3710986e555508b3f6d0fb73d31bf6"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2man": {
+    "mtime": 1777550634.5121207,
+    "hash": "323bdad18e1f23c5584608e08bce0903"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2odt": {
+    "mtime": 1777550634.5122619,
+    "hash": "c09fa7e070db1d1e0b8d94ff92ab7d67"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/fastmcp": {
+    "mtime": 1777550643.0886977,
+    "hash": "1c6a60a5cf5db5f344fe8adcf5e8c5e9"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/websockets": {
+    "mtime": 1777550630.6827347,
+    "hash": "f740979be976d6520b6e16a05ead99fa"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/userpath": {
+    "mtime": 1777550682.2511964,
+    "hash": "247a2b45a972696a9b92d0b731418643"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/mcp": {
+    "mtime": 1777550641.9473333,
+    "hash": "9a9ed13c934591174ccf0b481777717f"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/register-python-argcomplete": {
+    "mtime": 1777550682.2854488,
+    "hash": "6f76bae111cd581dba51eb23086d5f10"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/code-review-graph": {
+    "mtime": 1777550643.325867,
+    "hash": "9c35378e4888adc16b1d5e1aeacaf70f"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/pip": {
+    "mtime": 1777550620.4148076,
+    "hash": "cd3710986e555508b3f6d0fb73d31bf6"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/cyclopts": {
+    "mtime": 1777550642.2895048,
+    "hash": "9ae181d2a719dc4e0fc24c2712066c75"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/httpx": {
+    "mtime": 1777550640.6263452,
+    "hash": "3697b8adbdb199d6f727252fc852b903"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/jsonschema": {
+    "mtime": 1777550641.4609973,
+    "hash": "2b20247e681fa70136b22996278af7cc"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/python-argcomplete-check-easy-install-script": {
+    "mtime": 1777550682.285289,
+    "hash": "62bef70b49b61dafd1d04371daecb998"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/keyring": {
+    "mtime": 1777550640.5153832,
+    "hash": "7492d8d2dd718e383d48576c24869e79"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/markdown-it": {
+    "mtime": 1777550638.6716077,
+    "hash": "5356101e5514abdb5e0e7c203d7f2df6"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/pygmentize": {
+    "mtime": 1777550632.1545653,
+    "hash": "b18ed4c3f4865d9d62f79ee5d58184b5"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2xetex": {
+    "mtime": 1777550634.5126877,
+    "hash": "0fe274552295a9b7e7c928689eed8ca2"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2latex": {
+    "mtime": 1777550634.5119843,
+    "hash": "e3a0e9f5af25d3903682c8b44c32f181"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/uvicorn": {
+    "mtime": 1777550636.1428165,
+    "hash": "42365df57d4a576c0f1a613b1fddd64a"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2html4": {
+    "mtime": 1777550634.5116982,
+    "hash": "eb6523f22d2eb70d4e4069d1665c614d"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2s5": {
+    "mtime": 1777550634.5125508,
+    "hash": "8459c6814555df7a0d06e2e1c41dfca5"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2html5": {
+    "mtime": 1777550634.5118399,
+    "hash": "c47c223cf660a9fa63e7331bf7c8200b"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/rst2pseudoxml": {
+    "mtime": 1777550634.5124028,
+    "hash": "1d177409971a212f8b878e1aebec06b3"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/watchmedo": {
+    "mtime": 1777550630.7288482,
+    "hash": "6a166acea40ab18271ad7a18dee69d1e"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/email_validator": {
+    "mtime": 1777550638.9271204,
+    "hash": "ed7874e30de0c1c7f39216f27005c4a3"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/crg-env/bin/activate-global-python-argcomplete": {
+    "mtime": 1777550682.285094,
+    "hash": "ae7943ba1b404bd4b11b0b5c7ab6dda7"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/main.jsx": {
+    "mtime": 1777484107.4773407,
+    "hash": "b6ed219df5b2b89f0f6b9f49a7fbfd16"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/App.jsx": {
+    "mtime": 1777967246.8887265,
+    "hash": "2fa2d321473fcdac19beece6262e806e"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/context/ChatNotifications.jsx": {
+    "mtime": 1777917345.2028344,
+    "hash": "5741865436a7d20ad0fefec3b6f79b67"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/context/Locale.jsx": {
+    "mtime": 1777180686.9491978,
+    "hash": "903e35a68497b67d3e3b96a8ebe8a314"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/context/Auth.jsx": {
+    "mtime": 1777525553.1057775,
+    "hash": "5e4b7dfaae5ba59984395ebb081bfcb7"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/utils/supabase.js": {
+    "mtime": 1777481117.1159914,
+    "hash": "db87b4cc44384ef0dfb5e612db8496f5"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/utils/cartStore.js": {
+    "mtime": 1777410239.9615989,
+    "hash": "85ed0b2ba7b3f8f87de3a42115df0c41"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/Icons.jsx": {
+    "mtime": 1777525915.035643,
+    "hash": "ad90a4bc695da658a6e20de687387a66"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/SafeImage.jsx": {
+    "mtime": 1777152413.4650972,
+    "hash": "6013e159ea2b4d60453d6bdee748edf9"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/CircularRotator.jsx": {
+    "mtime": 1777216979.2924747,
+    "hash": "b0153ab7a5a7b673d3f2fddd780f8d4e"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/Layout.jsx": {
+    "mtime": 1777994771.6031952,
+    "hash": "fecbf0c2b6e8ad6035cb673a2bdcb8f6"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/CircularGallery.jsx": {
+    "mtime": 1777216959.846712,
+    "hash": "961b1c759e7306553781d78cbfd0983a"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/Footer.jsx": {
+    "mtime": 1777994504.1518717,
+    "hash": "8a4725580a59e3afbf22288f255e6300"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ColiseumGallery.jsx": {
+    "mtime": 1777395045.2463841,
+    "hash": "6608d458dc7044d75842a6b7079a15d3"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ChatModal.jsx": {
+    "mtime": 1777481924.2179992,
+    "hash": "bc40d4e95e984c17e2b207fd59b17fc4"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ArtworkHoverCard.jsx": {
+    "mtime": 1777967246.8890033,
+    "hash": "21094beac977428ffa16ec623bf410f7"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/Navigation.jsx": {
+    "mtime": 1777994538.2598743,
+    "hash": "6bedaa74b3f7788c196562fced3cf70e"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ChatbotWidget.jsx": {
+    "mtime": 1777967246.8892417,
+    "hash": "78169c321c790f928a55d34bd8a0cf70"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ColiseumCarousel.jsx": {
+    "mtime": 1777917345.2020767,
+    "hash": "bab337b4a45e581a5bac07b68ba9d0bc"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ui/CtaSectionGallery.jsx": {
+    "mtime": 1777996621.5658271,
+    "hash": "a76d0d05c630c1ae6b82efdf86ce0c24"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ui/SpotlightCard.jsx": {
+    "mtime": 1777994451.6861627,
+    "hash": "31f345ad83d6c9d622ee8e40adac6fe8"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ui/CircularTestimonials.jsx": {
+    "mtime": 1777996479.8395898,
+    "hash": "1db4aba5ad747c42bde469d2f58f2590"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/components/ui/FlipGallery.jsx": {
+    "mtime": 1777994476.2303846,
+    "hash": "e4eb3dbfb7aaad57c689b292fc1ffe16"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/ProductDetail.jsx": {
+    "mtime": 1777967246.8992848,
+    "hash": "a7d56c5ecbbe58f3dc7a74892e955951"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Profile.jsx": {
+    "mtime": 1777967246.9002073,
+    "hash": "8bf0f37a4b709562f1ad5cd70b69805f"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/ChatRooms.jsx": {
+    "mtime": 1777967246.8946984,
+    "hash": "b77cdf237156f67d8e8027ecf34618d5"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Categories.jsx": {
+    "mtime": 1777919039.5770788,
+    "hash": "7eac0479646e5d9541d6608ca09dc9b3"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/About.jsx": {
+    "mtime": 1777967246.8927588,
+    "hash": "95c5e929c85ac7a981ec947b5b3ea923"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/AdminDashboard.jsx": {
+    "mtime": 1777917345.2041256,
+    "hash": "e282a5e6dd1ae35a19eb7f1710b04b37"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Signin.jsx": {
+    "mtime": 1777967246.901407,
+    "hash": "f09897be683be16131e6929844725e73"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/ArtistChat.jsx": {
+    "mtime": 1777967246.8939908,
+    "hash": "f157171eadd47fab31bc2b704d01b5b6"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Refund.jsx": {
+    "mtime": 1777967246.900801,
+    "hash": "102e5ff7e1d4f0a656b2c8d0443723be"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/AR.jsx": {
+    "mtime": 1777967246.8922157,
+    "hash": "60403189e1b4efba6888f3a31bce8b60"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/PrivacyPolicy.jsx": {
+    "mtime": 1777967246.8987546,
+    "hash": "07a5f9fbddc25caefd87cb0f18cf5f6d"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/ArtistPortal.jsx": {
+    "mtime": 1777967246.8943489,
+    "hash": "7c511c702cb30ea958e5461365a7f48a"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/SubCategories.jsx": {
+    "mtime": 1777919071.368767,
+    "hash": "091f9e0389ad6cd0f3f2840c84d2acdd"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Gallery.jsx": {
+    "mtime": 1777967246.8966336,
+    "hash": "2b96d9f8f452fd609b344a2673b536b7"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Cart.jsx": {
+    "mtime": 1777919080.4728177,
+    "hash": "267158fcb542fed14acb4dc8ade9fe2e"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/ArtistProfile.jsx": {
+    "mtime": 1777919006.61248,
+    "hash": "54f5c8e89a4add89b1e5338739c6abf8"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/AdminInbox.jsx": {
+    "mtime": 1777481905.1905062,
+    "hash": "dff9a564dfacb4672fb65db79ba405fa"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/HelpDesk.jsx": {
+    "mtime": 1777967246.8972669,
+    "hash": "fc4f43c65100356858e3d05a9acfdb36"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Artists.jsx": {
+    "mtime": 1777481279.5427678,
+    "hash": "8f26270440191e79cd42dd42e8fb1d4f"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Community.jsx": {
+    "mtime": 1777994582.5115445,
+    "hash": "263b5ab9ac6caee94f30424c8d3233a1"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Checkout.jsx": {
+    "mtime": 1777967246.895311,
+    "hash": "dcd9924de1df226694b03529fca37b25"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Contact.jsx": {
+    "mtime": 1777481373.9510329,
+    "hash": "9c0e36cf5ede7195a0b81af4c3039477"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/ArtTypeDescription.jsx": {
+    "mtime": 1777967246.8930683,
+    "hash": "23d6b38daff8279e1435c55a784a1db1"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Home.jsx": {
+    "mtime": 1777997360.021535,
+    "hash": "95b2351d6d2795598c91c8611b4f3f53"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Events.jsx": {
+    "mtime": 1777919139.7165437,
+    "hash": "3333662910c1ab6887ecf776905d07cc"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/pages/Estimate.jsx": {
+    "mtime": 1777967246.895884,
+    "hash": "9b7e59a2cff2dcbcf5559ce858392935"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/index.html": {
+    "mtime": 1777015113.0,
+    "hash": "f0e9e11a17ca66fcdc371ccf7a11222f"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/README.md": {
+    "mtime": 1777015113.0,
+    "hash": "a28dc4cb878325f3e9e5649f3e1469ac"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/GEMINI.md": {
+    "mtime": 1777550720.6697967,
+    "hash": "85785109b1c3db1926f650ef5d7ded5f"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/AGENTS.md": {
+    "mtime": 1777550720.669583,
+    "hash": "85785109b1c3db1926f650ef5d7ded5f"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/CLAUDE.md": {
+    "mtime": 1777550720.6692467,
+    "hash": "85785109b1c3db1926f650ef5d7ded5f"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/supabase/SETUP.md": {
+    "mtime": 1777526238.5980134,
+    "hash": "bba2f8da769c891ef9f872c3aae78f92"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/public/icons.svg": {
+    "mtime": 1777015113.0,
+    "hash": "3b4fcfcf393eca4d264dca4a4663bc37"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/public/favicon.svg": {
+    "mtime": 1777015113.0,
+    "hash": "7e840862161341271697daa99a40d76b"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/i8.png": {
+    "mtime": 1777027011.5104384,
+    "hash": "3b27bce828dd995508dc5fc9b3afdc55"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/i1.png": {
+    "mtime": 1777024541.3992355,
+    "hash": "f56f55a92cc053183df7d2101f93ac63"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/i2.png": {
+    "mtime": 1777025004.7871234,
+    "hash": "b095280cb7f51e67226542ee11937627"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/i3.png": {
+    "mtime": 1777025344.5892103,
+    "hash": "9acda3c9579ac3e08faf6c6f82976c89"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/logo.png": {
+    "mtime": 1777037669.3111339,
+    "hash": "64d0b90e36778c1cce86555ec4252052"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/i7.png": {
+    "mtime": 1777027724.1862316,
+    "hash": "6c941390b62b82ffbab78282bca1e972"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/i6.png": {
+    "mtime": 1777026479.901215,
+    "hash": "d7f45c5c57c59216b5f0b4e150302126"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/i4.png": {
+    "mtime": 1777025504.7712698,
+    "hash": "6efe61e3a85dfbd7425d25f72023af6b"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/flower.png": {
+    "mtime": 1777225340.9564989,
+    "hash": "d04460b3b45b4d30c14b6582f13f709e"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/i5.png": {
+    "mtime": 1777025679.0646818,
+    "hash": "5e6e4c995a753164aac7d50d5aa0e670"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/3images/b2.png": {
+    "mtime": 1777393047.2020652,
+    "hash": "af5444a877a77e3d227f98d86919ebc2"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/3images/b1.png": {
+    "mtime": 1777392080.796309,
+    "hash": "f06abe49d63a5f276d4837e843a2785c"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/preservation/p8.png": {
+    "mtime": 1777390842.4744375,
+    "hash": "0aa80c601c16c52fda52a04527431e60"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/preservation/p3.png": {
+    "mtime": 1777390471.1690946,
+    "hash": "11d79dc093a8c02bc0af9aa70b3685f7"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/preservation/p2.png": {
+    "mtime": 1777390458.5776038,
+    "hash": "e325469349f1528bfc4c55be43844bc5"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/preservation/p1.png": {
+    "mtime": 1777389160.9465423,
+    "hash": "5179d4fd29a1a83d2dd4e6ef05ed15b2"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/preservation/p5.png": {
+    "mtime": 1777390503.3600922,
+    "hash": "352a4bf2896fb41cbae90afc3625b01a"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/preservation/p4.png": {
+    "mtime": 1777390484.2283595,
+    "hash": "8a97209d31408b5cc3738c2aefaee664"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/preservation/p6.png": {
+    "mtime": 1777390429.9564922,
+    "hash": "cf4d3cd1b02d59df35cb467e7575c6c1"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/preservation/p7.png": {
+    "mtime": 1777390413.0720787,
+    "hash": "fca62ec8b01ad783cf70b44210595a9e"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/About/a1.png": {
+    "mtime": 1777391280.1158566,
+    "hash": "61285ce2ccde60aa29a98e79f494194b"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/About/p8.png": {
+    "mtime": 1777392196.7131293,
+    "hash": "0aa80c601c16c52fda52a04527431e60"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/mediums/m3.png": {
+    "mtime": 1777394947.6401303,
+    "hash": "3839ff7bd42c80f2ef54430ec345c70a"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/mediums/m2.png": {
+    "mtime": 1777394756.4247832,
+    "hash": "58df855b8ad728dcc4d95b97fd4c2f0c"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/mediums/m1.png": {
+    "mtime": 1777395081.1149766,
+    "hash": "5dcc854b5bac8155f7f913361819b831"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/mediums/m4.png": {
+    "mtime": 1777394064.6498663,
+    "hash": "ab2931b66ebeaf398f153e3c86399f58"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e8.png": {
+    "mtime": 1777392960.3982022,
+    "hash": "c580e8f12f22dd0133661ad4ae9b09ea"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e9.png": {
+    "mtime": 1777392948.9015722,
+    "hash": "936750e3632a39dc1175a92a2c84d6ed"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e2.png": {
+    "mtime": 1777392649.230014,
+    "hash": "c9cbef2b1ef07fa284dd606f9a9dd1b2"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e3.png": {
+    "mtime": 1777392685.981908,
+    "hash": "6e69a1b96ff8f29ee0317596cce987d0"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e1.png": {
+    "mtime": 1777392631.3048017,
+    "hash": "2582a1d879c2d7789208237a39227205"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e4.png": {
+    "mtime": 1777392826.3664298,
+    "hash": "dabf7a83bec2009d6858cc2370d94744"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e5.png": {
+    "mtime": 1777392818.087724,
+    "hash": "29940ba6d5e2f683979144be784c4739"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e7.png": {
+    "mtime": 1777392971.6798775,
+    "hash": "a846dc251adcbaedb81599ba583a2972"
+  },
+  "/Users/undeanushkagmail.com/Downloads/artcoliseum-frontend-main-2/src/assets/events/e6.png": {
+    "mtime": 1777392808.4162772,
+    "hash": "d877422b652d1b7cdaedf60e1d8a48ae"
+  }
+}

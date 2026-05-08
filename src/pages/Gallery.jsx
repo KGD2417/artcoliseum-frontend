@@ -118,13 +118,15 @@ export default function Gallery() {
               {sub && <><span style={{ margin: "0 8px" }}>›</span><span style={{ color: "#D4AF37", textTransform: "capitalize" }}>{sub.replace("-"," ")}</span></>}
             </div>
           )}
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>CURATION VOL. IV</div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 42, fontWeight: 700, color: "#fff", lineHeight: 1.1, marginBottom: 12 }}>
-            The Modernists & The Muses
-          </h1>
-          <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", maxWidth: 560, lineHeight: 1.7 }}>
-            Explore our strictly curated collection of contemporary masterpieces. Each piece has been selected for its unique perspective on the intersection of physical medium and digital soul.
-          </p>
+          {!sub && <>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>CURATION VOL. IV</div>
+            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 42, fontWeight: 700, color: "#fff", lineHeight: 1.1, marginBottom: 12 }}>
+              The Modernists & The Muses
+            </h1>
+            <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", maxWidth: 560, lineHeight: 1.7 }}>
+              Explore our strictly curated collection of contemporary masterpieces. Each piece has been selected for its unique perspective on the intersection of physical medium and digital soul.
+            </p>
+          </>}
         </div>
 
         <div style={{
@@ -146,69 +148,73 @@ export default function Gallery() {
         </div>
       </motion.div>
 
-      <button
-        className={`gal-filter-toggle ${filtersOpen ? "is-open" : ""}`}
-        onClick={() => setFiltersOpen(v => !v)}>
-        {filtersOpen ? "HIDE FILTERS" : "SHOW FILTERS & SORT"}
-      </button>
+      {!sub && (
+        <button
+          className={`gal-filter-toggle ${filtersOpen ? "is-open" : ""}`}
+          onClick={() => setFiltersOpen(v => !v)}>
+          {filtersOpen ? "HIDE FILTERS" : "SHOW FILTERS & SORT"}
+        </button>
+      )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 36 }} className="gal-grid">
-        {/* sidebar filters */}
-        <aside className={`gal-sidebar ${filtersOpen ? "is-open" : ""}`}>
-          <FilterSection title="STYLE">
-            {STYLES.map(s => (
-              <button
-                key={s.label}
-                onClick={() => setStyleFilter(s.label)}
-                style={{
-                  display: "flex", justifyContent: "space-between", width: "100%",
-                  padding: "8px 0", background: "transparent", border: "none",
-                  cursor: "pointer", textAlign: "left",
-                  fontFamily: "'Raleway',sans-serif", fontSize: 13,
-                  color: styleFilter === s.label ? "#D4AF37" : "rgba(200,191,160,0.7)",
-                }}>
-                <span>{s.label}</span>
-                <span style={{ fontSize: 11, opacity: 0.7 }}>{s.count}</span>
-              </button>
-            ))}
-          </FilterSection>
-
-          <FilterSection title="CATEGORY">
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {CATEGORIES.map(c => (
+      <div style={{ display: "grid", gridTemplateColumns: sub ? "1fr" : "200px 1fr", gap: 36 }} className="gal-grid">
+        {/* sidebar filters — only shown on main gallery */}
+        {!sub && (
+          <aside className={`gal-sidebar ${filtersOpen ? "is-open" : ""}`}>
+            <FilterSection title="STYLE">
+              {STYLES.map(s => (
                 <button
-                  key={c.id}
-                  onClick={() => setCatFilter(c.id)}
+                  key={s.label}
+                  onClick={() => setStyleFilter(s.label)}
                   style={{
-                    fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em",
-                    padding: "6px 12px", borderRadius: 999, cursor: "pointer",
-                    border: catFilter === c.id ? "1px solid #D4AF37" : "1px solid rgba(212,175,55,0.25)",
-                    background: catFilter === c.id ? "#D4AF37" : "transparent",
-                    color: catFilter === c.id ? "#111" : "rgba(200,191,160,0.7)",
-                  }}>{c.label}</button>
+                    display: "flex", justifyContent: "space-between", width: "100%",
+                    padding: "8px 0", background: "transparent", border: "none",
+                    cursor: "pointer", textAlign: "left",
+                    fontFamily: "'Raleway',sans-serif", fontSize: 13,
+                    color: styleFilter === s.label ? "#D4AF37" : "rgba(200,191,160,0.7)",
+                  }}>
+                  <span>{s.label}</span>
+                  <span style={{ fontSize: 11, opacity: 0.7 }}>{s.count}</span>
+                </button>
               ))}
-            </div>
-          </FilterSection>
+            </FilterSection>
 
-          <FilterSection title="SIZE">
-            {SIZES.map(s => (
-              <label
-                key={s.id}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer",
-                  fontFamily: "'Raleway',sans-serif", fontSize: 12,
-                  color: sizeFilter === s.id ? "#D4AF37" : "rgba(200,191,160,0.7)",
-                }}>
-                <input
-                  type="radio" name="size" checked={sizeFilter === s.id}
-                  onChange={() => setSizeFilter(s.id)}
-                  style={{ accentColor: "#D4AF37" }}
-                />
-                {s.label}
-              </label>
-            ))}
-          </FilterSection>
-        </aside>
+            <FilterSection title="CATEGORY">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {CATEGORIES.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setCatFilter(c.id)}
+                    style={{
+                      fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em",
+                      padding: "6px 12px", borderRadius: 999, cursor: "pointer",
+                      border: catFilter === c.id ? "1px solid #D4AF37" : "1px solid rgba(212,175,55,0.25)",
+                      background: catFilter === c.id ? "#D4AF37" : "transparent",
+                      color: catFilter === c.id ? "#111" : "rgba(200,191,160,0.7)",
+                    }}>{c.label}</button>
+                ))}
+              </div>
+            </FilterSection>
+
+            <FilterSection title="SIZE">
+              {SIZES.map(s => (
+                <label
+                  key={s.id}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer",
+                    fontFamily: "'Raleway',sans-serif", fontSize: 12,
+                    color: sizeFilter === s.id ? "#D4AF37" : "rgba(200,191,160,0.7)",
+                  }}>
+                  <input
+                    type="radio" name="size" checked={sizeFilter === s.id}
+                    onChange={() => setSizeFilter(s.id)}
+                    style={{ accentColor: "#D4AF37" }}
+                  />
+                  {s.label}
+                </label>
+              ))}
+            </FilterSection>
+          </aside>
+        )}
 
         {/* grid */}
         <div>

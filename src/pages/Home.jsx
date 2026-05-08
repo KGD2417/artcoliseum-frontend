@@ -3,17 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import ColiseumCarousel from "../components/ColiseumCarousel";
-import { supabase } from "../utils/supabase";
+import { CircularTestimonials } from "../components/ui/CircularTestimonials";
+import { GlowCard } from "../components/ui/SpotlightCard";
+import { ContainerStagger, ContainerAnimated, GalleryGrid, GalleryGridCell } from "../components/ui/CtaSectionGallery";
 import {
-  PaletteIcon,
-  ChiselIcon,
-  CameraIcon,
-  ChipIcon,
-  FrameIcon,
-  ArtistFigureIcon,
-  GlobeIcon,
-  ShieldIcon,
-  SparkIcon,
+  PaletteIcon, ChiselIcon, CameraIcon, ChipIcon,
+  FrameIcon, ArtistFigureIcon, GlobeIcon, ShieldIcon, SparkIcon,
 } from "../components/Icons";
 import logo from "../assets/logo.png";
 import i1 from "../assets/i1.png";
@@ -37,54 +32,10 @@ import p6 from "../assets/preservation/p6.png";
 import p7 from "../assets/preservation/p7.png";
 import p8 from "../assets/preservation/p8.png";
 import a1 from "../assets/About/a1.png";
-import b1 from "../assets/3images/b1.png";
 import b2 from "../assets/3images/b2.png";
 import e1 from "../assets/events/e1.png";
 import e2 from "../assets/events/e2.png";
 import e3 from "../assets/events/e3.png";
-
-// Fallback data when database is empty
-const FALLBACK_HERO_GALLERY = [
-  { image: i1, text: "Golden Horizon" },
-  { image: i2, text: "Eternal Grace" },
-  { image: i6, text: "Cosmic Flow" },
-  { image: i4, text: "The Golden Tree" },
-  { image: i5, text: "Whispers of Silence" },
-  {
-    image:
-      "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop",
-    text: "Crimson Reverie",
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?w=900&q=80&auto=format&fit=crop",
-    text: "Velvet Mirage",
-  },
-  { image: i8, text: "Renaissance Study" },
-  {
-    image:
-      "https://images.unsplash.com/photo-1549887534-1541e9326642?w=900&q=80&auto=format&fit=crop",
-    text: "Crimson Tides",
-  },
-  { image: i3, text: "Azure Dreams" },
-  {
-    image:
-      "https://images.unsplash.com/photo-1551913902-c92207136625?w=900&q=80&auto=format&fit=crop",
-    text: "Solstice",
-  },
-  { image: i7, text: "Ocean Depths" },
-];
-
-const FALLBACK_CAROUSEL = [
-  { img: p1, title: "Golden Horizon", medium: "Acrylic on Canvas" },
-  { img: p4, title: "Eternal Grace", medium: "Bronze Sculpture" },
-  { img: p6, title: "Cosmic Flow", medium: "Mixed Media" },
-  { img: p7, title: "The Golden Tree", medium: "Oil on Canvas" },
-  { img: p5, title: "Whispers of Silence", medium: "Oil on Canvas" },
-  { img: p3, title: "Azure Dreams", medium: "Mixed Media" },
-  { img: p8, title: "Renaissance Study", medium: "Oil on Panel" },
-  { img: p2, title: "Ocean Depths", medium: "Digital Print" },
-];
 
 /* ── Hero gallery ────────────────────────────────────────────────── */
 const HERO_GALLERY = [
@@ -93,135 +44,53 @@ const HERO_GALLERY = [
   { image: i6, text: "Cosmic Flow" },
   { image: i4, text: "The Golden Tree" },
   { image: i5, text: "Whispers of Silence" },
-  {
-    image:
-      "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop",
-    text: "Crimson Reverie",
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?w=900&q=80&auto=format&fit=crop",
-    text: "Velvet Mirage",
-  },
+  { image: "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop", text: "Crimson Reverie" },
+  { image: "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?w=900&q=80&auto=format&fit=crop", text: "Velvet Mirage" },
   { image: i8, text: "Renaissance Study" },
-  {
-    image:
-      "https://images.unsplash.com/photo-1549887534-1541e9326642?w=900&q=80&auto=format&fit=crop",
-    text: "Crimson Tides",
-  },
+  { image: "https://images.unsplash.com/photo-1549887534-1541e9326642?w=900&q=80&auto=format&fit=crop", text: "Crimson Tides" },
   { image: i3, text: "Azure Dreams" },
-  {
-    image:
-      "https://images.unsplash.com/photo-1551913902-c92207136625?w=900&q=80&auto=format&fit=crop",
-    text: "Solstice",
-  },
+  { image: "https://images.unsplash.com/photo-1551913902-c92207136625?w=900&q=80&auto=format&fit=crop", text: "Solstice" },
   { image: i7, text: "Ocean Depths" },
 ];
 
-const HERO_STATS = [
-  { Icon: FrameIcon, value: "10,000+", label: "Original Artworks" },
-  { Icon: ArtistFigureIcon, value: "2,500+", label: "Talented Artists" },
-  { Icon: GlobeIcon, value: "50+", label: "Countries" },
-  { Icon: ShieldIcon, value: "Secure", label: "Global Delivery" },
-  { Icon: SparkIcon, value: "100%", label: "Authentic Artwork" },
-];
+const FALLBACK_HERO_GALLERY = HERO_GALLERY;
 
 /* ── Highlights carousel ─────────────────────────────────────────── */
 const CAROUSEL_ITEMS = [
-  { img: p1, title: "Golden Horizon", medium: "Acrylic on Canvas" },
-  { img: p4, title: "Eternal Grace", medium: "Bronze Sculpture" },
-  { img: p6, title: "Cosmic Flow", medium: "Mixed Media" },
-  { img: p7, title: "The Golden Tree", medium: "Oil on Canvas" },
-  { img: p5, title: "Whispers of Silence", medium: "Oil on Canvas" },
-  { img: p3, title: "Azure Dreams", medium: "Mixed Media" },
-  { img: p8, title: "Renaissance Study", medium: "Oil on Panel" },
-  { img: p2, title: "Ocean Depths", medium: "Digital Print" },
+  { img: p1, title: "Golden Horizon",     medium: "Acrylic on Canvas" },
+  { img: p4, title: "Eternal Grace",      medium: "Bronze Sculpture" },
+  { img: p6, title: "Cosmic Flow",        medium: "Mixed Media" },
+  { img: p7, title: "The Golden Tree",    medium: "Oil on Canvas" },
+  { img: p5, title: "Whispers of Silence",medium: "Oil on Canvas" },
+  { img: p3, title: "Azure Dreams",       medium: "Mixed Media" },
+  { img: p8, title: "Renaissance Study",  medium: "Oil on Panel" },
+  { img: p2, title: "Ocean Depths",       medium: "Digital Print" },
 ];
 
-const MEDIUMS = [
-  {
-    slug: "paintings",
-    label: "Paintings",
-    sub: "Oil, Acrylic & Watercolor",
-    count: "2,400+ works",
-    Icon: PaletteIcon,
-    img: m1,
-  },
-  {
-    slug: "sculptures",
-    label: "Sculptures",
-    sub: "Bronze, Marble & Mixed Media",
-    count: "840+ works",
-    Icon: ChiselIcon,
-    img: m2,
-  },
-  {
-    slug: "photography",
-    label: "Photography",
-    sub: "Fine Art & Documentary",
-    count: "1,200+ works",
-    Icon: CameraIcon,
-    img: m3,
-  },
-  {
-    slug: "digital",
-    label: "Digital",
-    sub: "NFT & Generative Canvas",
-    count: "3,600+ works",
-    Icon: ChipIcon,
-    img: m4,
-  },
-];
+const FALLBACK_CAROUSEL = CAROUSEL_ITEMS;
 
-/* ── New Arrivals — 3 rotating cards ────────────────────────────── */
-const ARRIVALS = [
+/* ── Launch of New Product — circular testimonials ───────────────── */
+const PRODUCT_TESTIMONIALS = [
   {
-    image: p8,
-    text: "New Collection",
-    titleBold: "Launch of",
-    titleItalic: "New Product",
-    tag: "New Arrivals",
-    sub: "Forty-eight new works. Eighteen artists. One season.",
-    desc: "A new chapter in art begins. Our latest curated collection brings together emerging and established artists — each piece a testament to the enduring power of human expression.",
-    bullets: [
-      "48 new works across painting, sculpture & photography",
-      "Verified provenance, direct from each artist's studio",
-      "Members get 48-hour early access",
-    ],
-    cta: "EXPLORE COLLECTION →",
-    to: "/categories",
+    quote: "Forty-eight new works. Eighteen artists. One season. Each piece a testament to the enduring power of human expression — verified provenance, direct from the artist's studio.",
+    name: "New Collection",
+    designation: "48 works · Oil, Sculpture & Photography",
+    src: i4,
+    tag: "NEW ARRIVALS",
   },
   {
-    image: b2,
-    text: "Artist of the Month",
-    titleBold: "",
-    titleItalic: "Elena Vance",
-    tag: "Artist of the Month",
-    sub: "Florence · Oil & Gold Leaf · Twelve Years in Practice",
-    desc: "Florence-born Elena Vance brings the Renaissance tradition into the 21st century. Her latest series, 'Golden Hours', captures the interplay of light and memory across twelve monumental canvases.",
-    bullets: [
-      "Featured in Vogue Italia & Apollo Magazine",
-      "Twelve original canvases — only three remain",
-      "Studio film & monograph included with every purchase",
-    ],
-    cta: "VIEW ARTIST PROFILE →",
-    to: "/artists/elena-vance",
+    quote: "The most coveted works of this season — from emerging masters whose voices are reshaping contemporary art. Members receive 48-hour early access before public launch.",
+    name: "Early Access",
+    designation: "Members-only · 48 hrs before public",
+    src: i1,
+    tag: "EXCLUSIVE",
   },
   {
-    image: b1,
-    text: "Art in Your Space",
-    titleBold: "Art in",
-    titleItalic: "Your Space",
-    tag: "AR Experience",
-    sub: "See it in your room before it ever leaves ours.",
-    desc: "Bridge the gap between digital and physical. Visualise any masterpiece in your own environment with perfect scale and lighting fidelity — before it ever leaves the studio.",
-    bullets: [
-      "Millimetre-accurate scale & shadow simulation",
-      "Save preview rooms and share with your designer",
-      "Works on any modern iPhone or Android — no app needed",
-    ],
-    cta: "LAUNCH AR PREVIEW →",
-    to: "/ar",
+    quote: "A new chapter in art begins. Every work presented with full documentation, artist monograph, and our authenticity guarantee. Art that will endure for generations.",
+    name: "Guaranteed Authentic",
+    designation: "Provenance-verified · Framing included",
+    src: i6,
+    tag: "COLLECTION",
   },
 ];
 
@@ -256,22 +125,32 @@ const EVENTS_DATA = [
   },
 ];
 
+/* ── Flip gallery images ─────────────────────────────────────────── */
+const FLIP_IMAGES = [
+  { title: "Golden Horizon",    url: i1 },
+  { title: "Eternal Grace",     url: i2 },
+  { title: "Azure Dreams",      url: i3 },
+  { title: "The Golden Tree",   url: i4 },
+  { title: "Whispers of Silence", url: i5 },
+  { title: "Cosmic Flow",       url: i6 },
+];
+
 /* ── About stacked cards ─────────────────────────────────────────── */
 const ABOUT_IMAGES = [p8, a1, p3];
 
-/* ── Preservation floating images (positioned absolutely) ────────── */
+/* ── Preservation floating images ────────────────────────────────── */
 const FLOAT_ART = [
-  { src: p1, top: "8%", left: "10%", size: 108 },
-  { src: p2, top: "20%", left: "30%", size: 84, mobileHide: true },
-  { src: p3, top: "5%", left: "50%", size: 70, mobileHide: true },
-  { src: p4, top: "10%", right: "12%", size: 116 },
-  { src: p5, top: "32%", right: "5%", size: 88, mobileHide: true },
-  { src: p6, top: "52%", right: "9%", size: 98, mobileHide: true },
-  { src: p7, top: "50%", left: "4%", size: 108, mobileHide: true },
-  { src: p2, bottom: "8%", left: "18%", size: 86, mobileHide: true },
-  { src: p4, bottom: "16%", left: "44%", size: 68, mobileHide: true },
-  { src: p6, bottom: "6%", right: "28%", size: 96, mobileHide: true },
-  { src: p3, bottom: "3%", right: "12%", size: 80 },
+  { src: p1, top: "8%",   left: "10%",  size: 108 },
+  { src: p2, top: "20%",  left: "30%",  size: 84,  mobileHide: true },
+  { src: p3, top: "5%",   left: "50%",  size: 70,  mobileHide: true },
+  { src: p4, top: "10%",  right: "12%", size: 116 },
+  { src: p5, top: "32%",  right: "5%",  size: 88,  mobileHide: true },
+  { src: p6, top: "52%",  right: "9%",  size: 98,  mobileHide: true },
+  { src: p7, top: "50%",  left: "4%",   size: 108, mobileHide: true },
+  { src: p2, bottom: "8%", left: "18%", size: 86,  mobileHide: true },
+  { src: p4, bottom: "16%",left: "44%", size: 68,  mobileHide: true },
+  { src: p6, bottom: "6%", right: "28%",size: 96,  mobileHide: true },
+  { src: p3, bottom: "3%", right: "12%",size: 80 },
 ];
 
 const FLOAT_PARAMS = FLOAT_ART.map((_, i) => ({
@@ -279,79 +158,12 @@ const FLOAT_PARAMS = FLOAT_ART.map((_, i) => ({
   duration: 5 + ((i * 0.7) % 4),
 }));
 
-const TESTIMONIALS = [
-  {
-    text: "Art Coliseum is the only platform where I trust the provenance as much as the curation. My living room has never looked more deliberate.",
-    name: "Isabella Moreau",
-    role: "Private Collector, Paris",
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 1,
-  },
-  {
-    text: "The AR preview alone changed how I commit to a piece. I placed three pieces virtually before purchasing — every single one was perfect on arrival.",
-    name: "Daniel Hoffmann",
-    role: "Architect, Berlin",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 2,
-  },
-  {
-    text: "From inquiry to white-glove delivery, the experience felt like working with a personal curator. This is what art collecting should feel like.",
-    name: "Aria Patel",
-    role: "Gallery Director, Mumbai",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 3,
-  },
-  {
-    text: "Their condition reports and authenticity ledger gave me complete confidence. A modern auction house in your pocket.",
-    name: "Lucas Marín",
-    role: "Hedge Fund Partner, Madrid",
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 4,
-  },
-  {
-    text: "I commissioned a piece for my Tokyo penthouse. The white-glove install team treated the artwork — and my home — with reverence.",
-    name: "Sakura Mori",
-    role: "Interior Stylist, Tokyo",
-    image:
-      "https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 5,
-  },
-  {
-    text: "The artist monographs alone are worth the membership. I have learned more about contemporary practice in three months than I had in years.",
-    name: "Henrik Almqvist",
-    role: "Curator, Stockholm",
-    image:
-      "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 6,
-  },
-  {
-    text: "Discreet, deeply considered, and extraordinarily well-priced for the quality. My only regret is not joining sooner.",
-    name: "Victoria Whitfield",
-    role: "Family Office, London",
-    image:
-      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 7,
-  },
-  {
-    text: "Every acquisition has appreciated, but the joy of living with the work is the real return.",
-    name: "Faraz Khan",
-    role: "Fintech Founder, Dubai",
-    image:
-      "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 0,
-  },
-  {
-    text: "The strict curation cuts through the noise. Every piece on Art Coliseum has earned its place.",
-    name: "Emilia Conti",
-    role: "Museum Trustee, Milan",
-    image:
-      "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=200&q=80&auto=format&fit=crop",
-    fbIdx: 1,
-  },
+/* ── MEDIUMS ─────────────────────────────────────────────────────── */
+const MEDIUMS = [
+  { slug: "paintings",   label: "Paintings",    sub: "Oil, Acrylic & Watercolor",    count: "2,400+ works", Icon: PaletteIcon, img: m1 },
+  { slug: "sculptures",  label: "Sculptures",   sub: "Bronze, Marble & Mixed Media", count: "840+ works",   Icon: ChiselIcon,  img: m2 },
+  { slug: "photography", label: "Photography",  sub: "Fine Art & Documentary",       count: "1,200+ works", Icon: CameraIcon,  img: m3 },
+  { slug: "digital",     label: "Digital",      sub: "NFT & Generative Canvas",      count: "3,600+ works", Icon: ChipIcon,    img: m4 },
 ];
 
 /* ═══════════════ SECTION HEADER ═══════════════════════════════════ */
@@ -366,15 +178,9 @@ function SectionHeader({ tag, title, italic, sub }) {
         initial={{ opacity: 0 }}
         animate={inView ? { opacity: 1 } : {}}
         transition={{ duration: 0.6 }}>
-        <div
-          className="grl"
-          style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }}
-        />
+        <div className="grl" style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }} />
         <span className="grt">{tag}</span>
-        <div
-          className="grl"
-          style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }}
-        />
+        <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
       </motion.div>
       <motion.h2
         className="section-heading"
@@ -390,12 +196,8 @@ function SectionHeader({ tag, title, italic, sub }) {
           animate={inView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.3 }}
           style={{
-            fontFamily: "'Raleway',sans-serif",
-            fontSize: 14,
-            color: "rgba(200,191,160,0.6)",
-            maxWidth: 560,
-            margin: "14px auto 0",
-            lineHeight: 1.7,
+            fontFamily: "'Raleway',sans-serif", fontSize: 14,
+            color: "rgba(200,191,160,0.6)", maxWidth: 560, margin: "14px auto 0", lineHeight: 1.7,
           }}>
           {sub}
         </motion.p>
@@ -409,21 +211,19 @@ function CylinderCarousel({ items, navigate }) {
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dims, setDims] = useState({ w: 240, h: 320, r: 420 });
+  const [isMobile, setIsMobile] = useState(false);
   const wrapRef = useRef(null);
   const startX = useRef(0);
   const startRot = useRef(0);
 
-  // Recompute card and ring radius from viewport so the cylinder always fits
   useEffect(() => {
     const recompute = () => {
       const vw = window.innerWidth;
-      // available width for the cylinder (minus a little gutter)
+      setIsMobile(vw <= 640);
       const avail = Math.min(vw - 32, 1100);
-      // card width: ~38% of available, clamped
-      const w = Math.round(Math.max(130, Math.min(240, avail * 0.38)));
+      const w = Math.round(Math.max(160, Math.min(240, avail * 0.38)));
       const h = Math.round(w * (320 / 240));
-      // radius = half the available width minus half a card so the front card sits inside the viewport
-      const r = Math.max(180, Math.round(avail / 2 - w * 0.45));
+      const r = Math.max(220, Math.round(avail / 2 - w * 0.42));
       setDims({ w, h, r });
     };
     recompute();
@@ -456,6 +256,56 @@ function CylinderCarousel({ items, navigate }) {
   };
   const handleUp = () => setIsDragging(false);
 
+  /* ── Mobile: horizontal scroll strip ── */
+  if (isMobile) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        style={{ marginTop: 32 }}>
+        <div style={{
+          display: "flex", gap: 14,
+          overflowX: "auto", paddingBottom: 12,
+          paddingLeft: 20, paddingRight: 20,
+          scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+          msOverflowStyle: "none", scrollbarWidth: "none",
+        }}>
+          {items.map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.06 }}
+              onClick={() => navigate("/gallery")}
+              style={{
+                flex: "0 0 200px", height: 270,
+                borderRadius: 14, overflow: "hidden",
+                position: "relative", cursor: "pointer",
+                border: "1px solid rgba(212,175,55,0.2)",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+                scrollSnapAlign: "start",
+              }}>
+              <img src={item.img} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.92) 0%, rgba(8,8,8,0.1) 55%)" }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "14px 16px" }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{item.title}</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 4 }}>{item.medium}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 20, fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.35)" }}>
+          SWIPE TO EXPLORE
+        </div>
+      </motion.div>
+    );
+  }
+
+  /* ── Desktop: 3D cylinder ── */
   return (
     <motion.div
       ref={wrapRef}
@@ -472,37 +322,25 @@ function CylinderCarousel({ items, navigate }) {
       onTouchStart={handleDown}
       onTouchMove={handleMove}
       onTouchEnd={handleUp}>
-      <div
-        style={{
-          position: "relative",
-          width: dims.w,
-          height: dims.h,
-          transformStyle: "preserve-3d",
-          transform: `rotateY(${rotation}deg)`,
-          transition: isDragging ? "none" : "transform 0.1s linear",
-        }}>
+      <div style={{
+        position: "relative", width: dims.w, height: dims.h,
+        transformStyle: "preserve-3d",
+        transform: `rotateY(${rotation}deg)`,
+        transition: isDragging ? "none" : "transform 0.1s linear",
+      }}>
         {items.map((item, i) => (
           <div
             key={i}
             className="carousel-card"
             style={{
-              width: dims.w,
-              height: dims.h,
+              width: dims.w, height: dims.h,
               transform: `rotateY(${(360 / items.length) * i}deg) translateZ(${dims.r}px)`,
             }}>
-            <img
-              src={item.img}
-              alt={item.title}
-              className="carousel-card-img"
-            />
+            <img src={item.img} alt={item.title} className="carousel-card-img" />
             <div className="carousel-glass">
               <div className="carousel-glass-title">{item.title}</div>
               <div className="carousel-glass-medium">{item.medium}</div>
-              <button
-                className="carousel-glass-btn"
-                onClick={() => navigate("/gallery")}>
-                View Artwork ›
-              </button>
+              <button className="carousel-glass-btn" onClick={() => navigate("/gallery")}>View Artwork ›</button>
             </div>
           </div>
         ))}
@@ -511,150 +349,11 @@ function CylinderCarousel({ items, navigate }) {
   );
 }
 
-/* ═══════════════ INTERACTIVE MEDIUMS ══════════════════════════════ */
-function InteractiveMediums({ items, onPick }) {
-  const [active, setActive] = useState(0);
-  const [animatedIn, setAnimatedIn] = useState([]);
-
-  useEffect(() => {
-    const timers = items.map((_, i) =>
-      setTimeout(() => setAnimatedIn((prev) => [...prev, i]), 180 * i),
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [items]);
-
-  return (
-    <div className="medsel">
-      {items.map((m, i) => {
-        const isActive = active === i;
-        const isIn = animatedIn.includes(i);
-        const Icon = m.Icon;
-        return (
-          <div
-            key={m.slug}
-            className={`medsel-opt ${isActive ? "is-active" : ""}`}
-            onClick={() => {
-              if (isActive) onPick && onPick(m);
-              else setActive(i);
-            }}
-            style={{
-              flex: isActive ? "7 1 0%" : "1 1 0%",
-              backgroundImage: `url('${m.img}')`,
-              opacity: isIn ? 1 : 0,
-              transform: isIn ? "translateX(0)" : "translateX(-60px)",
-              borderColor: isActive
-                ? "rgba(212,175,55,0.65)"
-                : "rgba(212,175,55,0.18)",
-              boxShadow: isActive
-                ? "0 22px 60px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(212,175,55,0.1)"
-                : "0 10px 30px rgba(0,0,0,0.35)",
-              zIndex: isActive ? 10 : 1,
-            }}>
-            <div
-              className="medsel-shadow"
-              style={{
-                boxShadow: isActive
-                  ? "inset 0 -160px 140px -100px rgba(0,0,0,0.95), inset 0 -160px 140px -60px rgba(0,0,0,0.85)"
-                  : "inset 0 -120px 0px -120px #000",
-              }}
-            />
-            <div className="medsel-label">
-              <div className="medsel-icon">
-                <Icon size={20} />
-              </div>
-              <div
-                className="medsel-info"
-                style={{
-                  opacity: isActive ? 1 : 0,
-                  transform: isActive ? "translateX(0)" : "translateX(20px)",
-                }}>
-                <div className="medsel-main">{m.label.toUpperCase()}</div>
-                <div className="medsel-sub">
-                  {m.sub} ·{" "}
-                  <span style={{ color: "#D4AF37" }} className="num-value">
-                    {m.count}
-                  </span>
-                </div>
-              </div>
-              {isActive && (
-                <button
-                  className="medsel-cta"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPick && onPick(m);
-                  }}>
-                  EXPLORE →
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ═══════════════ TESTIMONIAL COLUMN ═══════════════════════════════ */
-function TestimonialColumn({ items, duration = 16, className = "" }) {
-  return (
-    <div className={`tcol ${className}`}>
-      <motion.div
-        className="tcol-track"
-        animate={{ translateY: "-50%" }}
-        transition={{
-          duration,
-          repeat: Infinity,
-          ease: "linear",
-          repeatType: "loop",
-        }}>
-        {[0, 1].map((loop) => (
-          <div
-            key={loop}
-            style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {items.map((t, i) => (
-              <div className="tcard" key={`${loop}-${i}`}>
-                <div className="tcard-quote">{t.text}</div>
-                <div className="tcard-meta">
-                  <SafeImage
-                    src={t.image}
-                    alt={t.name}
-                    fallbackIndex={t.fbIdx ?? i}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "1px solid rgba(212,175,55,0.3)",
-                    }}
-                  />
-                  <div>
-                    <div className="tcard-name">{t.name}</div>
-                    <div className="tcard-role">{t.role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </motion.div>
-    </div>
-  );
-}
-
 /* ═══════════════ STACKED CARDS (About) ════════════════════════════ */
 function StackedCardsInteraction({ images }) {
   const [hovered, setHovered] = useState(false);
-  const STACK = [
-    { rotate: -7, x: -16, y: 10 },
-    { rotate: 0, x: 0, y: 0 },
-    { rotate: 7, x: 16, y: 10 },
-  ];
-  const SPREAD = [
-    { rotate: -20, x: -120, y: 24 },
-    { rotate: 0, x: 0, y: -34 },
-    { rotate: 20, x: 120, y: 24 },
-  ];
-
+  const STACK  = [{ rotate: -7, x: -16, y: 10 }, { rotate: 0, x: 0, y: 0 }, { rotate: 7, x: 16, y: 10 }];
+  const SPREAD = [{ rotate: -20, x: -120, y: 24 }, { rotate: 0, x: 0, y: -34 }, { rotate: 20, x: 120, y: 24 }];
   return (
     <div
       className="stacked-cards-wrap"
@@ -677,312 +376,43 @@ function StackedCardsInteraction({ images }) {
   );
 }
 
-/* ═══════════════ STORY ROW (one ARRIVALS item per section, alternating) ═══ */
-function StoryRow({ item, index, navigate }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const flipped = index % 2 === 1;
-
-  const bg =
-    index === 1
-      ? "linear-gradient(180deg,#080808 0%,#0d0a06 50%,#080808 100%)"
-      : "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)";
-
-  return (
-    <section ref={ref} className="section-pad" style={{ background: bg }}>
-      <div className={`story-row ${flipped ? "story-row--flip" : ""}`}>
-        <motion.div
-          className="story-image-col"
-          initial={{ opacity: 0, x: flipped ? 50 : -50 }}
-          animate={inView ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-          <div className="story-image-frame">
-            <img src={item.image} alt={item.titleItalic} />
-            <div className="story-image-glow" />
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="story-content-col"
-          initial={{ opacity: 0, x: flipped ? -40 : 40 }}
-          animate={inView ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}>
-          <div className="gold-rule" style={{ marginBottom: 18 }}>
-            <div
-              className="grl"
-              style={{ background: "linear-gradient(90deg,transparent,#D4AF37)", maxWidth: 60 }}
-            />
-            <span className="grt">{item.tag}</span>
-            <div
-              className="grl"
-              style={{ background: "linear-gradient(90deg,#D4AF37,transparent)", maxWidth: 60 }}
-            />
-          </div>
-          <h2 className="ar-heading">
-            {item.titleBold && <>{item.titleBold} </>}
-            <em>{item.titleItalic}</em>
-          </h2>
-          {item.sub && <p className="ar-sub">{item.sub}</p>}
-          <p className="ar-desc">{item.desc}</p>
-          {item.bullets && (
-            <ul className="ar-bullets">
-              {item.bullets.map((b, i) => (
-                <li key={i} className="ar-bullet">
-                  <span className="ar-bullet-mark" />
-                  <span className="ar-bullet-text">{b}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <motion.button
-            className="btn-secondary"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate(item.to)}>
-            {item.cta}
-          </motion.button>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════ NEW ARRIVALS ROTATOR (3 cards + info) ════════════ */
-function NewArrivalsSection({ items, navigate }) {
-  const [active, setActive] = useState(0);
-  const stageRef = useRef(null);
-  const [stageWidth, setStageWidth] = useState(420);
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    const onResize = () => {
-      if (stageRef.current) setStageWidth(stageRef.current.offsetWidth);
-    };
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  const startTimer = () => {
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(
-      () => setActive((p) => (p + 1) % items.length),
-      4500,
-    );
-  };
-
-  useEffect(() => {
-    startTimer();
-    return () => clearInterval(timerRef.current);
-  }, [items.length]);
-
-  const gap = Math.max(48, Math.min(96, stageWidth * 0.15));
-  const stickUp = gap * 0.7;
-
-  const styleFor = (i) => {
-    const isActive = i === active;
-    const isLeft = (active - 1 + items.length) % items.length === i;
-    const isRight = (active + 1) % items.length === i;
-    if (isActive)
-      return {
-        zIndex: 3,
-        opacity: 1,
-        transform: "translateX(0) translateY(0) scale(1) rotateY(0deg)",
-      };
-    if (isLeft)
-      return {
-        zIndex: 2,
-        opacity: 1,
-        transform: `translateX(-${gap}px) translateY(-${stickUp}px) scale(0.85) rotateY(18deg)`,
-      };
-    if (isRight)
-      return {
-        zIndex: 2,
-        opacity: 1,
-        transform: `translateX(${gap}px) translateY(-${stickUp}px) scale(0.85) rotateY(-18deg)`,
-      };
-    return { zIndex: 1, opacity: 0, pointerEvents: "none" };
-  };
-
-  const current = items[active];
-
-  const advance = () => {
-    setActive((p) => (p + 1) % items.length);
-    startTimer();
-  };
-
-  return (
-    <section className="ar-section">
-      <div className="ar-inner">
-        {/* Left: rotator */}
-        <motion.div
-          className="ar-rotator-col"
-          initial={{ opacity: 0, x: -40 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
-          <div className="rot-wrap">
-            <div className="rot-glow" />
-            <div ref={stageRef} className="rot-stage" onClick={advance}>
-              {items.map((it, i) => (
-                <div
-                  key={i}
-                  className="rot-card"
-                  style={{
-                    ...styleFor(i),
-                    transition:
-                      "transform 0.9s cubic-bezier(0.4,2,0.3,1), opacity 0.7s ease",
-                  }}>
-                  <img src={it.image} alt={it.text} />
-                  <div className="rot-card-frame" />
-                  {it.text && (
-                    <div className="rot-card-label">
-                      <span>{it.text}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="rot-dots">
-              {items.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setActive(i);
-                    startTimer();
-                  }}
-                  className={`rot-dot ${i === active ? "is-active" : ""}`}
-                />
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Right: animated content per active card */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={active}
-            className="ar-content-col"
-            initial={{ opacity: 0, x: 32 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-            <div className="gold-rule" style={{ marginBottom: 18 }}>
-              <div
-                className="grl"
-                style={{
-                  background: "linear-gradient(90deg,transparent,#D4AF37)",
-                  maxWidth: 60,
-                }}
-              />
-              <span className="grt">{current.tag}</span>
-              <div
-                className="grl"
-                style={{
-                  background: "linear-gradient(90deg,#D4AF37,transparent)",
-                  maxWidth: 60,
-                }}
-              />
-            </div>
-            <h2 className="ar-heading">
-              {current.titleBold && <>{current.titleBold} </>}
-              <em>{current.titleItalic}</em>
-            </h2>
-            {current.sub && <p className="ar-sub">{current.sub}</p>}
-            <p className="ar-desc">{current.desc}</p>
-            {current.desc2 && (
-              <p className="ar-desc ar-desc-2">{current.desc2}</p>
-            )}
-            {current.bullets && (
-              <ul className="ar-bullets">
-                {current.bullets.map((b, i) => (
-                  <li key={i} className="ar-bullet">
-                    <span className="ar-bullet-mark" />
-                    <span className="ar-bullet-text">{b}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <motion.button
-              className="btn-secondary"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate(current.to)}>
-              {current.cta}
-            </motion.button>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </section>
-  );
-}
-
 /* ═══════════════ PRESERVATION — FLOATING ART IMAGES ═══════════════ */
 function AnimatedPreservation({ navigate }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
-
   return (
     <div ref={ref} className="pres-float-section">
-      {FLOAT_ART.map(
-        ({ src, top, left, right, bottom, size, mobileHide }, i) => (
-          <motion.div
-            key={i}
-            className={`pres-float-img${mobileHide ? " pres-float-hide-mobile" : ""}`}
-            style={{ top, left, right, bottom, width: size, height: size }}
-            initial={{ opacity: 0, scale: 0.55 }}
-            animate={inView ? { opacity: 1, scale: 1 } : {}}
-            transition={{
-              type: "spring",
-              stiffness: 220,
-              damping: 22,
-              delay: i * 0.07,
-            }}>
-            <motion.img
-              src={src}
-              alt=""
-              draggable={false}
-              animate={{ y: FLOAT_PARAMS[i].y }}
-              transition={{
-                duration: FLOAT_PARAMS[i].duration,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut",
-              }}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          </motion.div>
-        ),
-      )}
-
+      {FLOAT_ART.map(({ src, top, left, right, bottom, size, mobileHide }, i) => (
+        <motion.div
+          key={i}
+          className={`pres-float-img${mobileHide ? " pres-float-hide-mobile" : ""}`}
+          style={{ top, left, right, bottom, width: size, height: size }}
+          initial={{ opacity: 0, scale: 0.55 }}
+          animate={inView ? { opacity: 1, scale: 1 } : {}}
+          transition={{ type: "spring", stiffness: 220, damping: 22, delay: i * 0.07 }}>
+          <motion.img
+            src={src} alt="" draggable={false}
+            animate={{ y: FLOAT_PARAMS[i].y }}
+            transition={{ duration: FLOAT_PARAMS[i].duration, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </motion.div>
+      ))}
       <motion.div
         className="pres-float-center"
         initial={{ opacity: 0, y: 30 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, delay: 0.3 }}>
-        <div
-          className="gold-rule"
-          style={{ justifyContent: "center", marginBottom: 20 }}>
-          <div
-            className="grl"
-            style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }}
-          />
+        <div className="gold-rule" style={{ justifyContent: "center", marginBottom: 20 }}>
+          <div className="grl" style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }} />
           <span className="grt">Our Commitment</span>
-          <div
-            className="grl"
-            style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }}
-          />
+          <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
         </div>
-        <h2 className="pres-float-heading">
-          Preservation
-          <br />
-          of <em>Art</em>
-        </h2>
+        <h2 className="pres-float-heading">Preservation<br />of <em>Art</em></h2>
         <p className="pres-float-desc">
-          Art is not merely object — it is memory, culture, and the
-          irreplaceable record of human feeling. We are committed to its
-          preservation: archiving provenance, supporting restoration, and
-          ensuring every work endures for generations to come.
+          Art is not merely object — it is memory, culture, and the irreplaceable record of human feeling.
+          We are committed to its preservation: archiving provenance, supporting restoration, and ensuring
+          every work endures for generations to come.
         </p>
         <div className="pres-float-btns">
           <motion.button
@@ -1008,8 +438,8 @@ function TiltCard({ event, index, onRegister }) {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     setTilt({
-      x: ((e.clientY - rect.top - rect.height / 2) / (rect.height / 2)) * -10,
-      y: ((e.clientX - rect.left - rect.width / 2) / (rect.width / 2)) * 10,
+      x: ((e.clientY - rect.top  - rect.height / 2) / (rect.height / 2)) * -10,
+      y: ((e.clientX - rect.left - rect.width  / 2) / (rect.width  / 2)) * 10,
     });
   };
 
@@ -1018,11 +448,7 @@ function TiltCard({ event, index, onRegister }) {
       ref={cardRef}
       initial={{ opacity: 0, y: 50 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{
-        duration: 0.7,
-        delay: index * 0.15,
-        ease: [0.22, 1, 0.36, 1],
-      }}
+      transition={{ duration: 0.7, delay: index * 0.15, ease: [0.22, 1, 0.36, 1] }}
       className="event-tilt-wrap"
       onMouseMove={handleMove}
       onMouseLeave={() => setTilt({ x: 0, y: 0 })}
@@ -1037,10 +463,7 @@ function TiltCard({ event, index, onRegister }) {
           <div className="event-card-img-overlay" />
         </div>
         <div className="event-card-body">
-          <div
-            className={`event-card-tag event-tag-${event.tag.toLowerCase()}`}>
-            {event.tag}
-          </div>
+          <div className={`event-card-tag event-tag-${event.tag.toLowerCase()}`}>{event.tag}</div>
           <div className="event-card-date">{event.date}</div>
           {event.time && <div className="event-card-time">{event.time}</div>}
           <div className="event-card-title">{event.title}</div>
@@ -1051,10 +474,7 @@ function TiltCard({ event, index, onRegister }) {
               className="event-register-btn"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onRegister();
-              }}>
+              onClick={(e) => { e.stopPropagation(); onRegister(); }}>
               REGISTER NOW →
             </motion.button>
           )}
@@ -1069,86 +489,12 @@ function TiltCard({ event, index, onRegister }) {
 ═══════════════════════════════════════════════════════════════════ */
 export default function Home() {
   const navigate = useNavigate();
-  const [heroGallery, setHeroGallery] = useState(FALLBACK_HERO_GALLERY);
+  const [heroGallery,   setHeroGallery]   = useState(FALLBACK_HERO_GALLERY);
   const [carouselItems, setCarouselItems] = useState(FALLBACK_CAROUSEL);
-  const [stats, setStats] = useState(HERO_STATS);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch data from Supabase
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch featured artworks
-        // const { data: artworks } = await supabase
-        //   .from("artworks")
-        //   .select("id, title, image_url, medium")
-        //   .limit(8);
-
-        if (artworks && artworks.length > 0) {
-          // Transform artworks for carousel
-          const transformedCarousel = artworks.map((a) => ({
-            img: a.image_url || p1,
-            title: a.title,
-            medium: a.medium || "Artwork",
-          }));
-          setCarouselItems(transformedCarousel);
-
-          // Transform artworks for hero gallery
-          const transformedHero = artworks.slice(0, 12).map((a) => ({
-            image: a.image_url || i1,
-            text: a.title,
-          }));
-          if (transformedHero.length > 0) {
-            setHeroGallery(transformedHero);
-          }
-        }
-
-        // Fetch stats
-        const [{ count: artworkCount }, { count: artistCount }] =
-          // await Promise.all([
-          //   supabase
-          //     .from("artworks")
-          //     .select("*", { count: "exact", head: true }),
-          //   supabase
-          //     .from("artists")
-          //     .select("*", { count: "exact", head: true }),
-          // ]);
-
-          setStats([
-            {
-              Icon: FrameIcon,
-              value: `${artworkCount || 10000}+`,
-              label: "Original Artworks",
-            },
-            {
-              Icon: ArtistFigureIcon,
-              value: `${artistCount || 2500}+`,
-              label: "Talented Artists",
-            },
-            { Icon: GlobeIcon, value: "50+", label: "Countries" },
-            { Icon: ShieldIcon, value: "Secure", label: "Global Delivery" },
-            { Icon: SparkIcon, value: "100%", label: "Authentic Artwork" },
-          ]);
-      } catch (err) {
-        console.error("Error fetching home data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-  const [email, setEmail] = useState("");
-
-  // Register form state
+  const [email, setEmail]                 = useState("");
   const [registerEvent, setRegisterEvent] = useState(null);
-  const [regForm, setRegForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    message: "",
-  });
-  const [regDone, setRegDone] = useState(false);
+  const [regForm, setRegForm]             = useState({ name: "", email: "", phone: "", message: "" });
+  const [regDone, setRegDone]             = useState(false);
 
   const handleRegSubmit = (e) => {
     e.preventDefault();
@@ -1160,10 +506,6 @@ export default function Home() {
     }, 2400);
   };
 
-  const col1 = TESTIMONIALS.slice(0, 3);
-  const col2 = TESTIMONIALS.slice(3, 6);
-  const col3 = TESTIMONIALS.slice(6, 9);
-
   return (
     <>
       {/* ═══════════════════════════════════════════════
@@ -1172,7 +514,6 @@ export default function Home() {
       <section className="hero-section hero-cyl">
         <div className="hero-glow" />
         <div className="hero-glow-2" />
-
         <motion.div
           className="hero-text"
           initial={{ opacity: 0, y: 50 }}
@@ -1192,21 +533,14 @@ export default function Home() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.4 }}
             style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontStyle: "italic",
-              fontSize: "clamp(16px, 1.45vw, 22px)",
-              letterSpacing: "0.18em",
-              lineHeight: 1.7,
-              color: "rgba(246,242,234,0.85)",
-              marginTop: 18,
-              padding: "0 18px",
+              fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic",
+              fontSize: "clamp(16px, 1.45vw, 22px)", letterSpacing: "0.18em",
+              lineHeight: 1.7, color: "rgba(246,242,234,0.85)", marginTop: 18, padding: "0 18px",
             }}>
             <span style={{ color: "#D4AF37" }}>Timeless</span> &nbsp;and&nbsp;{" "}
-            <span style={{ color: "#D4AF37" }}>Priceless</span> Art &nbsp;at
-            your space
+            <span style={{ color: "#D4AF37" }}>Priceless</span> Art &nbsp;at your space
           </motion.p>
         </motion.div>
-
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1214,7 +548,6 @@ export default function Home() {
           className="circ-gallery-wrap">
           <ColiseumCarousel items={heroGallery} />
         </motion.div>
-
         <motion.div
           className="hero-buttons hero-buttons-below-carousel"
           initial={{ opacity: 0, y: 16 }}
@@ -1228,24 +561,10 @@ export default function Home() {
             EXPLORE GALLERY →
           </motion.button>
         </motion.div>
-        {/* 
-        <motion.div
-          className="stats-bar hero-stats-bar"
-          initial={{ opacity: 0, y: 22 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.95 }}>
-          {HERO_STATS.map(({ Icon, value, label }) => (
-            <div className="stat-item hero-stat-item" key={label}>
-              <Icon size={28} />
-              <span className="stat-value">{value}</span>
-              <span className="stat-label">{label}</span>
-            </div>
-          ))}
-        </motion.div> */}
       </section>
 
       {/* ═══════════════════════════════════════════════
-          ABOUT ARRT COLISEUM
+          ABOUT ART COLISEUM
       ═══════════════════════════════════════════════ */}
       <section className="about-col-section">
         <div className="about-col-inner">
@@ -1257,69 +576,33 @@ export default function Home() {
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
             <StackedCardsInteraction images={ABOUT_IMAGES} />
           </motion.div>
-
           <motion.div
             className="about-col-content"
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            transition={{
-              duration: 0.9,
-              delay: 0.15,
-              ease: [0.22, 1, 0.36, 1],
-            }}>
+            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}>
             <div className="gold-rule" style={{ marginBottom: 20 }}>
-              <div
-                className="grl"
-                style={{
-                  background: "linear-gradient(90deg,transparent,#D4AF37)",
-                  maxWidth: 60,
-                }}
-              />
+              <div className="grl" style={{ background: "linear-gradient(90deg,transparent,#D4AF37)", maxWidth: 60 }} />
               <span className="grt">Our Story</span>
-              <div
-                className="grl"
-                style={{
-                  background: "linear-gradient(90deg,#D4AF37,transparent)",
-                  maxWidth: 60,
-                }}
-              />
+              <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)", maxWidth: 60 }} />
             </div>
-            <h2 className="ar-heading">
-              About <em>Art Coliseum</em>
-            </h2>
+            <h2 className="ar-heading">About <em>Art Coliseum</em></h2>
             <p className="ar-desc" style={{ marginBottom: 18 }}>
-              Art Coliseum is not a marketplace — it is a sanctuary for art. We
-              believe that great art does not need a price tag to prove its
-              worth; it speaks through silence, through texture, through the
-              quiet authority of a well-considered composition.
+              Art Coliseum is not a marketplace — it is a sanctuary for art. We believe that great art does
+              not need a price tag to prove its worth; it speaks through silence, through texture, through
+              the quiet authority of a well-considered composition.
             </p>
             <p className="ar-desc" style={{ marginBottom: 28 }}>
-              We bring together artists and admirers in a space designed to
-              honour the essence of creative work — where every piece is
-              presented with the reverence it deserves.
+              We bring together artists and admirers in a space designed to honour the essence of creative
+              work — where every piece is presented with the reverence it deserves.
             </p>
-            {/* Tagline */}
-            <div className="about-tagline">
-              Connecting Art. Elevating Creators. Inspiring Spaces.
-            </div>
+            <div className="about-tagline">Connecting Art. Elevating Creators. Inspiring Spaces.</div>
             <div className="about-col-pillars" style={{ marginTop: 28 }}>
               {[
-                {
-                  num: "01",
-                  label: "CURATION",
-                  desc: "Every work chosen for its cultural resonance, not commercial appeal.",
-                },
-                {
-                  num: "02",
-                  label: "AUTHENTICITY",
-                  desc: "Provenance, artist narratives, and full documentation for every piece.",
-                },
-                {
-                  num: "03",
-                  label: "EXPERIENCE",
-                  desc: "A gallery without walls — art you can live with, not just look at.",
-                },
+                { num: "01", label: "CURATION",      desc: "Every work chosen for its cultural resonance, not commercial appeal." },
+                { num: "02", label: "AUTHENTICITY",  desc: "Provenance, artist narratives, and full documentation for every piece." },
+                { num: "03", label: "EXPERIENCE",    desc: "A gallery without walls — art you can live with, not just look at." },
               ].map(({ num, label, desc }) => (
                 <div key={num} className="about-col-pillar">
                   <div className="about-col-pillar-num">{num}</div>
@@ -1335,15 +618,13 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          GALLERY HIGHLIGHTS
+          ART OF SEASONS — Gallery Highlights
       ═══════════════════════════════════════════════ */}
-      <section
-        className="section-pad"
-        style={{
-          background:
-            "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
-          overflowX: "hidden",
-        }}>
+      <section className="home-sec" style={{
+        background: "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
+        overflowX: "hidden",
+        paddingBottom: 160,
+      }}>
         <SectionHeader
           tag="Curator's Picks"
           title="Art of"
@@ -1353,36 +634,113 @@ export default function Home() {
         <CylinderCarousel items={carouselItems} navigate={navigate} />
       </section>
 
-      {/* ═══════════════════════════════════════════════
-          THREE STORY SECTIONS (alternating layout)
-      ═══════════════════════════════════════════════ */}
-      {ARRIVALS.map((item, i) => (
-        <StoryRow key={i} item={item} index={i} navigate={navigate} />
-      ))}
+      {/* Section divider */}
+      <div style={{ width: "100%", display: "flex", justifyContent: "center", background: "#080808" }}>
+        <div style={{ width: "min(480px, 60%)", height: 1, background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.25), transparent)" }} />
+      </div>
 
       {/* ═══════════════════════════════════════════════
-          PRESERVATION OF ART (floating images)
+          LAUNCH OF NEW PRODUCT
       ═══════════════════════════════════════════════ */}
-      <section
-        className="section-pad"
-        style={{
-          background:
-            "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
-          paddingTop: 0,
-          paddingBottom: 0,
-        }}>
-        <AnimatedPreservation navigate={navigate} />
+      <section className="home-sec home-inline-section" style={{
+        background: "linear-gradient(180deg,#080808 0%,#0d0a06 50%,#080808 100%)",
+        paddingTop: 160,
+      }}>
+        <div className="home-launch-inner">
+          {/* Left: rotating card carousel */}
+          <motion.div
+            className="home-launch-visual"
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+            <CircularTestimonials
+              imagesOnly
+              cardHeight="480px"
+              testimonials={PRODUCT_TESTIMONIALS}
+              autoplay={true}
+              colors={{
+                arrowBackground:      "#1a1612",
+                arrowForeground:      "#D4AF37",
+                arrowHoverBackground: "rgba(212,175,55,0.25)",
+              }}
+            />
+          </motion.div>
+
+          {/* Right: text */}
+          <motion.div
+            className="home-launch-text"
+            initial={{ opacity: 0, x: 40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}>
+            <div className="gold-rule" style={{ marginBottom: 24 }}>
+              <div className="grl" style={{ background: "linear-gradient(90deg, transparent, #D4AF37)" }} />
+              <span className="grt">NEW ARRIVALS</span>
+              <div className="grl" style={{ background: "linear-gradient(90deg, #D4AF37, transparent)" }} />
+            </div>
+
+            <h2 style={{
+              fontFamily: "'Cormorant Garamond',serif",
+              fontSize: "clamp(36px,4.5vw,64px)", fontWeight: 400,
+              color: "#fff", lineHeight: 1.15, margin: "0 0 16px",
+            }}>
+              Launch of{" "}
+              <em style={{ color: "#D4AF37", fontStyle: "italic" }}>New Product</em>
+            </h2>
+
+            <p style={{
+              fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic",
+              fontSize: 18, color: "#D4AF37", marginBottom: 24, lineHeight: 1.6,
+            }}>
+              Forty-eight new works. Eighteen artists. One season.
+            </p>
+
+            <p style={{
+              fontFamily: "'Cormorant Garamond',serif", fontSize: 18,
+              color: "rgba(200,191,160,0.75)", lineHeight: 1.8, marginBottom: 28,
+            }}>
+              A new chapter in art begins. Our latest curated collection brings together emerging
+              and established artists — each piece a testament to the enduring power of human expression.
+            </p>
+
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 0 0", display: "flex", flexDirection: "column", gap: 14 }}>
+              {[
+                "48 new works across painting, sculpture & photography",
+                "Verified provenance, direct from each artist's studio",
+                "Members get 48-hour early access",
+              ].map((b, i) => (
+                <li key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: "#D4AF37", flexShrink: 0,
+                  }} />
+                  <span style={{
+                    fontFamily: "'Raleway',sans-serif", fontSize: 14,
+                    color: "rgba(200,191,160,0.75)", letterSpacing: "0.03em",
+                  }}>{b}</span>
+                </li>
+              ))}
+            </ul>
+
+            <motion.button
+              className="btn-secondary"
+              style={{ marginTop: 40 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/categories")}>
+              EXPLORE COLLECTION →
+            </motion.button>
+          </motion.div>
+        </div>
       </section>
 
       {/* ═══════════════════════════════════════════════
           EVENTS
       ═══════════════════════════════════════════════ */}
-      <section
-        className="section-pad"
-        style={{
-          background:
-            "linear-gradient(180deg,#080808 0%,#0d0b08 60%,#080808 100%)",
-        }}>
+      <section className="home-sec" style={{
+        background: "linear-gradient(180deg,#080808 0%,#0d0b08 60%,#080808 100%)",
+      }}>
         <SectionHeader
           tag="Ongoing & Upcoming"
           title=""
@@ -1411,54 +769,219 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          TESTIMONIALS
+          ARTIST OF THE MONTH
       ═══════════════════════════════════════════════ */}
-      <section
-        className="section-pad"
-        style={{
-          background:
-            "linear-gradient(180deg,#080808 0%,#0d0b08 50%,#080808 100%)",
-        }}>
-        <SectionHeader
-          tag="Voices"
-          title="Stories we"
-          italic="carry"
-          sub="What our private collectors and curators say about acquiring art with Art Coliseum."
-        />
-        <div className="tcols-wrap">
-          <TestimonialColumn items={col1} duration={22} />
-          <TestimonialColumn items={col2} duration={28} className="tcol-md" />
-          <TestimonialColumn items={col3} duration={25} className="tcol-lg" />
+      <section className="home-sec" style={{
+        background: "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
+      }}>
+        <div className="home-launch-inner">
+          {/* Left: text */}
+          <motion.div
+            className="home-launch-text"
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            style={{ maxWidth: 520 }}>
+            <div className="gold-rule" style={{ marginBottom: 24 }}>
+              <div className="grl" style={{ background: "linear-gradient(90deg, transparent, #D4AF37)" }} />
+              <span className="grt">ARTIST OF THE MONTH</span>
+              <div className="grl" style={{ background: "linear-gradient(90deg, #D4AF37, transparent)" }} />
+            </div>
+
+            <h2 style={{
+              fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic",
+              fontSize: "clamp(48px,5vw,72px)", fontWeight: 400,
+              color: "#D4AF37", lineHeight: 1.1, margin: "0 0 14px",
+            }}>Elena Vance</h2>
+
+            <p style={{
+              fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic",
+              fontSize: 17, color: "#D4AF37", marginBottom: 24,
+            }}>
+              Florence · Oil &amp; Gold Leaf · Twelve Years in Practice
+            </p>
+
+            <p style={{
+              fontFamily: "'Cormorant Garamond',serif", fontSize: 18,
+              color: "rgba(200,191,160,0.75)", lineHeight: 1.8, marginBottom: 28,
+            }}>
+              Florence-born Elena Vance brings the Renaissance tradition into the 21st century.
+              Her latest series, 'Golden Hours', captures the interplay of light and memory across
+              twelve monumental canvases.
+            </p>
+
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 0 0", display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                "Featured in Vogue Italia & Apollo Magazine",
+                "Twelve original canvases — only three remain",
+                "Studio film & monograph included with every purchase",
+              ].map((b, i) => (
+                <li key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: "#D4AF37", flexShrink: 0,
+                  }} />
+                  <span style={{
+                    fontFamily: "'Raleway',sans-serif", fontSize: 14,
+                    color: "rgba(200,191,160,0.75)", letterSpacing: "0.03em",
+                  }}>{b}</span>
+                </li>
+              ))}
+            </ul>
+
+            <motion.button
+              className="btn-secondary"
+              style={{ marginTop: 40 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/artists/elena-vance")}>
+              VIEW ARTIST PROFILE →
+            </motion.button>
+          </motion.div>
+
+          {/* Right: photo with light golden glow */}
+          <motion.div
+            className="home-launch-visual"
+            initial={{ opacity: 0, x: 40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            style={{ display: "flex", justifyContent: "center" }}>
+            <GlowCard
+              glowColor="gold"
+              width={360}
+              height={480}
+              style={{
+                "--lightness": "88",
+                "--saturation": "85",
+                "--bg-spot-opacity": "0.18",
+                "--size": "320",
+                "--backup-border": "rgba(212,175,55,0.45)",
+                "--backdrop": "rgba(212,175,55,0.06)",
+              }}
+            >
+              <img
+                src={b2}
+                alt="Elena Vance"
+                style={{
+                  position: "absolute", inset: 0, width: "100%", height: "100%",
+                  objectFit: "cover", borderRadius: 14,
+                }}
+              />
+            </GlowCard>
+          </motion.div>
         </div>
       </section>
 
-      {/* NEWSLETTER */}
+      {/* ═══════════════════════════════════════════════
+          PRESERVATION OF ART
+      ═══════════════════════════════════════════════ */}
+      <section className="home-sec" style={{
+        background: "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
+      }}>
+        <AnimatedPreservation navigate={navigate} />
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          ART IN YOUR SPACE — CTA Gallery
+      ═══════════════════════════════════════════════ */}
+      <section className="home-sec" style={{
+        background: "linear-gradient(180deg,#080808 0%,#0d0a06 50%,#080808 100%)",
+      }}>
+        <div className="home-art-space-grid" style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          alignItems: "center",
+          gap: 64,
+          maxWidth: 1200,
+          margin: "0 auto",
+        }}>
+          {/* Left: staggered text */}
+          <ContainerStagger style={{ display: "flex", flexDirection: "column" }}>
+            <ContainerAnimated>
+              <div className="gold-rule" style={{ marginBottom: 24 }}>
+                <div className="grl" style={{ background: "linear-gradient(90deg, transparent, #D4AF37)" }} />
+                <span className="grt">ART IN YOUR SPACE</span>
+                <div className="grl" style={{ background: "linear-gradient(90deg, #D4AF37, transparent)" }} />
+              </div>
+            </ContainerAnimated>
+
+            <ContainerAnimated>
+              <h2 style={{
+                fontFamily: "'Cormorant Garamond',serif",
+                fontSize: "clamp(38px,4vw,58px)", fontWeight: 400,
+                color: "#fff", lineHeight: 1.15, margin: "0 0 18px",
+              }}>
+                Art in{" "}
+                <em style={{ color: "#D4AF37", fontStyle: "italic" }}>Your Space</em>
+              </h2>
+            </ContainerAnimated>
+
+            <ContainerAnimated>
+              <p style={{
+                fontFamily: "'Cormorant Garamond',serif", fontSize: 18,
+                color: "rgba(200,191,160,0.75)", lineHeight: 1.8, marginBottom: 28,
+              }}>
+                Visualise any masterpiece in your own environment with millimetre-accurate
+                scale and shadow simulation — before it ever leaves the studio.
+              </p>
+            </ContainerAnimated>
+
+            <ContainerAnimated>
+              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 36px", display: "flex", flexDirection: "column", gap: 14 }}>
+                {[
+                  "Millimetre-accurate scale & shadow simulation",
+                  "Save preview rooms and share with your designer",
+                  "Works on any modern smartphone — no app needed",
+                ].map((b, i) => (
+                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#D4AF37", flexShrink: 0 }} />
+                    <span style={{
+                      fontFamily: "'Raleway',sans-serif", fontSize: 14,
+                      color: "rgba(200,191,160,0.75)", letterSpacing: "0.03em",
+                    }}>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </ContainerAnimated>
+
+            <ContainerAnimated>
+              <motion.button
+                className="btn-secondary"
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate("/gallery")}>
+                EXPLORE GALLERY →
+              </motion.button>
+            </ContainerAnimated>
+          </ContainerStagger>
+
+          {/* Right: gallery grid */}
+          <GalleryGrid>
+            {[m1, m2, m3, m4].map((src, index) => (
+              <GalleryGridCell key={index} index={index} src={src} alt={`Gallery ${index + 1}`} />
+            ))}
+          </GalleryGrid>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          NEWSLETTER
+      ═══════════════════════════════════════════════ */}
       <motion.section
         className="newsletter-section"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.8 }}>
-        <div
-          className="gold-rule"
-          style={{ justifyContent: "center", marginBottom: 22 }}>
-          <div
-            className="grl"
-            style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }}
-          />
+        <div className="gold-rule" style={{ justifyContent: "center", marginBottom: 22 }}>
+          <div className="grl" style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }} />
           <span className="grt">Newsletter</span>
-          <div
-            className="grl"
-            style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }}
-          />
+          <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
         </div>
-        <h2 className="section-heading" style={{ marginBottom: 14 }}>
-          Stay <em>Cultivated</em>
-        </h2>
-        <p className="newsletter-sub">
-          Receive exclusive invitations to private viewings and new artist
-          debuts.
-        </p>
+        <h2 className="section-heading" style={{ marginBottom: 14 }}>Stay <em>Cultivated</em></h2>
+        <p className="newsletter-sub">Receive exclusive invitations to private viewings and new artist debuts.</p>
         <div className="newsletter-form">
           <input
             className="email-input"
@@ -1476,6 +999,7 @@ export default function Home() {
           </motion.button>
         </div>
       </motion.section>
+
 
       {/* ═══════════════════════════════════════════════
           REGISTER MODAL
@@ -1500,69 +1024,25 @@ export default function Home() {
                   <div className="reg-success-icon">✓</div>
                   <h3 className="reg-success-title">Registered!</h3>
                   <p className="reg-success-desc">
-                    You've been registered for <em>{registerEvent.title}</em>.
-                    We'll be in touch soon.
+                    You've been registered for <em>{registerEvent.title}</em>. We'll be in touch soon.
                   </p>
                 </div>
               ) : (
                 <>
                   <div className="reg-modal-header">
-                    <button
-                      className="reg-modal-close"
-                      onClick={() => setRegisterEvent(null)}>
-                      ×
-                    </button>
+                    <button className="reg-modal-close" onClick={() => setRegisterEvent(null)}>×</button>
                     <div className="reg-modal-tag">EVENT REGISTRATION</div>
                     <h3 className="reg-modal-title">{registerEvent.title}</h3>
-                    <div className="reg-modal-meta">
-                      {registerEvent.location} · {registerEvent.date}
-                    </div>
+                    <div className="reg-modal-meta">{registerEvent.location} · {registerEvent.date}</div>
                   </div>
                   <form className="reg-form" onSubmit={handleRegSubmit}>
                     <div className="reg-form-row">
-                      <input
-                        className="reg-input"
-                        required
-                        placeholder="Full Name"
-                        value={regForm.name}
-                        onChange={(e) =>
-                          setRegForm((f) => ({ ...f, name: e.target.value }))
-                        }
-                      />
-                      <input
-                        className="reg-input"
-                        required
-                        type="email"
-                        placeholder="Email Address"
-                        value={regForm.email}
-                        onChange={(e) =>
-                          setRegForm((f) => ({ ...f, email: e.target.value }))
-                        }
-                      />
+                      <input className="reg-input" required placeholder="Full Name" value={regForm.name} onChange={(e) => setRegForm(f => ({ ...f, name: e.target.value }))} />
+                      <input className="reg-input" required type="email" placeholder="Email Address" value={regForm.email} onChange={(e) => setRegForm(f => ({ ...f, email: e.target.value }))} />
                     </div>
-                    <input
-                      className="reg-input"
-                      placeholder="Phone Number"
-                      value={regForm.phone}
-                      onChange={(e) =>
-                        setRegForm((f) => ({ ...f, phone: e.target.value }))
-                      }
-                    />
-                    <textarea
-                      className="reg-input reg-textarea"
-                      placeholder="Message (optional)"
-                      rows={3}
-                      value={regForm.message}
-                      onChange={(e) =>
-                        setRegForm((f) => ({ ...f, message: e.target.value }))
-                      }
-                    />
-                    <motion.button
-                      type="submit"
-                      className="btn-primary"
-                      style={{ width: "100%", marginTop: 8 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}>
+                    <input className="reg-input" placeholder="Phone Number" value={regForm.phone} onChange={(e) => setRegForm(f => ({ ...f, phone: e.target.value }))} />
+                    <textarea className="reg-input reg-textarea" placeholder="Message (optional)" rows={3} value={regForm.message} onChange={(e) => setRegForm(f => ({ ...f, message: e.target.value }))} />
+                    <motion.button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 8 }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                       CONFIRM REGISTRATION →
                     </motion.button>
                   </form>

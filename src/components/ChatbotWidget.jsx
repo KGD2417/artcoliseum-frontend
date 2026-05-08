@@ -101,6 +101,13 @@ export default function ChatbotWidget() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
+  // Open via custom event fired from other pages (e.g. product enquiry)
+  useEffect(() => {
+    function onOpenChat() { setOpen(true); }
+    window.addEventListener("open-artcoliseum-chat", onOpenChat);
+    return () => window.removeEventListener("open-artcoliseum-chat", onOpenChat);
+  }, []);
+
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed) return;

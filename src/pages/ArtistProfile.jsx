@@ -35,17 +35,11 @@ const WORKS = [
   { id: "frag-6", title: "Fragmented Memory",        medium: "PLASTER AND LIGHT INSTALLATION",    price: null,  label: "Available at Auction", img: i5, status: "auction" },
 ];
 
-const FILTERS = [
-  { id: "all",       label: "ALL WORKS" },
-  { id: "available", label: "AVAILABLE" },
-  { id: "archive",   label: "ARCHIVE" },
-];
 
 export default function ArtistProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const artist = ARTISTS[id] || ARTISTS["elena-vance"];
-  const [filter, setFilter] = useState("all");
   const [email, setEmail] = useState("");
   const [search, setSearch] = useState("");
   const [shareCopied, setShareCopied] = useState(false);
@@ -64,8 +58,6 @@ export default function ArtistProfile() {
   };
 
   const filtered = WORKS.filter(w => {
-    const statusMatch = filter === "all" ? true : filter === "available" ? w.status === "available" : w.status !== "available";
-    if (!statusMatch) return false;
     if (search.trim()) {
       const t = search.trim().toLowerCase();
       return `${w.title} ${w.medium}`.toLowerCase().includes(t);
@@ -179,18 +171,6 @@ export default function ArtistProfile() {
               }}
             />
           </div>
-          {FILTERS.map(f => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              style={{
-                background: "transparent", border: "none", cursor: "pointer",
-                fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em",
-                color: filter === f.id ? "#D4AF37" : "rgba(200,191,160,0.55)",
-                paddingBottom: 4,
-                borderBottom: filter === f.id ? "1px solid #D4AF37" : "1px solid transparent",
-              }}>{f.label}</button>
-          ))}
         </div>
       </div>
 

@@ -344,7 +344,13 @@ a {
    SECTION UTILITIES
 ═══════════════════════════════════════════════ */
 .section-pad {
-  padding: 90px 52px 110px;
+  padding: 100px 48px;
+  position: relative;
+}
+
+/* Universal home section rhythm */
+.home-sec {
+  padding: 100px 48px;
   position: relative;
 }
 
@@ -1225,7 +1231,7 @@ a {
    NEWSLETTER
 ═══════════════════════════════════════════════ */
 .newsletter-section {
-  padding: 110px 24px;
+  padding: 100px 48px;
   text-align: center;
   border-top: 1px solid rgba(139, 122, 69, 0.1);
   background: radial-gradient(
@@ -1442,9 +1448,12 @@ a {
 }
 
 @media (max-width: 900px) {
-  .section-pad {
-    padding: 60px 28px 80px;
+  .section-pad,
+  .home-sec {
+    padding: 70px 28px;
   }
+  .about-col-section { padding: 70px 28px !important; }
+  .home-art-space-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
   .stats-bar {
     flex-wrap: wrap;
   }
@@ -2283,7 +2292,7 @@ input[type="email"] {
   position: relative;
   width: 100%;
   height: 520px;
-  margin: 36px auto 12px;
+  margin: 36px auto 0;
   z-index: 2;
 }
 .circ-gallery-wrap::before,
@@ -2871,7 +2880,7 @@ input[type="email"] {
    ABOUT ARRT COLISEUM — two-column stacked cards
 ═══════════════════════════════════════════════ */
 .about-col-section {
-  padding: 100px 24px;
+  padding: 100px 48px;
   background: linear-gradient(180deg, #080808 0%, #0c0a07 50%, #080808 100%);
 }
 .about-col-inner {
@@ -3245,7 +3254,7 @@ input[type="email"] {
 }
 .ev-page-hero {
   text-align: center;
-  padding: 80px 24px 60px;
+  padding: 32px 24px 40px;
 }
 .ev-page-h1 {
   font-family: "Cormorant Garamond", serif;
@@ -4302,7 +4311,7 @@ input[type="email"] {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 120px 24px;
+  padding: 0 24px;
   min-height: 640px;
   display: flex;
   align-items: center;
@@ -4832,4 +4841,179 @@ input[type="email"] {
 }
 .ev-tab.is-active .ev-tab-count {
   color: #d4af37;
+}
+
+/* ── Launch of New Product layout ────────────────────────────────── */
+.home-launch-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.home-launch-visual {
+  flex: 0 0 auto;
+  width: 360px;
+}
+.home-launch-text {
+  flex: 1 1 340px;
+  max-width: 520px;
+}
+
+/* Hide scrollbar on mobile strip */
+.home-seasons-strip::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════════════
+   GLOBAL MOBILE RESPONSIVENESS — 640px and below
+═══════════════════════════════════════════════ */
+
+/* Base mobile resets */
+@media (max-width: 640px) {
+  * { box-sizing: border-box; }
+
+  /* ── Navigation ── */
+  .nav-inner { padding: 0 16px !important; }
+
+  /* ── Hero sections ── */
+  .art-hero { height: 260px !important; min-height: 260px !important; }
+  .art-hero h1 { font-size: clamp(36px, 10vw, 56px) !important; }
+  .art-hero-padding { padding: 0 20px 28px !important; }
+
+  /* ── Tab pills ── */
+  .art-tabs-row { gap: 6px !important; margin-bottom: 20px !important; }
+  .art-tab-pill { padding: 8px 12px !important; font-size: 8px !important; }
+
+  /* ── Info slide panel ── */
+  .art-slide-panel {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+  .art-slide-img { display: none !important; }
+  .art-slide-content { padding: 28px 20px !important; border-left: none !important; }
+  .art-slide-content h2 { font-size: 28px !important; }
+
+  /* ── Styles grid ── */
+  .art-styles-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+
+  /* ── Main container padding ── */
+  .art-main-container { padding: 28px 16px 60px !important; }
+
+  /* ── Gallery grid ── */
+  .gallery-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Product detail ── */
+  .pd-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
+  .pd-artist { grid-template-columns: 1fr !important; text-align: center; }
+  .pd-artist img { margin: 0 auto 16px !important; width: 120px !important; height: 120px !important; }
+  .pd-custom-grid { grid-template-columns: 1fr !important; }
+  .pd-wall-row { flex-wrap: wrap !important; gap: 8px !important; }
+  .pd-wall-row input, .pd-wall-row select { flex: 1 1 40% !important; }
+  .pd-wall-row button { flex: 1 1 100% !important; }
+  .pd-btn-row { grid-template-columns: 1fr !important; }
+
+  /* ── Home page — uniform section padding ── */
+  .home-sec,
+  .home-inline-section,
+  .section-pad,
+  .about-col-section,
+  .newsletter-section { padding: 60px 16px !important; }
+  .home-section { padding: 60px 16px !important; }
+  .home-two-col { flex-direction: column !important; gap: 32px !important; }
+  .home-two-col > * { width: 100% !important; }
+
+  /* Art in Your Space grid → single column */
+  .home-art-space-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+
+  /* ── Category cards ── */
+  .cat-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+
+  /* ── SubTypeDetail gallery ── */
+  .sub-gallery-grid { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 480px) {
+  .art-styles-grid { grid-template-columns: 1fr !important; }
+  .cat-grid { grid-template-columns: 1fr !important; }
+
+  /* Events grid → single column */
+  .ev-page-grid { grid-template-columns: 1fr !important; padding: 0 12px 60px !important; }
+  .ev-page-hero { padding: 100px 16px 40px !important; }
+
+  /* Community */
+  .community-body { padding: 32px 16px 80px !important; }
+  .community-hero { padding: 110px 16px 44px !important; }
+}
+
+/* ── Tablet (641–900px) ── */
+@media (min-width: 641px) and (max-width: 900px) {
+  .art-slide-panel {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+  .art-slide-img { display: none !important; }
+  .art-slide-content { padding: 32px 28px !important; border-left: none !important; }
+  .art-main-container { padding: 36px 28px 80px !important; }
+  .art-styles-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+  .pd-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .pd-custom-grid { grid-template-columns: 1fr 1fr !important; }
+  .home-section { padding: 70px 28px !important; }
+  .home-two-col { gap: 40px !important; }
+  .home-art-space-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+
+  /* Events */
+  .ev-page-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Launch section on tablet */
+  .home-launch-inner { gap: 48px !important; }
+  .home-launch-visual { width: 300px !important; }
+
+  /* SubTypeDetail hero */
+  .art-hero { height: 320px !important; }
+  .art-main-container { padding: 36px 24px 80px !important; }
+}
+
+/* ── Universal overflow guard ── */
+@media (max-width: 640px) {
+  /* Events: 3-col → 1-col */
+  .ev-page-grid { grid-template-columns: 1fr !important; padding: 0 14px 60px !important; }
+  .ev-page-hero { padding: 100px 16px 40px !important; }
+
+  /* Community hero & body padding */
+  .community-hero { padding: 110px 16px 44px !important; }
+  .community-body { padding: 32px 16px 80px !important; }
+
+  /* Home inline-padded sections */
+  .home-inline-section { padding: 60px 16px !important; }
+
+  /* Launch of New Product — stack vertically */
+  .home-launch-inner {
+    flex-direction: column !important;
+    gap: 36px !important;
+    align-items: stretch !important;
+  }
+  .home-launch-visual {
+    width: 100% !important;
+    max-width: 340px !important;
+    margin: 0 auto !important;
+  }
+  .home-launch-text {
+    flex: none !important;
+    max-width: 100% !important;
+    text-align: center !important;
+  }
+  .home-launch-text .gold-rule { justify-content: center !important; }
+  .home-launch-text ul { text-align: left !important; }
+  .home-launch-text .btn-secondary { margin-left: auto !important; margin-right: auto !important; display: block !important; text-align: center !important; }
+
+  /* ProductDetail section padding */
+  section.pd-section { padding: 80px 14px 60px !important; }
+
+  /* Hero breadcrumb text */
+  .art-hero-padding { padding: 0 16px 24px !important; }
+  .art-hero-padding h1 { font-size: clamp(34px,9vw,56px) !important; }
+
+  /* General overflow prevention */
+  img { max-width: 100%; }
+  .home-carousel-card { width: 100% !important; max-width: 340px !important; margin: 0 auto; }
 }

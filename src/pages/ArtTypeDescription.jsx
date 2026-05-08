@@ -331,318 +331,298 @@ const MEDIUM_DATA = {
   },
 };
 
+const TAB_ICONS = ["✦", "◆", "✳", "◈", "❖", "◇"];
+
 export default function ArtTypeDescription() {
   const { medium } = useParams();
   const navigate = useNavigate();
   const data = MEDIUM_DATA[medium] || MEDIUM_DATA.paintings;
-  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState(0);
 
-  const filtered = data.subtypes.filter((s) =>
-    !search.trim()
-      ? true
-      : `${s.label} ${s.desc}`.toLowerCase().includes(search.trim().toLowerCase())
-  );
+  const tabs = [
+    {
+      label: "About the Art",
+      heading: `The Art of ${data.title}`,
+      body: data.origin[0],
+      img: data.heroImg,
+    },
+    {
+      label: "History & Origins",
+      heading: "Ancient Beginnings",
+      body: data.origin[1] || data.origin[0],
+      img: data.heroImg,
+    },
+    {
+      label: "Modern Era",
+      heading: "Into the Modern Era",
+      body: data.origin[2] || data.origin[1],
+      img: data.heroImg,
+    },
+    {
+      label: "Pioneers & Masters",
+      heading: "The Great Masters",
+      body: data.pioneers.join("  ·  "),
+      img: data.heroImg,
+      isPioneers: true,
+    },
+  ];
+
+  const current = tabs[activeTab];
+  const go = (dir) => setActiveTab(i => Math.max(0, Math.min(tabs.length - 1, i + dir)));
 
   return (
     <div style={{ background: "#080808", minHeight: "100vh" }}>
+
       {/* HERO */}
-      <div style={{ position: "relative", height: 520, overflow: "hidden" }}>
-        <img
-          src={data.heroImg}
-          alt={data.title}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-        />
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "linear-gradient(to bottom, rgba(8,8,8,0.3) 0%, rgba(8,8,8,0.6) 50%, rgba(8,8,8,1) 100%)",
-        }} />
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
-          padding: "0 48px 52px",
-          maxWidth: 1280, margin: "0 auto",
-        }}>
-          {/* Breadcrumb */}
-          <div style={{
-            fontFamily: "'Raleway',sans-serif", fontSize: 12,
-            color: "rgba(200,191,160,0.55)", marginBottom: 18,
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <Link to="/categories" style={{ color: "rgba(200,191,160,0.55)" }}>Collections</Link>
+      <div className="art-hero" style={{ position: "relative", height: 440, overflow: "hidden" }}>
+        <img src={data.heroImg} alt={data.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(8,8,8,0.25) 0%, rgba(8,8,8,0.55) 50%, rgba(8,8,8,1) 100%)" }} />
+        <div className="art-hero-padding" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 56px 48px", maxWidth: 1320, margin: "0 auto" }}>
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+            <Link to="/categories" style={{ color: "rgba(200,191,160,0.5)", textDecoration: "none" }}>Collections</Link>
             <span style={{ color: "rgba(212,175,55,0.4)" }}>›</span>
             <span style={{ color: "#D4AF37" }}>{data.title}</span>
           </div>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}>
-            <div style={{
-              fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.22em",
-              color: "#D4AF37", marginBottom: 14,
-            }}>
-              {data.label}
-            </div>
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(52px,7vw,88px)",
-              fontWeight: 700, color: "#fff", lineHeight: 0.95, letterSpacing: "-0.01em",
-            }}>
+          <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.24em", color: "#D4AF37", marginBottom: 12 }}>{data.label}</div>
+            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(52px,6vw,84px)", fontWeight: 700, color: "#fff", lineHeight: 0.95, letterSpacing: "-0.01em", margin: 0 }}>
               {data.title}
             </h1>
           </motion.div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 48px 100px" }}>
+      {/* TABBED SECTION */}
+      <div className="art-main-container" style={{ maxWidth: 1320, margin: "0 auto", padding: "48px 56px 100px" }}>
 
-        {/* Gold divider */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, margin: "52px 0 48px" }}>
-          <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.5))" }} />
-          <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.22em", color: "#D4AF37" }}>HISTORY & ORIGINS</span>
-          <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(212,175,55,0.5), transparent)" }} />
-        </div>
-
-        {/* Origin / History */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 32, marginBottom: 60 }}>
-          {data.origin.map((para, i) => (
-            <motion.p
+        {/* Tab pills */}
+        <div className="art-tabs-row" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 36 }}>
+          {tabs.map((tab, i) => (
+            <motion.button
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
+              onClick={() => setActiveTab(i)}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               style={{
-                fontFamily: "'Cormorant Garamond',serif", fontSize: 17,
-                color: "rgba(200,191,160,0.8)", lineHeight: 1.85,
-                borderLeft: i === 0 ? "2px solid rgba(212,175,55,0.4)" : "none",
-                paddingLeft: i === 0 ? 20 : 0,
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "10px 20px",
+                background: activeTab === i ? "rgba(212,175,55,0.08)" : "transparent",
+                border: `1px solid ${activeTab === i ? "#D4AF37" : "rgba(212,175,55,0.2)"}`,
+                borderRadius: 999, cursor: "pointer",
+                fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em",
+                color: activeTab === i ? "#D4AF37" : "rgba(200,191,160,0.45)",
+                transition: "all 0.2s",
               }}>
-              {para}
-            </motion.p>
+              <span style={{ fontSize: 9 }}>{TAB_ICONS[i]}</span>
+              {tab.label.toUpperCase()}
+              <span style={{ fontSize: 9, opacity: 0.6 }}>{String(i + 1).padStart(2, "0")}</span>
+            </motion.button>
           ))}
         </div>
 
-        {/* Pioneers */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          style={{
-            background: "rgba(212,175,55,0.04)",
-            border: "1px solid rgba(212,175,55,0.18)",
-            borderRadius: 16,
-            padding: "36px 40px",
-            marginBottom: 72,
-          }}>
-          <div style={{
-            fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.22em",
-            color: "#D4AF37", marginBottom: 20,
-          }}>
-            PIONEERS & MASTERS
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {data.pioneers.map((name) => (
-              <span key={name} style={{
-                fontFamily: "'Cormorant Garamond',serif", fontSize: 15,
-                color: "rgba(200,191,160,0.85)",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(212,175,55,0.2)",
-                borderRadius: 999,
-                padding: "8px 18px",
-                letterSpacing: "0.03em",
+        {/* Slide panel */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.35 }}
+            className="art-slide-panel"
+            style={{
+              display: "grid", gridTemplateColumns: "1fr 1fr",
+              border: "1px solid rgba(212,175,55,0.15)",
+              borderRadius: 20, overflow: "hidden",
+              background: "rgba(255,255,255,0.018)",
+              height: 560,
+            }}>
+
+            {/* Left: Image panel */}
+            <div className="art-slide-img" style={{
+              position: "relative", overflow: "hidden",
+              background: "#0d0b08",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: 36,
+            }}>
+              <div style={{
+                width: "100%", height: "100%", position: "absolute", inset: 0,
+                background: "radial-gradient(ellipse at center, rgba(212,175,55,0.06) 0%, transparent 70%)",
+              }} />
+              <motion.img
+                key={current.img}
+                initial={{ scale: 1.06, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.6 }}
+                src={current.img}
+                alt=""
+                style={{
+                  width: "100%", height: "100%", objectFit: "cover",
+                  borderRadius: 12, display: "block", position: "relative", zIndex: 1,
+                  boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+                }}
+              />
+              {/* Bottom label */}
+              <div style={{
+                position: "absolute", bottom: 28, left: 28, zIndex: 2,
+                display: "flex", alignItems: "center", gap: 8,
+                background: "rgba(8,8,8,0.75)",
+                border: "1px solid rgba(212,175,55,0.3)",
+                borderRadius: 999, padding: "7px 16px",
               }}>
-                {name}
-              </span>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Subtypes header + search */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 36, flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <div style={{
-              fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.22em",
-              color: "#D4AF37", marginBottom: 10,
-            }}>
-              EXPLORE STYLES
+                <span style={{ color: "#D4AF37", fontSize: 9 }}>◆</span>
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37" }}>
+                  {current.label.toUpperCase()}
+                </span>
+              </div>
             </div>
-            <h2 style={{
-              fontFamily: "'Cormorant Garamond',serif", fontSize: 42,
-              fontWeight: 700, color: "#fff", lineHeight: 1,
-            }}>
-              {data.title} <em style={{ fontWeight: 300 }}>Sub-Categories</em>
-            </h2>
-          </div>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 18px",
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(212,175,55,0.25)",
-            borderRadius: 999,
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(212,175,55,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Search ${data.title.toLowerCase()}…`}
-              style={{
-                background: "transparent", border: "none", outline: "none",
-                color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13,
-                width: 200,
-              }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{
-                background: "none", border: "none", color: "rgba(200,191,160,0.5)",
-                cursor: "pointer", fontSize: 16, padding: 0, lineHeight: 1,
-              }}>×</button>
-            )}
-          </div>
-        </div>
 
-        {/* Subtype grid */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-          gap: 24,
-          marginBottom: 60,
-        }}>
-          <AnimatePresence>
-            {filtered.map((s, i) => (
-              <motion.div
+            {/* Right: Content panel */}
+            <div className="art-slide-content" style={{
+              padding: "40px 52px",
+              display: "flex", flexDirection: "column", justifyContent: "space-between",
+              borderLeft: "1px solid rgba(212,175,55,0.1)",
+              height: "100%",
+              boxSizing: "border-box",
+            }}>
+              {/* Centered content block */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                {/* Section label */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                  <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, color: "rgba(212,175,55,0.5)", fontStyle: "italic" }}>
+                    {String(activeTab + 1).padStart(2, "0")}
+                  </span>
+                  <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.22em", color: "#D4AF37" }}>
+                    {current.label.toUpperCase()}
+                  </span>
+                </div>
+
+                {/* Heading */}
+                <h2 style={{
+                  fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(32px,3vw,46px)",
+                  fontWeight: 700, color: "#fff", lineHeight: 1.05,
+                  margin: "0 0 20px", letterSpacing: "-0.01em",
+                }}>
+                  {current.heading}
+                </h2>
+
+                {/* Body */}
+                {current.isPioneers ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+                    {data.pioneers.map((name) => (
+                      <span key={name} style={{
+                        fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontStyle: "italic",
+                        color: "rgba(200,191,160,0.75)",
+                        background: "rgba(212,175,55,0.06)",
+                        border: "1px solid rgba(212,175,55,0.15)",
+                        borderRadius: 999, padding: "5px 14px",
+                      }}>{name}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{
+                    fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontStyle: "italic",
+                    color: "rgba(200,191,160,0.78)", lineHeight: 1.8, margin: "0 0 24px",
+                  }}>
+                    {current.body}
+                  </p>
+                )}
+
+                {/* Gold accent line */}
+                <div style={{ width: 64, height: 2, background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
+              </div>
+
+              {/* Navigation — pinned to bottom */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 24 }}>
+                <motion.button
+                  onClick={() => go(-1)}
+                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
+                  disabled={activeTab === 0}
+                  style={{
+                    width: 44, height: 44, borderRadius: "50%",
+                    background: activeTab === 0 ? "rgba(255,255,255,0.03)" : "rgba(212,175,55,0.08)",
+                    border: `1px solid ${activeTab === 0 ? "rgba(212,175,55,0.1)" : "rgba(212,175,55,0.35)"}`,
+                    color: activeTab === 0 ? "rgba(200,191,160,0.2)" : "#D4AF37",
+                    cursor: activeTab === 0 ? "default" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "serif", fontSize: 18, transition: "all 0.2s",
+                  }}>←</motion.button>
+
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "rgba(200,191,160,0.4)" }}>
+                  {String(activeTab + 1).padStart(2, "0")} / {String(tabs.length).padStart(2, "0")}
+                </span>
+
+                <motion.button
+                  onClick={() => go(1)}
+                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
+                  disabled={activeTab === tabs.length - 1}
+                  style={{
+                    width: 44, height: 44, borderRadius: "50%",
+                    background: activeTab === tabs.length - 1 ? "rgba(255,255,255,0.03)" : "rgba(212,175,55,0.08)",
+                    border: `1px solid ${activeTab === tabs.length - 1 ? "rgba(212,175,55,0.1)" : "rgba(212,175,55,0.35)"}`,
+                    color: activeTab === tabs.length - 1 ? "rgba(200,191,160,0.2)" : "#D4AF37",
+                    cursor: activeTab === tabs.length - 1 ? "default" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "serif", fontSize: 18, transition: "all 0.2s",
+                  }}>→</motion.button>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* STYLES & FORMS — separate section */}
+        <div style={{ marginTop: 72 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 36 }}>
+            <div style={{ width: 32, height: 1, background: "rgba(212,175,55,0.4)" }} />
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.24em", color: "#D4AF37" }}>STYLES & FORMS</span>
+            <div style={{ flex: 1, height: 1, background: "rgba(212,175,55,0.15)" }} />
+            <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontStyle: "italic", color: "rgba(200,191,160,0.4)" }}>
+              {data.subtypes.length} Distinct Styles
+            </span>
+          </div>
+          <div className="art-styles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            {data.subtypes.map(s => (
+              <div
                 key={s.slug}
-                layout
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.5, delay: (i % 3) * 0.07 }}
-                whileHover={{ y: -8, boxShadow: "0 24px 50px rgba(0,0,0,0.6)" }}
                 onClick={() => navigate(`/categories/${medium}/${s.slug}`)}
                 style={{
                   position: "relative", overflow: "hidden",
-                  borderRadius: 12, cursor: "pointer",
-                  border: "1px solid rgba(212,175,55,0.15)",
-                  background: "#0e0c0a",
+                  borderRadius: 14, cursor: "pointer",
+                  border: "1px solid rgba(212,175,55,0.12)",
+                  aspectRatio: "4/3",
+                  transition: "border-color 0.25s, transform 0.25s, box-shadow 0.25s",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)";
+                  e.currentTarget.style.transform = "scale(1.025)";
+                  e.currentTarget.style.boxShadow = "0 16px 48px rgba(0,0,0,0.5)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = "rgba(212,175,55,0.12)";
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}>
-                {/* Image */}
-                <div style={{ height: 220, overflow: "hidden", position: "relative" }}>
-                  <img
-                    src={s.img}
-                    alt={s.label}
-                    style={{
-                      width: "100%", height: "100%", objectFit: "cover",
-                      display: "block", transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)",
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.06)")}
-                    onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
-                  />
-                  <div style={{
-                    position: "absolute", inset: 0,
-                    background: "linear-gradient(to bottom, transparent 50%, rgba(8,8,8,0.8) 100%)",
-                  }} />
-                  {/* Count badge */}
-                  <div style={{
-                    position: "absolute", top: 14, right: 14,
-                    background: "rgba(8,8,8,0.75)",
-                    border: "1px solid rgba(212,175,55,0.35)",
-                    borderRadius: 999,
-                    padding: "4px 12px",
-                    fontFamily: "'Cinzel',serif", fontSize: 9,
-                    letterSpacing: "0.16em", color: "#D4AF37",
-                  }}>
-                    {s.count} WORKS
-                  </div>
+                <img src={s.img} alt={s.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.9) 0%, rgba(8,8,8,0.15) 60%)" }} />
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "14px 16px" }}>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{s.label}</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 4 }}>{s.count} WORKS</div>
                 </div>
-                {/* Text */}
-                <div style={{ padding: "22px 24px 24px" }}>
-                  <h3 style={{
-                    fontFamily: "'Cormorant Garamond',serif", fontSize: 24,
-                    fontWeight: 700, color: "#fff", marginBottom: 10, lineHeight: 1.1,
-                  }}>
-                    {s.label}
-                  </h3>
-                  <p style={{
-                    fontFamily: "'Raleway',sans-serif", fontSize: 13,
-                    color: "rgba(200,191,160,0.65)", lineHeight: 1.7,
-                    marginBottom: 18,
-                  }}>
-                    {s.desc}
-                  </p>
-                  <div style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                  }}>
-                    <span style={{
-                      fontFamily: "'Cinzel',serif", fontSize: 9,
-                      letterSpacing: "0.2em", color: "#D4AF37",
-                    }}>
-                      EXPLORE COLLECTION →
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
+              </div>
             ))}
-          </AnimatePresence>
-          {filtered.length === 0 && (
-            <div style={{
-              gridColumn: "1/-1", textAlign: "center",
-              padding: "60px 0",
-              color: "rgba(200,191,160,0.4)",
-              fontFamily: "'Raleway',sans-serif", fontSize: 14,
-            }}>
-              No styles found for "{search}"
-            </div>
-          )}
+          </div>
         </div>
 
         {/* CTA row */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          gap: 20, flexWrap: "wrap",
-          paddingTop: 20,
-          borderTop: "1px solid rgba(212,175,55,0.12)",
-        }}>
-          <Link to="/categories" style={{
-            fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
-            color: "rgba(200,191,160,0.5)",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, flexWrap: "wrap", paddingTop: 48, borderTop: "1px solid rgba(212,175,55,0.1)", marginTop: 48 }}>
+          <Link to="/categories" style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "rgba(200,191,160,0.4)", textDecoration: "none" }}>
             ← BACK TO COLLECTIONS
           </Link>
           <motion.button
-            whileHover={{ scale: 1.04, boxShadow: "0 12px 36px rgba(212,175,55,0.35)" }}
+            whileHover={{ scale: 1.04, boxShadow: "0 12px 36px rgba(212,175,55,0.3)" }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate(`/gallery?medium=${medium}`)}
-            style={{
-              padding: "15px 40px",
-              background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-              color: "#0e0c0a",
-              border: "none",
-              borderRadius: 999,
-              fontFamily: "'Cinzel',serif", fontSize: 11,
-              letterSpacing: "0.2em",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}>
+            style={{ padding: "14px 40px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#0e0c0a", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", fontWeight: 600, cursor: "pointer" }}>
             EXPLORE ALL {data.title.toUpperCase()}
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate(`/gallery?medium=${medium}`)}
-            style={{
-              padding: "15px 40px",
-              background: "transparent",
-              color: "#D4AF37",
-              border: "1px solid rgba(212,175,55,0.4)",
-              borderRadius: 999,
-              fontFamily: "'Cinzel',serif", fontSize: 11,
-              letterSpacing: "0.2em",
-              cursor: "pointer",
-            }}>
-            ENTER COLLECTION
           </motion.button>
         </div>
       </div>

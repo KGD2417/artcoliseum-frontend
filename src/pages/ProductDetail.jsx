@@ -22,6 +22,23 @@ const ARTWORK_MAP = {
   p7: { title: "Whispers of Silence", artist: "Lena Bach", year: "2025", price: 7600, images: [i5, i1, i6, i4], medium: "Oil on Canvas", dimensions: "50 × 50 cm", description: "A near-monochromatic study where barely perceptible brushwork creates an atmosphere of profound stillness." },
   p8: { title: "Renaissance Study", artist: "Elena Rossi", year: "2023", price: 19500, images: [i8, i6, i1, i4], medium: "Oil on Panel", dimensions: "80 × 60 cm", description: "Old-master technique meets contemporary subject matter — a daring recontextualisation of 15th century portraiture." },
   p9: { title: "Ocean Depths", artist: "Hideo Tanaka", year: "2024", price: 5400, images: [i7, i6, i1, i4], medium: "Archival Digital Print", dimensions: "70 × 50 cm", description: "Algorithmically generated depth maps transformed into a high-definition archival print, evoking the abyssal ocean floor." },
+  // Oil on Canvas gallery items
+  o1: { title: "The Golden Meadow", artist: "Claire Bouchard", year: "2024", price: 11200, images: ["https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "120 × 90 cm", description: "A luminous pastoral landscape rendered in layered glazes of cadmium yellow and viridian, evoking the golden light of late afternoon." },
+  o2: { title: "Storm Over the Valley", artist: "Henry Ashford", year: "2023", price: 18600, images: ["https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80","https://images.unsplash.com/photo-1567359781514-3b964e2b04d6?w=1200&q=80"], medium: "Oil on Linen", dimensions: "150 × 100 cm", description: "Churning cloud formations rendered in thick impasto, the canvas surface alive with the physical urgency of the mark." },
+  o3: { title: "Interior with Red", artist: "Marta Voss", year: "2025", price: 9400, images: ["https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "80 × 80 cm", description: "A meditation on domestic space — the room as psychological interior, the red as both colour and feeling." },
+  o4: { title: "Portrait of the Afternoon", artist: "Elena Rossi", year: "2024", price: 7800, images: ["https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"], medium: "Oil on Board", dimensions: "60 × 50 cm", description: "Loosely painted figures dissolve into the warm light of a summer afternoon, form surrendering to atmosphere." },
+  o5: { title: "The Old Harbour", artist: "James Calloway", year: "2023", price: 13500, images: ["https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "100 × 70 cm", description: "Working boats at rest in the harbour, the still water a mirror of masts and sky — a study in horizontal calm." },
+  o6: { title: "Nocturne in Blue", artist: "Lena Bach", year: "2024", price: 10200, images: ["https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "90 × 90 cm", description: "A nocturnal composition of deep Prussian blue and silver, the night reduced to its most essential tonal architecture." },
+  o7: { title: "The Ancient Tree", artist: "Chen Wei", year: "2025", price: 16400, images: ["https://images.unsplash.com/photo-1567359781514-3b964e2b04d6?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Oil on Linen", dimensions: "140 × 100 cm", description: "A solitary oak recorded with the patient attention of the naturalist and the emotional depth of the romantic." },
+  o8: { title: "Figure Study No. 7", artist: "Marcus Thomas", year: "2024", price: 8900, images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "70 × 50 cm", description: "The human form in repose — painted with the directness of Freud and the tonal sensitivity of Rembrandt." },
+  o9: { title: "Seascape at Dusk", artist: "Ingrid Halvor", year: "2023", price: 14800, images: ["https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1567359781514-3b964e2b04d6?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "110 × 80 cm", description: "The horizon line as the painting's true subject — a thin band of gold between the weight of sea and sky." },
+  // Default gallery fallback items
+  d1: { title: "Ethereal Horizon", artist: "Marcus Thomas", year: "2024", price: 8400, images: ["https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Mixed Media", dimensions: "120 × 90 cm", description: "A sweeping composition that dissolves the boundary between sky and sea, evoking an infinite sense of calm and possibility." },
+  d2: { title: "Fractured Silence", artist: "Elena Vance", year: "2023", price: 12500, images: ["https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80"], medium: "Mixed Media", dimensions: "100 × 80 cm", description: "Layered textures coalesce into a meditation on memory and the spaces between sound." },
+  d3: { title: "Obsidian Flow", artist: "Julian Aris", year: "2024", price: 16800, images: ["https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"], medium: "Mixed Media", dimensions: "150 × 100 cm", description: "Dark pigments pour and solidify, channelling the raw energy of volcanic geology." },
+  d4: { title: "The Golden Tree", artist: "Chen Wei", year: "2024", price: 14200, images: ["https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80"], medium: "Mixed Media", dimensions: "90 × 70 cm", description: "An ancient form rendered in luminous gold and amber, standing as a symbol of endurance." },
+  d5: { title: "Whispers of Silence", artist: "Lena Bach", year: "2025", price: 7600, images: ["https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Mixed Media", dimensions: "50 × 50 cm", description: "A near-monochromatic study where barely perceptible marks create an atmosphere of profound stillness." },
+  d6: { title: "Renaissance Study", artist: "Elena Rossi", year: "2023", price: 19500, images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80"], medium: "Mixed Media", dimensions: "80 × 60 cm", description: "Old-master technique meets contemporary subject matter." },
 };
 
 const FALLBACK_PRODUCT = {
@@ -77,17 +94,27 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const [activeImg, setActiveImg] = useState(0);
   const [favorited, setFavorited] = useState(false);
-  const [enquiryStep, setEnquiryStep] = useState(0); // 0=closed, 1-4=steps
-  const [enquiryForm, setEnquiryForm] = useState({ name: "", email: "", phone: "", message: "" });
-  const [customForm, setCustomForm] = useState({
-    size: "Standard (as listed)",
-    material: "Original medium",
-    frame: "No frame",
-    palette: "As created",
-    finish: "Satin varnish",
-    notes: "",
-  });
-  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customForm, setCustomForm] = useState({ size: "Standard", frame: "No frame", finish: "Satin varnish", palette: "As created" });
+  const [wall, setWall] = useState({ w: "", h: "", unit: "Feet" });
+  const [wallFit, setWallFit] = useState(null);
+  const [wallUpcharge, setWallUpcharge] = useState(0);
+
+  const calcWallFit = () => {
+    const w = parseFloat(wall.w), h = parseFloat(wall.h);
+    if (!w || !h) return;
+    const toIn = wall.unit === "Feet" ? 12 : wall.unit === "cm" ? 0.3937 : 1;
+    const wallW = w * toIn, wallH = h * toIn;
+    const [artW, artH] = (productData?.dimensions || "80 × 60 cm").replace("cm","").split("×").map(s => parseFloat(s.trim()) * 0.3937);
+    const fits = artW <= wallW && artH <= wallH;
+    const scaleW = Math.floor((wallW / artW) * 10) / 10;
+    const scaleH = Math.floor((wallH / artH) * 10) / 10;
+    const maxScale = Math.min(scaleW, scaleH);
+    // price upcharge based on how much the artwork needs to scale up to fill the wall
+    const upcharge = !fits ? 0 : maxScale <= 1.2 ? 0 : maxScale <= 1.5 ? 10 : maxScale <= 2 ? 20 : maxScale <= 3 ? 35 : 50;
+    setWallUpcharge(upcharge);
+    setWallFit({ fits, scaleW, scaleH, maxScale, upcharge });
+  };
 
   const matched = id && ARTWORK_MAP[id];
   const productData = matched
@@ -114,23 +141,22 @@ export default function ProductDetail() {
       }
     : FALLBACK_PRODUCT.default;
 
-  useEffect(() => {
-    setActiveImg(0);
-    setEnquiryStep(0);
-  }, [id]);
-
-  const FRAME_MARKUP = { "No frame": 0, "Simple Wood": 8, "Hand-finished Walnut": 15, "Museum Grade UV Glass": 25, "Custom Gilded": 40 };
-  const baseEstimate = productData?.price || 12000;
-  const frameUpcharge = (FRAME_MARKUP[customForm.frame] || 0) / 100;
-  const finalEstimate = Math.round(baseEstimate * (1 + frameUpcharge));
+  const UPCHARGES = {
+    size:    { Standard: 0, "Small (50%)": -20, "Large (150%)": 30, Custom: 50 },
+    frame:   { "No frame": 0, "Simple Wood": 8, "Hand-finished Walnut": 18, "Museum Grade UV Glass": 28, "Custom Gilded": 45 },
+    finish:  { "Satin varnish": 0, Matte: 0, "High gloss": 5, Unvarnished: 0 },
+    palette: { "As created": 0, "Warmer tones": 10, "Cooler tones": 10, Monochrome: 15, Custom: 20 },
+  };
+  const basePrice = productData?.price || 12000;
+  const upchargePct = Object.entries(UPCHARGES).reduce((sum, [key, map]) => sum + (map[customForm[key]] ?? 0), 0) + wallUpcharge;
+  const customPrice = Math.round(basePrice * (1 + upchargePct / 100));
   const fmtPrice = (n) => "$" + n.toLocaleString("en-US");
 
-  const handleEnquirySubmit = (e) => { e.preventDefault(); setEnquiryStep(2); };
-  const handleCustomSubmit = (e) => { e.preventDefault(); setEnquiryStep(3); };
-  const handlePlaceOrder = () => { setEnquiryStep(4); setTimeout(() => { setOrderPlaced(true); }, 400); };
+  useEffect(() => { setActiveImg(0); window.scrollTo(0, 0); }, [id]);
 
   return (
     <section
+      className="pd-section"
       style={{ padding: "100px 24px 80px", maxWidth: 1280, margin: "0 auto" }}>
       <div
         style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 56 }}
@@ -340,7 +366,7 @@ export default function ProductDetail() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setEnquiryStep(1)}
+            onClick={() => window.dispatchEvent(new Event("open-artcoliseum-chat"))}
             style={{
               width: "100%",
               padding: "16px",
@@ -365,26 +391,151 @@ export default function ProductDetail() {
             ENQUIRE NOW
           </motion.button>
 
-          <button
-            onClick={() => navigate("/ar")}
-            style={{
-              ...pillBtn,
-              width: "100%",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              marginBottom: 22,
-            }}>
-            <SparkIcon size={14} /> VIEW IN AR
-          </button>
+          {/* VIEW IN AR + CUSTOMISE row */}
+          <div className="pd-btn-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+            <button
+              onClick={() => navigate("/ar")}
+              style={{ ...pillBtn, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <SparkIcon size={14} /> VIEW IN AR
+            </button>
+            <motion.button
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => setCustomOpen(v => !v)}
+              style={{
+                ...pillBtn,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                borderColor: customOpen ? "#D4AF37" : "rgba(212,175,55,0.4)",
+                color: customOpen ? "#D4AF37" : "#e8e0d0",
+                background: customOpen ? "rgba(212,175,55,0.07)" : "transparent",
+              }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+              </svg>
+              CUSTOMISE
+            </motion.button>
+          </div>
+
+          {/* Inline customisation panel */}
+          <AnimatePresence>
+            {customOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                style={{ overflow: "hidden", marginBottom: 16 }}>
+                <div style={{
+                  background: "rgba(212,175,55,0.04)",
+                  border: "1px solid rgba(212,175,55,0.18)",
+                  borderRadius: 12, padding: "20px 22px",
+                }}>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>CUSTOMISE YOUR PIECE</div>
+
+                  <div className="pd-custom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                    {[
+                      ["SIZE", "size", ["Standard", "Small (50%)", "Large (150%)", "Custom"]],
+                      ["FRAME", "frame", ["No frame", "Simple Wood", "Hand-finished Walnut", "Museum Grade UV Glass", "Custom Gilded"]],
+                      ["FINISH", "finish", ["Satin varnish", "Matte", "High gloss", "Unvarnished"]],
+                      ["PALETTE", "palette", ["As created", "Warmer tones", "Cooler tones", "Monochrome", "Custom"]],
+                    ].map(([label, key, opts]) => (
+                      <div key={key}>
+                        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 5 }}>{label}</div>
+                        <select
+                          value={customForm[key]}
+                          onChange={e => setCustomForm(f => ({ ...f, [key]: e.target.value }))}
+                          style={{ width: "100%", padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, cursor: "pointer", outline: "none" }}>
+                          {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Wall size calculator */}
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 8 }}>ENTER YOUR WALL SIZE</div>
+                    <div className="pd-wall-row" style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                      <input
+                        type="number" placeholder="Width" value={wall.w}
+                        onChange={e => { setWall(f => ({ ...f, w: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
+                        style={{ flex: 1, padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center" }}
+                      />
+                      <input
+                        type="number" placeholder="Height" value={wall.h}
+                        onChange={e => { setWall(f => ({ ...f, h: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
+                        style={{ flex: 1, padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center" }}
+                      />
+                      <select
+                        value={wall.unit} onChange={e => { setWall(f => ({ ...f, unit: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
+                        style={{ padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, cursor: "pointer", outline: "none" }}>
+                        <option>Feet</option>
+                        <option>Inches</option>
+                        <option>cm</option>
+                      </select>
+                      <motion.button
+                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        onClick={calcWallFit}
+                        style={{ padding: "8px 16px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", border: "none", borderRadius: 6, color: "#0e0c0a", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                        CALCULATE
+                      </motion.button>
+                    </div>
+                    {wallFit && wallFit.upcharge > 0 && (
+                      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                        style={{ marginTop: 10, padding: "8px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.2)" }}>
+                        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: "#D4AF37" }}>
+                          +{wallFit.upcharge}% wall-size adjustment applied to price
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {/* Price comparison */}
+                  <div style={{ borderTop: "1px solid rgba(212,175,55,0.15)", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.45)", marginBottom: 3 }}>BASE MRP</div>
+                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "rgba(200,191,160,0.55)", textDecoration: upchargePct !== 0 ? "line-through" : "none" }}>
+                        {fmtPrice(basePrice)}
+                      </div>
+                    </div>
+                    {upchargePct !== 0 && (
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 3 }}>
+                          CUSTOMISED PRICE {upchargePct > 0 ? `+${upchargePct}%` : `${upchargePct}%`}
+                        </div>
+                        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#D4AF37" }}>
+                          {fmtPrice(customPrice)}
+                        </div>
+                      </div>
+                    )}
+                    {upchargePct === 0 && (
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(200,191,160,0.35)" }}>
+                        NO ADDITIONAL COST
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Take it home CTA */}
+                  <motion.button
+                    whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => navigate("/cart")}
+                    style={{
+                      width: "100%", padding: "14px",
+                      background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+                      color: "#0e0c0a", border: "none", borderRadius: 999,
+                      fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                    }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                    TAKE IT HOME — {fmtPrice(customPrice)}
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
-
-      {/* ═══════════════════════════════════════════════
-          DEEP CONTEXT — interactive tabbed view with side imagery
-      ═══════════════════════════════════════════════ */}
-      <CloserLook product={productData} />
 
       {/* artist block */}
       <div
@@ -467,142 +618,6 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* ── Multi-step Enquiry Modal ── */}
-      <AnimatePresence>
-        {enquiryStep > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setEnquiryStep(0)}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-            <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 24, scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 280, damping: 26 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{ background: "#0e0c0a", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 16, width: "100%", maxWidth: 560, padding: 40, maxHeight: "90vh", overflowY: "auto" }}>
-
-              {/* Steps indicator */}
-              <div style={{ display: "flex", gap: 8, marginBottom: 32 }}>
-                {["Enquire", "Customise", "Review", "Confirmed"].map((s, i) => (
-                  <div key={s} style={{ flex: 1 }}>
-                    <div style={{ height: 3, borderRadius: 99, background: enquiryStep > i ? "#D4AF37" : "rgba(212,175,55,0.2)", transition: "background 0.4s" }} />
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.15em", color: enquiryStep > i ? "#D4AF37" : "rgba(200,191,160,0.4)", marginTop: 5 }}>{s}</div>
-                  </div>
-                ))}
-              </div>
-
-              <button onClick={() => setEnquiryStep(0)} style={{ position: "absolute", top: 20, right: 20, background: "transparent", border: "none", color: "rgba(200,191,160,0.55)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
-
-              {/* Step 1: Enquiry details */}
-              {enquiryStep === 1 && (
-                <form onSubmit={handleEnquirySubmit}>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>ENQUIRY</div>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 6 }}>Tell us about yourself</h3>
-                  <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 24, lineHeight: 1.7 }}>Submit your enquiry for <em style={{ color: "rgba(200,191,160,0.9)" }}>{productData.title}</em>. We'll guide you through customisation and provide a personalised quote.</p>
-                  {[["Full Name", "name", "text"], ["Email Address", "email", "email"], ["Phone (optional)", "phone", "tel"]].map(([placeholder, key, type]) => (
-                    <input key={key} type={type} required={key !== "phone"} placeholder={placeholder} value={enquiryForm[key]} onChange={e => setEnquiryForm(f => ({ ...f, [key]: e.target.value }))}
-                      style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, marginBottom: 12, boxSizing: "border-box", outline: "none" }} />
-                  ))}
-                  <textarea placeholder="What draws you to this piece? Any questions for the artist?" value={enquiryForm.message} onChange={e => setEnquiryForm(f => ({ ...f, message: e.target.value }))} rows={3}
-                    style={{ width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, marginBottom: 20, boxSizing: "border-box", resize: "vertical", outline: "none" }} />
-                  <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    style={{ width: "100%", padding: "15px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.18em", border: "none", borderRadius: 999, cursor: "pointer" }}>
-                    CONTINUE TO CUSTOMISE →
-                  </motion.button>
-                </form>
-              )}
-
-              {/* Step 2: Customisation */}
-              {enquiryStep === 2 && (
-                <form onSubmit={handleCustomSubmit}>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>CUSTOMISE</div>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 6 }}>Make it yours</h3>
-                  <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 24, lineHeight: 1.7 }}>Every detail can be tailored. Configure your piece below — exact pricing will be revealed once you review your selection.</p>
-                  {[
-                    ["SIZE", "size", ["Standard (as listed)", "Small (50%)", "Large (150%)", "Custom — specify in notes"]],
-                    ["MATERIAL / MEDIUM", "material", ["Original medium", "Oil on Canvas", "Acrylic on Canvas", "Watercolor on Paper", "Giclée Print", "Bronze cast (sculptures)"]],
-                    ["FRAME", "frame", ["No frame", "Simple Wood", "Hand-finished Walnut", "Museum Grade UV Glass", "Custom Gilded"]],
-                    ["COLOUR PALETTE", "palette", ["As created", "Warmer tones", "Cooler tones", "Monochrome", "Custom — specify in notes"]],
-                    ["FINISH", "finish", ["Satin varnish", "Matte", "High gloss", "Unvarnished"]],
-                  ].map(([label, key, opts]) => (
-                    <div key={key} style={{ marginBottom: 16 }}>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 6 }}>{label}</div>
-                      <select value={customForm[key]} onChange={e => setCustomForm(f => ({ ...f, [key]: e.target.value }))}
-                        style={{ width: "100%", padding: "11px 14px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, cursor: "pointer", outline: "none" }}>
-                        {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    </div>
-                  ))}
-                  <textarea placeholder="Additional notes or special requests…" value={customForm.notes} onChange={e => setCustomForm(f => ({ ...f, notes: e.target.value }))} rows={2}
-                    style={{ width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, marginBottom: 20, boxSizing: "border-box", resize: "vertical", outline: "none" }} />
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <button type="button" onClick={() => setEnquiryStep(1)} style={{ flex: 1, padding: "14px", background: "transparent", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 999, color: "#D4AF37", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", cursor: "pointer" }}>← BACK</button>
-                    <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ flex: 2, padding: "14px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", border: "none", borderRadius: 999, cursor: "pointer" }}>
-                      REVEAL PRICE →
-                    </motion.button>
-                  </div>
-                </form>
-              )}
-
-              {/* Step 3: Price reveal + order */}
-              {enquiryStep === 3 && (
-                <div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 8 }}>YOUR QUOTE</div>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 20 }}>Your personalised configuration</h3>
-                  <div style={{ background: "rgba(212,175,55,0.05)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, padding: 24, marginBottom: 20 }}>
-                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#fff", marginBottom: 12 }}>{productData.title}</div>
-                    {[["Artist", productData.artist], ["Size", customForm.size], ["Material", customForm.material], ["Frame", customForm.frame], ["Palette", customForm.palette], ["Finish", customForm.finish]].map(([k, v]) => (
-                      <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(212,175,55,0.08)", fontFamily: "'Raleway',sans-serif", fontSize: 12 }}>
-                        <span style={{ color: "rgba(200,191,160,0.55)", letterSpacing: "0.08em" }}>{k}</span>
-                        <span style={{ color: "rgba(200,191,160,0.85)" }}>{v}</span>
-                      </div>
-                    ))}
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(212,175,55,0.25)" }}>
-                      <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", color: "#D4AF37" }}>TOTAL ESTIMATE</span>
-                      <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#D4AF37", fontWeight: 700 }}>{fmtPrice(finalEstimate)}</span>
-                    </div>
-                    <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.45)", marginTop: 10, lineHeight: 1.6 }}>This is a personalised estimate. Final pricing is confirmed by the artist within 48 hours. No payment is taken at this stage.</p>
-                  </div>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <button onClick={() => setEnquiryStep(2)} style={{ flex: 1, padding: "14px", background: "transparent", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 999, color: "#D4AF37", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", cursor: "pointer" }}>← EDIT</button>
-                    <motion.button onClick={handlePlaceOrder} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ flex: 2, padding: "14px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", border: "none", borderRadius: 999, cursor: "pointer" }}>
-                      PLACE ORDER →
-                    </motion.button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4: Order confirmed + tracking */}
-              {enquiryStep === 4 && (
-                <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "20px 0" }}>
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}
-                    style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(212,175,55,0.15)", border: "2px solid #D4AF37", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 28, color: "#D4AF37" }}>✓</motion.div>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 30, color: "#fff", marginBottom: 10 }}>Order Submitted</h3>
-                  <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.75, marginBottom: 28 }}>Your enquiry for <em style={{ color: "rgba(200,191,160,0.9)" }}>{productData.title}</em> has been received. The artist will confirm your configuration within 48 hours. A full tracking link will be sent to <strong style={{ color: "#D4AF37" }}>{enquiryForm.email}</strong>.</p>
-                  <div style={{ background: "rgba(212,175,55,0.05)", border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, padding: "20px 24px", marginBottom: 24, textAlign: "left" }}>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 14 }}>ORDER TRACKING</div>
-                    {[["Enquiry Received", true], ["Artist Review", false], ["In Production", false], ["Quality Check", false], ["Shipped", false], ["Delivered", false]].map(([stage, done]) => (
-                      <div key={stage} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: done ? "#D4AF37" : "rgba(212,175,55,0.2)", flexShrink: 0 }} />
-                        <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: done ? "rgba(200,191,160,0.85)" : "rgba(200,191,160,0.4)" }}>{stage}</span>
-                        {done && <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: "#D4AF37", marginLeft: "auto" }}>✓</span>}
-                      </div>
-                    ))}
-                  </div>
-                  <motion.button onClick={() => setEnquiryStep(0)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    style={{ padding: "14px 32px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", border: "none", borderRadius: 999, cursor: "pointer" }}>
-                    DONE
-                  </motion.button>
-                </motion.div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <style>{`
         @media (max-width: 900px) {
           .pd-grid    { grid-template-columns: 1fr !important; }
@@ -673,236 +688,3 @@ function Meta({ label, value }) {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   CLOSER LOOK — interactive tabbed deep-dive with side imagery
-═══════════════════════════════════════════════ */
-function CloserLook({ product }) {
-  const TABS = [
-    {
-      id: "about",
-      label: "About the Art",
-      icon: "✦",
-      img: product.images?.[0],
-    },
-    {
-      id: "origin",
-      label: "Origin",
-      icon: "◈",
-      img: product.images?.[1] || product.images?.[0],
-    },
-    {
-      id: "purpose",
-      label: "Purpose",
-      icon: "❋",
-      img: product.images?.[2] || product.images?.[0],
-    },
-    {
-      id: "story",
-      label: "Story Behind",
-      icon: "✧",
-      img: product.images?.[3] || product.images?.[0],
-    },
-    {
-      id: "spread",
-      label: "Spread & Accepted",
-      icon: "❖",
-      img: product.images?.[0],
-    },
-    {
-      id: "specs",
-      label: "Specifications",
-      icon: "⟨ ⟩",
-      img: product.images?.[1] || product.images?.[0],
-    },
-  ];
-
-  const [active, setActive] = useState("about");
-  const [progress, setProgress] = useState(0);
-
-  /* gentle progress bar that resets when you switch tab */
-  useEffect(() => {
-    setProgress(0);
-    const start = Date.now();
-    const id = setInterval(() => {
-      const p = Math.min(100, ((Date.now() - start) / 8000) * 100);
-      setProgress(p);
-      if (p >= 100) {
-        const idx = TABS.findIndex((t) => t.id === active);
-        setActive(TABS[(idx + 1) % TABS.length].id);
-      }
-    }, 80);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
-
-  const activeIdx = TABS.findIndex((t) => t.id === active);
-  const activeTab = TABS[activeIdx];
-
-  const renderBody = () => {
-    switch (active) {
-      case "about":
-        return (
-          <>
-            <h3 className="cl-headline">About this work</h3>
-            <p className="cl-body">{product.aboutArt}</p>
-          </>
-        );
-      case "origin":
-        return (
-          <>
-            <h3 className="cl-headline">Where it came to life</h3>
-            <p className="cl-body">{product.origin}</p>
-          </>
-        );
-      case "purpose":
-        return (
-          <>
-            <h3 className="cl-headline">Why it exists</h3>
-            <p className="cl-body">{product.purpose}</p>
-          </>
-        );
-      case "story":
-        return (
-          <>
-            <h3 className="cl-headline">The making of it</h3>
-            <p
-              className="cl-body"
-              style={{
-                fontStyle: "italic",
-                fontFamily: "'Cormorant Garamond',serif",
-                fontSize: 18,
-              }}>
-              {product.story}
-            </p>
-          </>
-        );
-      case "spread":
-        return (
-          <>
-            <h3 className="cl-headline">Where it lives now</h3>
-            <p className="cl-body">{product.spread}</p>
-          </>
-        );
-      case "specs":
-        return (
-          <>
-            <h3 className="cl-headline">Built to last</h3>
-            <div style={{ marginTop: 18 }}>
-              {product.specs.map((s) => (
-                <div key={s.k} className="cl-spec-row">
-                  <div className="cl-spec-label">{s.k.toUpperCase()}</div>
-                  <div className="cl-spec-value">{s.v}</div>
-                </div>
-              ))}
-            </div>
-          </>
-        );
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div style={{ marginTop: 70 }}>
-      <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <div className="gold-rule" style={{ justifyContent: "center" }}>
-          <div
-            className="grl"
-            style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }}
-          />
-          <span className="grt">Provenance & Context</span>
-          <div
-            className="grl"
-            style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }}
-          />
-        </div>
-        <h2 className="section-heading" style={{ marginTop: 8 }}>
-          <span className="bold-white">A Closer</span> <em>Look</em>
-        </h2>
-      </div>
-
-      {/* Tab pills */}
-      <div className="cl-tabs">
-        {TABS.map((t, i) => (
-          <button
-            key={t.id}
-            onClick={() => setActive(t.id)}
-            className={`cl-tab ${active === t.id ? "is-active" : ""}`}>
-            <span className="cl-tab-icon">{t.icon}</span>
-            <span className="cl-tab-label">{t.label}</span>
-            <span className="cl-tab-num num-value">0{i + 1}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Body grid: image | content */}
-      <div className="cl-stage">
-        {/* Image side — animated */}
-        <div className="cl-image-wrap">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab.img + active}
-              initial={{ opacity: 0, scale: 0.96, rotateY: -8 }}
-              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-              exit={{ opacity: 0, scale: 0.96, rotateY: 8 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="cl-image">
-              <SafeImage
-                src={activeTab.img}
-                alt={activeTab.label}
-                fallbackIndex={activeIdx}
-              />
-              <div className="cl-image-frame" />
-            </motion.div>
-          </AnimatePresence>
-          <div className="cl-image-tag">
-            <span className="cl-image-tag-icon">{activeTab.icon}</span>
-            <span>{activeTab.label.toUpperCase()}</span>
-          </div>
-        </div>
-
-        {/* Content side */}
-        <div className="cl-content">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-              <div className="cl-eyebrow">
-                <span className="num-value">0{activeIdx + 1}</span> ·{" "}
-                {activeTab.label.toUpperCase()}
-              </div>
-              {renderBody()}
-            </motion.div>
-          </AnimatePresence>
-
-          <div className="cl-progress-wrap">
-            <div className="cl-progress" style={{ width: `${progress}%` }} />
-          </div>
-
-          <div className="cl-nav">
-            <button
-              onClick={() =>
-                setActive(TABS[(activeIdx - 1 + TABS.length) % TABS.length].id)
-              }
-              className="cl-nav-btn"
-              aria-label="Previous">
-              ←
-            </button>
-            <span className="cl-nav-counter num-value">
-              0{activeIdx + 1} / 0{TABS.length}
-            </span>
-            <button
-              onClick={() => setActive(TABS[(activeIdx + 1) % TABS.length].id)}
-              className="cl-nav-btn"
-              aria-label="Next">
-              →
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

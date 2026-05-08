@@ -11,6 +11,7 @@ import i5 from "../assets/i5.png";
 import i6 from "../assets/i6.png";
 
 const LINKS = [
+  { label: "HOME", to: "/" },
   { label: "ARTISTS", to: "/artists" },
   { label: "COLLECTION", to: "/categories" },
   { label: "COMMUNITY", to: "/community" },
@@ -18,10 +19,8 @@ const LINKS = [
 ];
 
 const ALL_LINKS = [
-  { label: "HOME", to: "/" },
   ...LINKS,
   { label: "GALLERY", to: "/gallery" },
-  { label: "AR VIEWER", to: "/ar" },
   { label: "CHAT", to: "/chat" },
   { label: "ESTIMATE", to: "/estimate" },
   { label: "CONTACT", to: "/contact" },
@@ -145,7 +144,6 @@ const SEARCH_INDEX = [
     sub: "Artist portal",
     to: "/become-artist",
   },
-  { type: "PAGE", title: "AR Viewer", sub: "Try art in your space", to: "/ar" },
   { type: "PAGE", title: "Cart", sub: "Your acquisitions", to: "/cart" },
   { type: "PAGE", title: "Help Desk", sub: "Concierge support", to: "/help" },
   { type: "PAGE", title: "Privacy Policy", sub: "Legal", to: "/privacy" },
@@ -514,15 +512,6 @@ export default function Navigation() {
           <div className="nav-right nav-desktop">
             <NavSearch />
 
-            <motion.button
-              className="nav-ar-pill"
-              onClick={() => navigate("/ar")}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.96 }}
-              title="View art in your space">
-              <SparkBolt /> AR
-            </motion.button>
-
             <span className="nav-divider" aria-hidden />
 
             <motion.button
@@ -618,18 +607,6 @@ export default function Navigation() {
                 <ProfileIcon />
               </motion.button>
             </motion.div>
-            <motion.button
-              className="btn-outline"
-              style={{ marginTop: 24, width: "100%" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.44 }}
-              onClick={() => {
-                navigate("/ar");
-                setMenuOpen(false);
-              }}>
-              TRY AR VIEWER
-            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>

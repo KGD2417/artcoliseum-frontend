@@ -7,6 +7,7 @@ import ArtistPortal from './pages/ArtistPortal';
 import Gallery from './pages/Gallery';
 import Categories from './pages/Categories';
 import ArtTypeDescription from './pages/ArtTypeDescription';
+import SubTypeDetail from './pages/SubTypeDetail';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
@@ -37,7 +38,7 @@ function App() {
         <Route path="gallery" element={<Gallery />} />
         <Route path="categories" element={<Categories />} />
         <Route path="categories/:medium" element={<ArtTypeDescription />} />
-        <Route path="categories/:medium/:sub" element={<Gallery />} />
+        <Route path="categories/:medium/:sub" element={<SubTypeDetail />} />
         <Route path="product/:id" element={<ProductDetail />} />
         <Route path="cart" element={<Cart />} />
         <Route path="checkout" element={<Checkout />} />

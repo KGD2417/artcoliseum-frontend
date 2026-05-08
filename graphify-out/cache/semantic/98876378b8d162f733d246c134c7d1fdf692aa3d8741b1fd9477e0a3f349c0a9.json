@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [], "hyperedges": [{"id": "core_context_providers", "label": "Core React Context Providers", "nodes": ["auth_authprovider", "chatnotifications_chatnotificationsprovider", "locale_localeprovider"], "relation": "participate_in", "confidence": "INFERRED", "confidence_score": 0.85, "source_file": "src/main.jsx"}]}
