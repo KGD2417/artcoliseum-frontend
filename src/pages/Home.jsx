@@ -377,6 +377,12 @@ function StackedCardsInteraction({ images }) {
 }
 
 /* ═══════════════ PRESERVATION — FLOATING ART IMAGES ═══════════════ */
+const PRESERVATION_TIERS = [
+  { label: "ASSESSMENT", icon: "◈", desc: "We examine your artwork's condition, medium, age, and structural integrity to determine preservation viability." },
+  { label: "TREATMENT PLAN", icon: "◆", desc: "A detailed restoration roadmap is created — specific to your piece. Not all art qualifies; we will tell you honestly." },
+  { label: "ARCHIVING", icon: "✦", desc: "High-resolution digital archiving, provenance documentation, and certificate of preservation issued upon completion." },
+];
+
 function AnimatedPreservation({ navigate }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -408,19 +414,53 @@ function AnimatedPreservation({ navigate }) {
           <span className="grt">Our Commitment</span>
           <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
         </div>
-        <h2 className="pres-float-heading">Preservation<br />of <em>Art</em></h2>
+        <h2 className="pres-float-heading">We Preserve<br /><em>Your Art</em></h2>
         <p className="pres-float-desc">
-          Art is not merely object — it is memory, culture, and the irreplaceable record of human feeling.
-          We are committed to its preservation: archiving provenance, supporting restoration, and ensuring
-          every work endures for generations to come.
+          Art is not merely an object — it is memory, culture, and the irreplaceable record of human feeling.
+          We preserve your art for generations to come. However,{" "}
+          <strong style={{ color: "#D4AF37", fontWeight: 500 }}>not all art can be preserved</strong> — condition,
+          medium, and age all determine feasibility. We assess each work honestly before committing to treatment.
+          Our preservation services carry a professional charge, reflective of the expertise, materials, and care involved.
         </p>
+
+        {/* Tiers */}
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", margin: "28px 0" }}>
+          {PRESERVATION_TIERS.map(({ label, icon, desc }) => (
+            <div key={label} style={{
+              flex: "1 1 200px", maxWidth: 240,
+              padding: "20px 20px",
+              background: "rgba(8,8,8,0.75)",
+              border: "1px solid rgba(212,175,55,0.2)",
+              borderRadius: 12, textAlign: "left",
+            }}>
+              <div style={{ color: "#D4AF37", fontSize: 16, marginBottom: 10 }}>{icon}</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>{label}</div>
+              <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.65)", lineHeight: 1.6, margin: 0 }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Pricing note */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 10,
+          padding: "10px 20px", marginBottom: 28,
+          background: "rgba(212,175,55,0.06)",
+          border: "1px solid rgba(212,175,55,0.25)",
+          borderRadius: 999,
+        }}>
+          <span style={{ color: "#D4AF37", fontSize: 12 }}>◆</span>
+          <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.15em", color: "rgba(212,175,55,0.85)" }}>
+            PROFESSIONAL CHARGES APPLY · CUSTOM QUOTE PER ARTWORK
+          </span>
+        </div>
+
         <div className="pres-float-btns">
           <motion.button
             className="btn-primary"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate("/contact")}>
-            CONTACT US →
+            REQUEST PRESERVATION ASSESSMENT →
           </motion.button>
         </div>
       </motion.div>

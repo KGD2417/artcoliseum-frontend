@@ -398,10 +398,73 @@ const DEFAULT_GALLERY = [
 
 const TAB_ICONS = ["✦", "◆", "✳", "◈"];
 
+const PREDEFINED_SIZES = [
+  { label: "Small", dims: "30 × 25 cm", desc: "Perfect for intimate spaces", multiplier: 0.65 },
+  { label: "Standard", dims: "60 × 50 cm", desc: "The most versatile format", multiplier: 1.0 },
+  { label: "Large", dims: "90 × 70 cm", desc: "Statement wall presence", multiplier: 1.45 },
+  { label: "Monumental", dims: "120 × 90 cm", desc: "Gallery-grade installation", multiplier: 2.1 },
+];
+
+function ArtworkTags({ item }) {
+  const tags = [
+    `#${item.medium?.replace(/\s+/g, "").replace(/[^a-zA-Z0-9]/g, "") || "Art"}`,
+    `#${item.artist?.split(" ").pop() || "Artist"}`,
+    `#${item.year || "2024"}`,
+    `#ArtColiseum`,
+    `#${item.dimensions?.includes("×") ? item.dimensions.split("×")[0].trim().replace(" ", "") + "cm" : "Original"}`,
+    `#FinArt`,
+  ];
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 10 }}>
+      {tags.map((tag, i) => (
+        <span key={i} style={{
+          fontFamily: "'Raleway',sans-serif", fontSize: 10,
+          color: i === 3 ? "#D4AF37" : "rgba(200,191,160,0.55)",
+          letterSpacing: "0.02em", cursor: "pointer",
+        }}
+          onMouseEnter={e => (e.currentTarget.style.color = "#D4AF37")}
+          onMouseLeave={e => (e.currentTarget.style.color = i === 3 ? "#D4AF37" : "rgba(200,191,160,0.55)")}>
+          {tag}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function MentionBubble({ item }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.88, y: 6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.88, y: 6 }}
+      transition={{ duration: 0.18 }}
+      style={{
+        position: "absolute", bottom: 14, left: 14, zIndex: 10,
+        background: "rgba(8,8,8,0.88)", backdropFilter: "blur(12px)",
+        border: "1px solid rgba(212,175,55,0.35)", borderRadius: 12,
+        padding: "10px 14px", pointerEvents: "none",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+        minWidth: 160,
+      }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: "#D4AF37", marginBottom: 4 }}>
+        @{item.artist?.toLowerCase().replace(/\s+/g, "_")}
+      </div>
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.8)", marginBottom: 2 }}>{item.medium}</div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
+        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: "rgba(200,191,160,0.45)" }}>{item.year}</span>
+        <span style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(212,175,55,0.4)", display: "inline-block" }} />
+        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.1em", color: "rgba(200,191,160,0.45)" }}>{item.dimensions}</span>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function SubTypeDetail() {
   const { medium, sub } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
+  const [collectionTab, setCollectionTab] = useState("predefined");
+  const [mention, setMention] = useState(null);
 
   const data = SUBTYPE_DATA[medium]?.[sub];
   const galleryItems = SUBTYPE_GALLERY[medium]?.[sub] ?? DEFAULT_GALLERY;
@@ -552,13 +615,37 @@ export default function SubTypeDetail() {
 
         {/* GALLERY */}
         <div style={{ marginTop: 72 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 36 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
             <div style={{ width: 32, height: 1, background: "rgba(212,175,55,0.4)" }} />
             <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.24em", color: "#D4AF37" }}>THE COLLECTION</span>
             <div style={{ flex: 1, height: 1, background: "rgba(212,175,55,0.15)" }} />
             <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontStyle: "italic", color: "rgba(200,191,160,0.4)" }}>
               {galleryItems.length} works
             </span>
+          </div>
+
+          {/* Collection Tabs */}
+          <div style={{ display: "flex", gap: 0, marginBottom: 36, borderRadius: 999, overflow: "hidden", border: "1px solid rgba(212,175,55,0.2)", width: "fit-content" }}>
+            {[
+              { key: "predefined", label: "Predefined Sizes" },
+              { key: "customization", label: "Customization" },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setCollectionTab(key)}
+                style={{
+                  padding: "10px 24px",
+                  background: collectionTab === key ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "transparent",
+                  border: "none", cursor: "pointer",
+                  fontFamily: "'Cinzel',serif", fontSize: 10,
+                  letterSpacing: "0.14em",
+                  color: collectionTab === key ? "#111" : "rgba(200,191,160,0.55)",
+                  fontWeight: collectionTab === key ? 700 : 400,
+                  transition: "all 0.2s",
+                }}>
+                {label}
+              </button>
+            ))}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 22 }}>
@@ -571,7 +658,9 @@ export default function SubTypeDetail() {
                 transition={{ duration: 0.5, delay: (i % 3) * 0.07 }}
                 style={{ cursor: "pointer" }}>
                 <ArtworkHoverCard artwork={item}>
-                  <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 6, overflow: "hidden", background: "rgba(255,255,255,0.03)" }}>
+                  <div
+                    style={{ width: "100%", aspectRatio: "1/1", borderRadius: 6, overflow: "hidden", background: "rgba(255,255,255,0.03)", position: "relative" }}
+                    onClick={(e) => { e.stopPropagation(); setMention(mention === item.id ? null : item.id); }}>
                     <SafeImage
                       src={item.img}
                       alt={item.title}
@@ -580,6 +669,12 @@ export default function SubTypeDetail() {
                       onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}
                       onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
                     />
+                    <AnimatePresence>
+                      {mention === item.id && <MentionBubble item={item} />}
+                    </AnimatePresence>
+                    <div style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,8,8,0.6)", borderRadius: 6, padding: "4px 8px", pointerEvents: "none" }}>
+                      <span style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.1em", color: "rgba(212,175,55,0.7)" }}>@ TAP</span>
+                    </div>
                   </div>
                 </ArtworkHoverCard>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, gap: 12 }}>
@@ -588,11 +683,12 @@ export default function SubTypeDetail() {
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{item.artist}</div>
                   </div>
                   <button
-                    onClick={() => navigate(`/product/${item.id}`)}
-                    style={{ background: "transparent", border: "none", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600, color: "#D4AF37", whiteSpace: "nowrap", alignSelf: "center", cursor: "pointer", padding: 0 }}>
+                    onClick={() => navigate(`/product/${item.id}${collectionTab === "predefined" ? "?mode=predefined" : ""}`)}
+                    style={{ background: "transparent", border: "none", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600, color: "#D4AF37", whiteSpace: "nowrap", alignSelf: "flex-start", cursor: "pointer", padding: 0, paddingTop: 4 }}>
                     ENQUIRE →
                   </button>
                 </div>
+                <ArtworkTags item={item} />
               </motion.div>
             ))}
           </div>

@@ -2054,6 +2054,14 @@ input[type="email"] {
   width: 200px;
   padding-left: 8px;
 }
+.nav-search-sm .nav-search-input {
+  width: 110px;
+  font-size: 11px;
+}
+.nav-search-sm {
+  height: 30px;
+  padding: 0 10px;
+}
 .nav-search-input::placeholder {
   color: rgba(200, 191, 160, 0.5);
 }

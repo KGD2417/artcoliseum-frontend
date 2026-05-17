@@ -11,15 +11,25 @@ import i5 from "../assets/i5.png";
 import i6 from "../assets/i6.png";
 
 const LINKS = [
-  { label: "HOME", to: "/" },
   { label: "ARTISTS", to: "/artists" },
   { label: "COLLECTION", to: "/categories" },
   { label: "COMMUNITY", to: "/community" },
   { label: "EVENTS", to: "/events" },
+  { label: "EXHIBITION", to: "/exhibition" },
+];
+
+const SETU_LINKS = [
+  { label: "SAMAN SETU", to: "/saman-setu" },
+  { label: "SWAD SETU", to: "/swad-setu" },
+  { label: "SARJAAN SETU", to: "/sarjaan-setu" },
+  { label: "SHILP SETU", to: "/shilp-setu" },
+  { label: "RENTAL", to: "/rental" },
+  { label: "WASTE MGMT", to: "/waste-management" },
 ];
 
 const ALL_LINKS = [
   ...LINKS,
+  ...SETU_LINKS,
   { label: "GALLERY", to: "/gallery" },
   { label: "CHAT", to: "/chat" },
   { label: "ESTIMATE", to: "/estimate" },
@@ -196,13 +206,13 @@ function NavSearch() {
   }, [results]);
 
   return (
-    <div ref={ref} className="nav-search" onClick={() => setOpen(true)}>
+    <div ref={ref} className="nav-search nav-search-sm" onClick={() => setOpen(true)}>
       <span className="nav-search-icon">
-        <SearchIcon size={14} />
+        <SearchIcon size={12} />
       </span>
       <input
         className="nav-search-input"
-        placeholder="Search artworks, artists, mediums…"
+        placeholder="Search…"
         value={q}
         onChange={(e) => {
           setQ(e.target.value);
@@ -313,6 +323,7 @@ function ProfileIcon() {
     </svg>
   );
 }
+
 
 function LangButton({ compact }) {
   const { lang, setLang } = useLocale();
@@ -495,35 +506,40 @@ export default function Navigation() {
             />
           </div>
 
-          <div className="nav-center nav-desktop">
-            {LINKS.map(({ label, to }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === "/"}
-                className={({ isActive }) =>
-                  "nav-link" + (isActive ? " nav-active" : "")
-                }>
-                {label}
-              </NavLink>
-            ))}
+          <div className="nav-center nav-desktop" style={{ flex: 3, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+            <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
+              {LINKS.map(({ label, to }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === "/"}
+                  className={({ isActive }) =>
+                    "nav-link" + (isActive ? " nav-active" : "")
+                  }>
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 6, paddingTop: 6, borderTop: "1px solid rgba(212,175,55,0.1)", flexWrap: "nowrap" }}>
+              {SETU_LINKS.map(({ label, to }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={({ isActive }) =>
+                    "nav-link" + (isActive ? " nav-active" : "")
+                  }
+                  style={{ fontSize: "9px", letterSpacing: "0.15em", opacity: 0.65, display: "flex", alignItems: "center", gap: 4 }}>
+                  {label}
+                  <span style={{ fontSize: 7, color: "#D4AF37", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 3, padding: "1px 3px", lineHeight: 1, opacity: 0.8 }}>SOON</span>
+                </NavLink>
+              ))}
+            </div>
           </div>
 
           <div className="nav-right nav-desktop">
             <NavSearch />
 
             <span className="nav-divider" aria-hidden />
-
-            <motion.button
-              title="Cart"
-              onClick={() => navigate("/cart")}
-              className="nav-icon-btn"
-              whileHover={{ scale: 1.15, color: "#D4AF37" }}
-              whileTap={{ scale: 0.92 }}>
-              <CartIcon />
-            </motion.button>
-
-            <LangButton />
 
             <motion.button
               title="Profile"
@@ -587,16 +603,6 @@ export default function Navigation() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.38 }}>
-              <motion.button
-                title="Cart"
-                className="nav-icon-btn"
-                onClick={() => {
-                  navigate("/cart");
-                  setMenuOpen(false);
-                }}>
-                <CartIcon />
-              </motion.button>
-              <LangButton compact />
               <motion.button
                 title="Profile"
                 className="nav-icon-btn"

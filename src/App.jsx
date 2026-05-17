@@ -26,6 +26,8 @@ import ArtistChat from './pages/ArtistChat';
 import Community from './pages/Community';
 import ChatRooms from './pages/ChatRooms';
 import Estimate from './pages/Estimate';
+import ComingSoon from './pages/ComingSoon';
+import Exhibition from './pages/Exhibition';
 
 function App() {
   return (
@@ -57,6 +59,13 @@ function App() {
         <Route path="community" element={<Community />} />
         <Route path="chat" element={<ChatRooms />} />
         <Route path="estimate" element={<Estimate />} />
+        <Route path="exhibition" element={<Exhibition />} />
+        <Route path="saman-setu" element={<ComingSoon page="saman-setu" />} />
+        <Route path="swad-setu" element={<ComingSoon page="swad-setu" />} />
+        <Route path="sarjaan-setu" element={<ComingSoon page="sarjaan-setu" />} />
+        <Route path="shilp-setu" element={<ComingSoon page="shilp-setu" />} />
+        <Route path="rental" element={<ComingSoon page="rental" />} />
+        <Route path="waste-management" element={<ComingSoon page="waste-management" />} />
       </Route>
     </Routes>
   );

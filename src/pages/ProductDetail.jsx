@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { HeartIcon, ZoomIcon, SparkIcon } from "../components/Icons";
@@ -89,10 +89,20 @@ const FALLBACK_PRODUCT = {
   },
 };
 
+const PREDEFINED_SIZES = [
+  { label: "Small", dims: "30 × 25 cm", desc: "Perfect for intimate spaces", multiplier: 0.65 },
+  { label: "Standard", dims: "60 × 50 cm", desc: "The most versatile format", multiplier: 1.0 },
+  { label: "Large", dims: "90 × 70 cm", desc: "Statement wall presence", multiplier: 1.45 },
+  { label: "Monumental", dims: "120 × 90 cm", desc: "Gallery-grade installation", multiplier: 2.1 },
+];
+
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPredefined = searchParams.get("mode") === "predefined";
   const [activeImg, setActiveImg] = useState(0);
+  const [predefinedSize, setPredefinedSize] = useState(null);
   const [favorited, setFavorited] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [customForm, setCustomForm] = useState({ size: "Standard", frame: "No frame", finish: "Satin varnish", palette: "As created" });
@@ -193,7 +203,7 @@ export default function ProductDetail() {
               <CircleBtn>
                 <ZoomIcon size={16} />
               </CircleBtn>
-              <CircleBtn onClick={() => navigate("/ar")}>
+              <CircleBtn onClick={() => window.open('/ar-launcher.html?image=' + encodeURIComponent(productData.images[activeImg]), '_blank')}>
                 <SparkIcon size={16} />
               </CircleBtn>
             </div>
@@ -394,7 +404,7 @@ export default function ProductDetail() {
           {/* VIEW IN AR + CUSTOMISE row */}
           <div className="pd-btn-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
             <button
-              onClick={() => navigate("/ar")}
+              onClick={() => window.open('/ar-launcher.html?image=' + encodeURIComponent(productData.images[activeImg]), '_blank')}
               style={{ ...pillBtn, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <SparkIcon size={14} /> VIEW IN AR
             </button>
@@ -529,6 +539,68 @@ export default function ProductDetail() {
                       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                     </svg>
                     TAKE IT HOME — {fmtPrice(customPrice)}
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Predefined sizes panel */}
+          <AnimatePresence>
+            {isPredefined && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                style={{ overflow: "hidden", marginBottom: 16 }}>
+                <div style={{ background: "rgba(212,175,55,0.04)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, padding: "20px 22px" }}>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>SELECT PREDEFINED SIZE</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+                    {PREDEFINED_SIZES.map((sz) => (
+                      <motion.button
+                        key={sz.label}
+                        onClick={() => setPredefinedSize(sz)}
+                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                        style={{
+                          padding: "14px 12px", borderRadius: 10, cursor: "pointer", textAlign: "left",
+                          background: predefinedSize?.label === sz.label ? "rgba(212,175,55,0.1)" : "rgba(255,255,255,0.02)",
+                          border: `1px solid ${predefinedSize?.label === sz.label ? "#D4AF37" : "rgba(212,175,55,0.18)"}`,
+                          transition: "all 0.15s",
+                        }}>
+                        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: predefinedSize?.label === sz.label ? "#D4AF37" : "#e8e0d0", marginBottom: 4 }}>{sz.label}</div>
+                        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)", marginBottom: 2 }}>{sz.dims}</div>
+                        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>{sz.desc}</div>
+                      </motion.button>
+                    ))}
+                  </div>
+                  {predefinedSize && (
+                    <AnimatePresence>
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 10, marginBottom: 14 }}>
+                        <div>
+                          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 2 }}>{predefinedSize.label} — {predefinedSize.dims}</div>
+                          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{predefinedSize.desc}</div>
+                        </div>
+                        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>
+                          {fmtPrice(Math.round(basePrice * predefinedSize.multiplier))}
+                        </div>
+                      </motion.div>
+                    </AnimatePresence>
+                  )}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    onClick={() => navigate("/cart")}
+                    style={{
+                      width: "100%", padding: "14px",
+                      background: predefinedSize ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.08)",
+                      color: predefinedSize ? "#0e0c0a" : "#D4AF37",
+                      border: `1px solid ${predefinedSize ? "transparent" : "rgba(212,175,55,0.3)"}`,
+                      borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
+                      cursor: predefinedSize ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "all 0.2s",
+                    }}>
+                    {predefinedSize ? `ENQUIRE — ${fmtPrice(Math.round(basePrice * predefinedSize.multiplier))}` : "SELECT A SIZE TO ENQUIRE"}
                   </motion.button>
                 </div>
               </motion.div>
