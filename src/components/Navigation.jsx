@@ -520,7 +520,7 @@ export default function Navigation() {
                 </NavLink>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 6, paddingTop: 6, borderTop: "1px solid rgba(212,175,55,0.1)", flexWrap: "nowrap" }}>
+            <div style={{ display: "flex", gap: 40, alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(212,175,55,0.1)", flexWrap: "nowrap" }}>
               {SETU_LINKS.map(({ label, to }) => (
                 <NavLink
                   key={to}
@@ -528,9 +528,16 @@ export default function Navigation() {
                   className={({ isActive }) =>
                     "nav-link" + (isActive ? " nav-active" : "")
                   }
-                  style={{ fontSize: "9px", letterSpacing: "0.15em", opacity: 0.65, display: "flex", alignItems: "center", gap: 4 }}>
-                  {label}
-                  <span style={{ fontSize: 7, color: "#D4AF37", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 3, padding: "1px 3px", lineHeight: 1, opacity: 0.8 }}>SOON</span>
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontStyle: "italic",
+                    fontSize: "16px",
+                    letterSpacing: "0.06em",
+                    textTransform: "none",
+                    opacity: 0.92,
+                    whiteSpace: "nowrap",
+                  }}>
+                  {label.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
                 </NavLink>
               ))}
             </div>

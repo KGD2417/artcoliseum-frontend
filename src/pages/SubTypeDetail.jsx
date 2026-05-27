@@ -396,8 +396,6 @@ const DEFAULT_GALLERY = [
   { id: "d6", title: "Renaissance Study", medium: "Mixed Media", artist: "ELENA ROSSI", year: "2023", img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&q=80", dimensions: "80 × 60 cm", description: "Old-master technique meets contemporary subject matter." },
 ];
 
-const TAB_ICONS = ["✦", "◆", "✳", "◈"];
-
 const PREDEFINED_SIZES = [
   { label: "Small", dims: "30 × 25 cm", desc: "Perfect for intimate spaces", multiplier: 0.65 },
   { label: "Standard", dims: "60 × 50 cm", desc: "The most versatile format", multiplier: 1.0 },
@@ -462,7 +460,6 @@ function MentionBubble({ item }) {
 export default function SubTypeDetail() {
   const { medium, sub } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(0);
   const [collectionTab, setCollectionTab] = useState("predefined");
   const [mention, setMention] = useState(null);
 
@@ -478,16 +475,6 @@ export default function SubTypeDetail() {
       </div>
     );
   }
-
-  const tabs = [
-    { label: "About the Art",     heading: data.label,              body: data.origin[0] },
-    { label: "History & Origins", heading: "Ancient Beginnings",    body: data.origin[1] },
-    { label: "Modern Era",        heading: "Into the Modern Era",   body: data.origin[2] },
-    { label: "Pioneers & Masters",heading: "The Great Masters",     isPioneers: true },
-  ];
-
-  const current = tabs[activeTab];
-  const go = (dir) => setActiveTab(i => Math.max(0, Math.min(tabs.length - 1, i + dir)));
 
   return (
     <div style={{ background: "#080808", minHeight: "100vh" }}>
@@ -514,104 +501,6 @@ export default function SubTypeDetail() {
       </div>
 
       <div className="art-main-container" style={{ maxWidth: 1320, margin: "0 auto", padding: "48px 56px 100px" }}>
-
-        {/* Tab pills */}
-        <div className="art-tabs-row" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 36 }}>
-          {tabs.map((tab, i) => (
-            <motion.button
-              key={i}
-              onClick={() => setActiveTab(i)}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "10px 20px",
-                background: activeTab === i ? "rgba(212,175,55,0.08)" : "transparent",
-                border: `1px solid ${activeTab === i ? "#D4AF37" : "rgba(212,175,55,0.2)"}`,
-                borderRadius: 999, cursor: "pointer",
-                fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em",
-                color: activeTab === i ? "#D4AF37" : "rgba(200,191,160,0.45)",
-                transition: "all 0.2s",
-              }}>
-              <span style={{ fontSize: 9 }}>{TAB_ICONS[i]}</span>
-              {tab.label.toUpperCase()}
-              <span style={{ fontSize: 9, opacity: 0.6 }}>{String(i + 1).padStart(2, "0")}</span>
-            </motion.button>
-          ))}
-        </div>
-
-        {/* Slide panel */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.35 }}
-            className="art-slide-panel"
-            style={{
-              display: "grid", gridTemplateColumns: "1fr 1fr",
-              border: "1px solid rgba(212,175,55,0.15)",
-              borderRadius: 20, overflow: "hidden",
-              background: "rgba(255,255,255,0.018)",
-              height: 560,
-            }}>
-
-            {/* Left: Image */}
-            <div className="art-slide-img" style={{ position: "relative", overflow: "hidden", background: "#0d0b08", display: "flex", alignItems: "center", justifyContent: "center", padding: 36 }}>
-              <div style={{ width: "100%", height: "100%", position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(212,175,55,0.06) 0%, transparent 70%)" }} />
-              <motion.img
-                key={data.heroImg}
-                initial={{ scale: 1.06, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6 }}
-                src={data.heroImg}
-                alt=""
-                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12, display: "block", position: "relative", zIndex: 1, boxShadow: "0 24px 60px rgba(0,0,0,0.6)" }}
-              />
-              <div style={{ position: "absolute", bottom: 28, left: 28, zIndex: 2, display: "flex", alignItems: "center", gap: 8, background: "rgba(8,8,8,0.75)", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 999, padding: "7px 16px" }}>
-                <span style={{ color: "#D4AF37", fontSize: 9 }}>◆</span>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37" }}>{current.label.toUpperCase()}</span>
-              </div>
-            </div>
-
-            {/* Right: Content */}
-            <div className="art-slide-content" style={{ padding: "40px 52px", display: "flex", flexDirection: "column", justifyContent: "space-between", borderLeft: "1px solid rgba(212,175,55,0.1)", height: "100%", boxSizing: "border-box" }}>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                  <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, color: "rgba(212,175,55,0.5)", fontStyle: "italic" }}>{String(activeTab + 1).padStart(2, "0")}</span>
-                  <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.22em", color: "#D4AF37" }}>{current.label.toUpperCase()}</span>
-                </div>
-                <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(32px,3vw,46px)", fontWeight: 700, color: "#fff", lineHeight: 1.05, margin: "0 0 20px", letterSpacing: "-0.01em" }}>
-                  {current.heading}
-                </h2>
-                {current.isPioneers ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
-                    {data.pioneers.map(name => (
-                      <span key={name} style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontStyle: "italic", color: "rgba(200,191,160,0.75)", background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.15)", borderRadius: 999, padding: "5px 14px" }}>{name}</span>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontStyle: "italic", color: "rgba(200,191,160,0.78)", lineHeight: 1.8, margin: "0 0 24px" }}>
-                    {current.body}
-                  </p>
-                )}
-                <div style={{ width: 64, height: 2, background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
-              </div>
-
-              {/* Navigation */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 24 }}>
-                <motion.button onClick={() => go(-1)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} disabled={activeTab === 0}
-                  style={{ width: 44, height: 44, borderRadius: "50%", background: activeTab === 0 ? "rgba(255,255,255,0.03)" : "rgba(212,175,55,0.08)", border: `1px solid ${activeTab === 0 ? "rgba(212,175,55,0.1)" : "rgba(212,175,55,0.35)"}`, color: activeTab === 0 ? "rgba(200,191,160,0.2)" : "#D4AF37", cursor: activeTab === 0 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "serif", fontSize: 18, transition: "all 0.2s" }}>←</motion.button>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "rgba(200,191,160,0.4)" }}>
-                  {String(activeTab + 1).padStart(2, "0")} / {String(tabs.length).padStart(2, "0")}
-                </span>
-                <motion.button onClick={() => go(1)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} disabled={activeTab === tabs.length - 1}
-                  style={{ width: 44, height: 44, borderRadius: "50%", background: activeTab === tabs.length - 1 ? "rgba(255,255,255,0.03)" : "rgba(212,175,55,0.08)", border: `1px solid ${activeTab === tabs.length - 1 ? "rgba(212,175,55,0.1)" : "rgba(212,175,55,0.35)"}`, color: activeTab === tabs.length - 1 ? "rgba(200,191,160,0.2)" : "#D4AF37", cursor: activeTab === tabs.length - 1 ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "serif", fontSize: 18, transition: "all 0.2s" }}>→</motion.button>
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
 
         {/* GALLERY */}
         <div style={{ marginTop: 72 }}>

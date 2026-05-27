@@ -28,12 +28,12 @@ export default function Footer() {
           <img
             src={logo}
             alt="Art Coliseum"
-            style={{ height: 28, cursor: "pointer", opacity: 0.85 }}
+            style={{ height: 44, cursor: "pointer", opacity: 0.9 }}
             onClick={() => navigate("/")}
           />
           <span style={{
-            fontFamily: "'Raleway', sans-serif", fontSize: 11,
-            color: "rgba(200,191,160,0.3)", letterSpacing: "0.05em",
+            fontFamily: "'Raleway', sans-serif", fontSize: 13,
+            color: "rgba(200,191,160,0.55)", letterSpacing: "0.05em",
           }}>
             © {new Date().getFullYear()} Art Coliseum
           </span>
@@ -45,11 +45,11 @@ export default function Footer() {
               key={l.label}
               onClick={() => navigate(l.to)}
               style={{
-                fontFamily: "'Raleway', sans-serif", fontSize: 11,
-                color: "rgba(200,191,160,0.35)", cursor: "pointer", transition: "color 0.2s",
+                fontFamily: "'Raleway', sans-serif", fontSize: 13,
+                color: "rgba(200,191,160,0.6)", cursor: "pointer", transition: "color 0.2s",
               }}
               onMouseEnter={e => e.currentTarget.style.color = "#D4AF37"}
-              onMouseLeave={e => e.currentTarget.style.color = "rgba(200,191,160,0.35)"}>
+              onMouseLeave={e => e.currentTarget.style.color = "rgba(200,191,160,0.6)"}>
               {l.label}
             </span>
           ))}
