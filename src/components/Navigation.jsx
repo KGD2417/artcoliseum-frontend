@@ -11,11 +11,11 @@ import i5 from "../assets/i5.png";
 import i6 from "../assets/i6.png";
 
 const LINKS = [
-  { label: "ARTISTS", to: "/artists" },
   { label: "COLLECTION", to: "/categories" },
   { label: "COMMUNITY", to: "/community" },
   { label: "EVENTS", to: "/events" },
   { label: "EXHIBITION", to: "/exhibition" },
+  { label: "ARTISTS", to: "/artists" },
 ];
 
 const SETU_LINKS = [
@@ -24,7 +24,7 @@ const SETU_LINKS = [
   { label: "SARJAAN SETU", to: "/sarjaan-setu" },
   { label: "SHILP SETU", to: "/shilp-setu" },
   { label: "RENTAL", to: "/rental" },
-  { label: "WASTE MGMT", to: "/waste-management" },
+  { label: "Disposal MGMT", to: "/waste-management" },
 ];
 
 const ALL_LINKS = [
@@ -166,9 +166,24 @@ const SEARCH_INDEX = [
   { type: "PAGE", title: "Profile", sub: "Collector profile", to: "/profile" },
   { type: "PAGE", title: "About Art Coliseum", sub: "Our story", to: "/about" },
   { type: "PAGE", title: "Contact", sub: "Get in touch", to: "/contact" },
-  { type: "PAGE", title: "Community", sub: "Artists & collectors hub", to: "/community" },
-  { type: "PAGE", title: "Chat Rooms", sub: "Art discussion rooms", to: "/chat" },
-  { type: "PAGE", title: "Estimate Calculator", sub: "Get artwork price estimate", to: "/estimate" },
+  {
+    type: "PAGE",
+    title: "Community",
+    sub: "Artists & collectors hub",
+    to: "/community",
+  },
+  {
+    type: "PAGE",
+    title: "Chat Rooms",
+    sub: "Art discussion rooms",
+    to: "/chat",
+  },
+  {
+    type: "PAGE",
+    title: "Estimate Calculator",
+    sub: "Get artwork price estimate",
+    to: "/estimate",
+  },
 ];
 
 function NavSearch() {
@@ -206,7 +221,10 @@ function NavSearch() {
   }, [results]);
 
   return (
-    <div ref={ref} className="nav-search nav-search-sm" onClick={() => setOpen(true)}>
+    <div
+      ref={ref}
+      className="nav-search nav-search-sm"
+      onClick={() => setOpen(true)}>
       <span className="nav-search-icon">
         <SearchIcon size={12} />
       </span>
@@ -302,7 +320,15 @@ function GlobeIcon() {
 }
 function SparkBolt() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   );
@@ -323,7 +349,6 @@ function ProfileIcon() {
     </svg>
   );
 }
-
 
 function LangButton({ compact }) {
   const { lang, setLang } = useLocale();
@@ -506,7 +531,15 @@ export default function Navigation() {
             />
           </div>
 
-          <div className="nav-center nav-desktop" style={{ flex: 3, display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+          <div
+            className="nav-center nav-desktop"
+            style={{
+              flex: 3,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 0,
+            }}>
             <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
               {LINKS.map(({ label, to }) => (
                 <NavLink
@@ -520,7 +553,16 @@ export default function Navigation() {
                 </NavLink>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 40, alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(212,175,55,0.1)", flexWrap: "nowrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 40,
+                alignItems: "center",
+                marginTop: 8,
+                paddingTop: 8,
+                borderTop: "1px solid rgba(212,175,55,0.1)",
+                flexWrap: "nowrap",
+              }}>
               {SETU_LINKS.map(({ label, to }) => (
                 <NavLink
                   key={to}
@@ -537,7 +579,7 @@ export default function Navigation() {
                     opacity: 0.92,
                     whiteSpace: "nowrap",
                   }}>
-                  {label.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
+                  {label.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
                 </NavLink>
               ))}
             </div>

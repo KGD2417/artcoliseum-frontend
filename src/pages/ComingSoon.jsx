@@ -213,24 +213,6 @@ export default function ComingSoon({ page }) {
             {info.icon}
           </motion.div>
 
-          <div
-            className="gold-rule"
-            style={{ justifyContent: "center", marginBottom: 20 }}>
-            <div
-              className="grl"
-              style={{
-                background: "linear-gradient(90deg,transparent,#D4AF37)",
-              }}
-            />
-            <span className="grt">COMING SOON</span>
-            <div
-              className="grl"
-              style={{
-                background: "linear-gradient(90deg,#D4AF37,transparent)",
-              }}
-            />
-          </div>
-
           <h1
             style={{
               fontFamily: "'Cormorant Garamond',serif",
