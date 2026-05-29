@@ -24,7 +24,7 @@ const SETU_LINKS = [
   { label: "SARJAAN SETU", to: "/sarjaan-setu" },
   { label: "SHILP SETU", to: "/shilp-setu" },
   { label: "RENTAL", to: "/rental" },
-  { label: "Disposal MGMT", to: "/waste-management" },
+  { label: "Disposal Management", to: "/waste-management" },
 ];
 
 const ALL_LINKS = [
@@ -589,6 +589,15 @@ export default function Navigation() {
             <NavSearch />
 
             <span className="nav-divider" aria-hidden />
+
+            <motion.button
+              title="Cart"
+              onClick={() => navigate("/cart")}
+              className="nav-icon-btn"
+              whileHover={{ scale: 1.15, color: "#D4AF37" }}
+              whileTap={{ scale: 0.92 }}>
+              <CartIcon />
+            </motion.button>
 
             <motion.button
               title="Profile"

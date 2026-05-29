@@ -5,80 +5,79 @@ import { motion } from "framer-motion";
 const PAGE_INFO = {
   "saman-setu": {
     title: "Saman Setu",
-    subtitle: "The Bridge of Provenance",
+    subtitle: "Connecting You with Trusted Vendors",
     description:
-      "A dedicated logistics and authentication layer for fine art — connecting artists, collectors, and conservators with insured global handling, end-to-end provenance tracking, and white-glove delivery. Every Art Coliseum acquisition will pass through Saman Setu, ensuring the work that leaves the studio is the work that arrives at your wall.",
+      "A unique platform that helps you find verified and trusted vendors for your needs. Browse genuine testimonials and authentic unpaid reviews to make confident decisions.",
     icon: "✦",
     features: [
-      "Fully insured global shipping with climate-controlled crating",
-      "Blockchain-anchored provenance and certificate of authenticity",
-      "On-site installation by trained art handlers in 40+ cities",
-      "Live tracking with photo updates at every handoff",
+      "Search vendors by area and category",
+      "Connect with vendors and place orders securely",
+      "Track your order status from start to finish",
     ],
   },
+
   "swad-setu": {
     title: "Swad Setu",
-    subtitle: "Where Culinary Heritage Meets Art",
+    subtitle: "Quality Food Delivered to Your Team",
     description:
-      "Swad Setu is a curated programme of artist-led culinary experiences — private dinners hosted inside ateliers, tasting menus designed alongside exhibitions, and edible art commissions that celebrate regional cuisines as living craft. A bridge between the table and the gallery.",
+      "A unique platform that connects you with experienced food specialists who can provide tasty, high-quality meals for your staff, events, or teams at reasonable prices.",
     icon: "❖",
     features: [
-      "Chef-and-artist collaborations across India, Italy, and Japan",
-      "Intimate atelier dinners limited to twelve guests",
-      "Seasonal tasting menus paired with curated artworks",
-      "Recipe and provenance booklets included with every booking",
+      "Search food providers by cuisine and area",
+      "Place your order and make payments online",
+      "Track your food delivery in real time",
     ],
   },
+
   "sarjaan-setu": {
     title: "Sarjaan Setu",
-    subtitle: "The Bridge of Creation",
+    subtitle: "Finding the Right Expert for Your Needs",
     description:
-      "An incubator for emerging artists — offering studio residencies, materials grants, mentorship from established masters, and a guaranteed first exhibition at Art Coliseum. Sarjaan Setu exists to lower the barrier between talent and platform, so the next generation of voices can be heard without having to wait for permission.",
+      "A unqiue platform that helps you connect with nearby and skilled Sarjaans based on your requirements. View detailed profiles and choose the best match for your work.",
     icon: "✧",
     features: [
-      "Funded six-month residencies at partner studios worldwide",
-      "One-to-one mentorship with represented Art Coliseum artists",
-      "Materials, framing, and shipping grants up to ₹2,00,000",
-      "Guaranteed debut exhibition slot for selected residents",
+      "Search Sarjaans by area and specialization",
+      "View detailed profiles and experience",
+      "Compare options and choose the right expert",
     ],
   },
+
   "shilp-setu": {
     title: "Shilp Setu",
-    subtitle: "Honouring the Hand of the Craftsman",
+    subtitle: "Connecting You with Skilled Contractors",
     description:
-      "A direct-to-collector platform for India's master artisans — Pichwai painters, Madhubani practitioners, blue-pottery throwers, Pattachitra storytellers, and bronze casters working in techniques passed down through generations. Shilp Setu removes the middlemen, ensuring fair compensation reaches the makers and their craft endures.",
+      "A unique platform that connects you with verified and trusted contractors. Check genuine testimonials and authentic reviews before assigning your projects.",
     icon: "◈",
     features: [
-      "Direct commissions from over 200 verified master artisans",
-      "Workshop films documenting the making of every piece",
-      "Cluster-level fair-trade pricing audited annually",
-      "Apprenticeship funding tied to every collector purchase",
+      "Search contractors by area and category",
+      "Connect with contractors and assign tasks",
+      "Share reviews, ratings, and project photos",
     ],
   },
+
   rental: {
     title: "Rental",
-    subtitle: "Live With Masterpieces — On Your Terms",
+    subtitle: "Easy Access to Equipment and Machinery",
     description:
-      "For collectors who wish to experience a work before acquiring it, and for businesses looking to refresh their walls each season — Art Rental offers monthly and quarterly leases on a rotating catalogue of Art Coliseum works. Rental fees credit toward future purchase, so loving a piece can quietly become owning it.",
+      "A unique platform where you can rent equipment, machinery, tools, and other resources with useful data insights to help you make better rental decisions.",
     icon: "◆",
     features: [
-      "Flexible monthly, quarterly, and annual rental terms",
-      "Free swap-outs every quarter from the rotating catalogue",
-      "100% of paid rental credits applies toward future purchase",
-      "Full insurance and white-glove installation included",
+      "Search equipment and rental providers in your area",
+      "Compare options and review rental insights",
+      "Track rentals and manage payments easily",
     ],
   },
+
   "waste-management": {
     title: "Disposal Management",
-    subtitle: "A Circular Future for Studio Materials",
+    subtitle: "Smart Waste Collection and Disposal",
     description:
-      "Studios produce enormous quantities of solvent, pigment, canvas off-cuts, and packing waste — most of it landfill-bound. Art Waste Management is our partnership with studios and collectors to recover, reuse, and responsibly dispose of art-making byproducts, with a clear public ledger of what's been diverted from the waste stream.",
+      "A unique platform that helps you find reliable waste disposal agencies in your area. Compare services, track progress, and manage payments through a simple process.",
     icon: "♢",
     features: [
-      "Free studio pickup of solvents, used canvases, and offcuts",
-      "Pigment and material recovery distributed to art schools",
-      "Carbon-neutral packing materials on every Coliseum shipment",
-      "Public sustainability ledger updated quarterly",
+      "Find waste disposal agencies based on location",
+      "Upload photos and compare service options",
+      "Track task completion and make secure payments",
     ],
   },
 };
