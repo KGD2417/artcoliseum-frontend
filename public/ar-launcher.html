@@ -223,7 +223,11 @@
 <div class="ar-not-supported" id="ar-not-supported">
   <h2>AR Not Available</h2>
   <p id="not-supported-msg">WebXR AR is not supported on this browser/device. On desktop you'll enjoy the full 3D preview. On Android use Chrome for full AR.</p>
-  <button class="ar-place-btn" id="not-supported-close" style="margin-top:8px">Close</button>
+  <p style="margin-top:4px;font-size:13px;color:rgba(240,236,228,0.45);">Or use our AI Room Visualizer — upload a photo of your room and place the artwork with AI.</p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px">
+    <button class="ar-place-btn" id="not-supported-close">Continue in 3D Preview</button>
+    <button class="ar-place-btn" id="not-supported-visualizer" style="background:transparent;border:1px solid var(--gold);color:var(--gold)">Try AI Room Visualizer</button>
+  </div>
 </div>
 
 <div id="screenshot-preview">
@@ -245,7 +249,7 @@ const state = {
   frameStyle: 'classic', frameColor: '#8B6914',
   frameWidth: 3.0, matteWidth: 1.5, artworkScale: 80, shadowIntensity: 1,
   placedMeshes: [], xrSession: null, xrRefSpace: null, xrHitTestSource: null,
-  reticleMesh: null, previewMesh: null, animFrameId: null, isARActive: false,
+  reticleMesh: null, previewMesh: null, animFrameId: null, isARActive: false, onWall: false,
   renderer: null, scene: null, camera: null,
 };
 
@@ -463,6 +467,17 @@ function showNotSupported(msg) {
 document.getElementById('not-supported-close').addEventListener('click', () => {
   document.getElementById('ar-not-supported').classList.remove('active');
 });
+document.getElementById('not-supported-visualizer').addEventListener('click', () => {
+  const p = new URLSearchParams(window.location.search);
+  const imgParam  = p.get('image');
+  const typeParam = p.get('type');
+  let target = '/ar';
+  const params = [];
+  if (imgParam)  params.push('image='  + encodeURIComponent(imgParam));
+  if (typeParam) params.push('type='   + encodeURIComponent(typeParam));
+  if (params.length) target += '?' + params.join('&');
+  window.location.href = target;
+});
 
 // ── WEBXR AR SESSION ──────────────────────────────────────────────
 async function startARSession() {
@@ -470,7 +485,7 @@ async function startARSession() {
   try {
     const session = await navigator.xr.requestSession('immersive-ar', {
       requiredFeatures: ['hit-test'],
-      optionalFeatures: ['local-floor', 'hand-tracking'],
+      optionalFeatures: ['local-floor', 'hand-tracking', 'plane-detection'],
     });
     state.xrSession = session;
     state.isARActive = true;
@@ -484,8 +499,9 @@ async function startARSession() {
 
     const viewerSpace = await session.requestReferenceSpace('viewer');
     state.xrHitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+    state.onWall = false; // tracks whether reticle is on a wall
 
-    // Reticle
+    // Reticle — two colours: gold for wall, dim white for floor/unknown
     const reticleGeo = new THREE.RingGeometry(0.09, 0.11, 32);
     const reticleMat = new THREE.MeshBasicMaterial({ color: 0xc9a84c, side: THREE.DoubleSide });
     state.reticleMesh = new THREE.Mesh(reticleGeo, reticleMat);
@@ -504,30 +520,73 @@ async function startARSession() {
   }
 }
 
+// Returns true if an XRPlane's normal vector is near-vertical (i.e. it's a wall).
+function isVerticalPlane(plane, refSpace, frame) {
+  try {
+    const pose = frame.getPose(plane.planeSpace, refSpace);
+    if (!pose) return false;
+    // Extract the Y column of the rotation matrix — that's the plane normal
+    const m = pose.transform.matrix;
+    const normalY = m[5]; // column-major: m[4]=nx, m[5]=ny, m[6]=nz (Y column)
+    return Math.abs(normalY) < 0.25; // near-horizontal normal → vertical plane
+  } catch { return false; }
+}
+
 function onXRFrame(time, frame) {
   const session = state.xrSession;
   if (!session) return;
   session.requestAnimationFrame(onXRFrame);
 
-  const hitTestResults = frame.getHitTestResults(state.xrHitTestSource);
   const placeBtn = document.getElementById('ar-place-btn');
+  const instructionEl = document.getElementById('ar-instruction');
+
+  // ── 1. Check for vertical planes (walls) via plane-detection ──
+  let wallHitPose = null;
+  if (frame.detectedPlanes && frame.detectedPlanes.size > 0) {
+    frame.detectedPlanes.forEach(plane => {
+      if (wallHitPose) return; // already found one
+      if (isVerticalPlane(plane, state.xrRefSpace, frame)) {
+        // Use the plane's pose as our preferred placement point
+        const planePose = frame.getPose(plane.planeSpace, state.xrRefSpace);
+        if (planePose) wallHitPose = planePose;
+      }
+    });
+  }
+
+  // ── 2. Fall back to hit-test (floor / any surface) ──
+  const hitTestResults = frame.getHitTestResults(state.xrHitTestSource);
+  let hitPose = null;
   if (hitTestResults.length > 0) {
-    const hit = hitTestResults[0];
-    const pose = hit.getPose(state.xrRefSpace);
-    if (pose) {
-      state.reticleMesh.visible = true;
-      state.reticleMesh.matrix.fromArray(pose.transform.matrix);
-      state.reticleMesh.matrixAutoUpdate = false;
-      document.getElementById('ar-instruction').textContent = 'Surface detected — tap Place to hang artwork';
-      placeBtn.disabled = false;
+    hitPose = hitTestResults[0].getPose(state.xrRefSpace);
+  }
+
+  // ── 3. Prefer wall pose; suppress floor if a wall is available ──
+  const bestPose = wallHitPose || (wallHitPose ? null : hitPose);
+  state.onWall = !!wallHitPose;
+
+  if (bestPose) {
+    state.reticleMesh.visible = true;
+    state.reticleMesh.matrixAutoUpdate = false;
+    state.reticleMesh.matrix.fromArray(bestPose.transform.matrix);
+
+    // Adjust reticle orientation: walls need vertical ring, floors need horizontal
+    if (state.onWall) {
+      state.reticleMesh.rotation.set(0, 0, 0); // stand upright on wall
+      state.reticleMesh.material.color.setHex(0xc9a84c); // gold — wall locked
+      instructionEl.textContent = 'Wall detected — tap Place to hang artwork';
+    } else {
+      state.reticleMesh.rotation.x = -Math.PI / 2; // lie flat on floor
+      state.reticleMesh.material.color.setHex(0x888888); // grey — floor only
+      instructionEl.textContent = 'Floor detected — point at a wall for best results';
     }
+
+    placeBtn.disabled = false;
   } else {
     state.reticleMesh.visible = false;
-    document.getElementById('ar-instruction').textContent = 'Move camera slowly to detect surfaces';
+    instructionEl.textContent = 'Move camera slowly to detect a wall surface';
     placeBtn.disabled = true;
   }
 
-  const glLayer = session.renderState.baseLayer;
   state.renderer.render(state.scene, state.camera);
 }
 
@@ -539,11 +598,25 @@ document.getElementById('ar-place-btn').addEventListener('click', () => {
     frameWidth: state.frameWidth, matteWidth: state.matteWidth, shadowIntensity: state.shadowIntensity,
   });
   mesh.position.setFromMatrixPosition(state.reticleMesh.matrix);
-  mesh.quaternion.setFromRotationMatrix(state.reticleMesh.matrix);
-  mesh.rotation.x = 0; // keep upright
+
+  if (state.onWall) {
+    // Keep artwork flat against the wall: copy wall orientation but zero out any tilt
+    mesh.quaternion.setFromRotationMatrix(state.reticleMesh.matrix);
+    mesh.rotation.x = 0;     // no lean forward/back
+    mesh.rotation.z = 0;     // no roll
+    // Offset slightly forward from the wall surface so it doesn't z-fight
+    const forward = new THREE.Vector3(0, 0, 0.005);
+    forward.applyQuaternion(mesh.quaternion);
+    mesh.position.add(forward);
+  } else {
+    // Floor placement: face camera, stay upright
+    mesh.quaternion.setFromRotationMatrix(state.reticleMesh.matrix);
+    mesh.rotation.x = 0;
+  }
+
   state.scene.add(mesh);
   state.placedMeshes.push(mesh);
-  toast('Artwork placed!', 'success');
+  toast(state.onWall ? 'Artwork hung on wall!' : 'Artwork placed on floor!', 'success');
 });
 
 document.getElementById('ar-undo-btn').addEventListener('click', () => {

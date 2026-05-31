@@ -9,6 +9,36 @@ import e7 from "../assets/events/e7.png";
 import e8 from "../assets/events/e8.png";
 import e9 from "../assets/events/e9.png";
 
+const FALLBACK_PAST = [
+  {
+    title: "Echoes of the Ancients",
+    date: "Jan 10 – Mar 28, 2025",
+    time: "10:00 AM – 6:00 PM · Tue – Sun",
+    location: "Rome, Italy",
+    desc: "A landmark retrospective tracing the influence of classical antiquity on modern and contemporary art forms. Sculptures, reliefs, and painted panels spanning three millennia.",
+    img: e4,
+    curator: "Marco Bianchi",
+  },
+  {
+    title: "Chromatic Dialogues",
+    date: "Feb 14 – Apr 30, 2025",
+    time: "11:00 AM – 7:00 PM · Daily",
+    location: "Paris, France",
+    desc: "Colour as conversation — thirty artists across five decades exploring how pigment, light, and surface unite to create experiences that transcend the visual.",
+    img: e5,
+    curator: "Sophie Laurent",
+  },
+  {
+    title: "Invisible Architectures",
+    date: "Mar 1 – May 10, 2025",
+    time: "10:30 AM – 6:30 PM · Wed – Mon",
+    location: "Tokyo, Japan",
+    desc: "Structural art installations exploring negative space, shadow, and the geometry of absence. Twenty-two artists, one shared vision.",
+    img: e6,
+    curator: "Kenji Mori",
+  },
+];
+
 const FALLBACK_ONGOING = [
   {
     title: "The Golden Age Exhibition",
@@ -78,7 +108,7 @@ function EventCard({ event, index, status, onAction, onOpenDetail }) {
       ref={ref}
       className="ev-page-card"
       onClick={() => status === "ONGOING" && onOpenDetail && onOpenDetail(event)}
-      style={{ cursor: status === "ONGOING" ? "pointer" : "default" }}
+      style={{ cursor: status === "ONGOING" ? "pointer" : "default", opacity: status === "PAST" ? 0.82 : 1 }}
       initial={{ opacity: 0, y: 40 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.7, delay: (index % 3) * 0.12, ease: [0.22, 1, 0.36, 1] }}>
@@ -122,6 +152,13 @@ function EventCard({ event, index, status, onAction, onOpenDetail }) {
         {status === "ONGOING" && (
           <div className="ev-page-actions">
             <motion.button
+              className="btn-primary ev-page-btn"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={(e) => { e.stopPropagation(); onAction(event, "register"); }}>
+              REGISTER →
+            </motion.button>
+            <motion.button
               className="btn-secondary ev-page-btn"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
@@ -145,6 +182,7 @@ export default function Events() {
   const [activeMode, setActiveMode] = useState("register");
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [done, setDone] = useState(false);
+  const [past, setPast] = useState(FALLBACK_PAST);
   const [ongoing, setOngoing] = useState(FALLBACK_ONGOING);
   const [upcoming, setUpcoming] = useState(FALLBACK_UPCOMING);
   const [detailEvent, setDetailEvent] = useState(null);
@@ -184,6 +222,7 @@ export default function Events() {
         desc: r.description,
         img: r.image_url,
       });
+      setPast(data.filter(r => r.status === "past").map(map));
       setOngoing(data.filter(r => r.status === "ongoing").map(map));
       setUpcoming(data.filter(r => r.status === "upcoming").map(map));
     })();
@@ -223,7 +262,7 @@ export default function Events() {
           animate={headerInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.7 }}>
           <div className="grl" style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }} />
-          <span className="grt">Ongoing & Upcoming</span>
+          <span className="grt">Past, Ongoing & Upcoming</span>
           <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
         </motion.div>
         <motion.h1
@@ -267,6 +306,13 @@ export default function Events() {
 
       <div className="ev-tabs">
         <button
+          className={`ev-tab ${tab === "past" ? "is-active" : ""}`}
+          onClick={() => setTab("past")}>
+          <span className="ev-section-dot ev-section-dot-past" />
+          PAST
+          <span className="ev-tab-count">{past.length}</span>
+        </button>
+        <button
           className={`ev-tab ${tab === "ongoing" ? "is-active" : ""}`}
           onClick={() => setTab("ongoing")}>
           <span className="ev-section-dot ev-section-dot-on" />
@@ -290,8 +336,8 @@ export default function Events() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-          <div className="ev-page-grid">
-            {(tab === "ongoing" ? ongoing : upcoming)
+          <div className="ev-page-grid" style={tab === "past" ? { opacity: 0.75 } : {}}>
+            {(tab === "past" ? past : tab === "ongoing" ? ongoing : upcoming)
               .filter((ev) =>
                 !search.trim()
                   ? true
@@ -304,7 +350,7 @@ export default function Events() {
                   key={ev.title}
                   event={ev}
                   index={i}
-                  status={tab === "ongoing" ? "ONGOING" : "UPCOMING"}
+                  status={tab === "past" ? "PAST" : tab === "ongoing" ? "ONGOING" : "UPCOMING"}
                   onAction={open}
                   onOpenDetail={setDetailEvent}
                 />

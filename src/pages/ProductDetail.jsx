@@ -104,7 +104,6 @@ export default function ProductDetail() {
   const [activeImg, setActiveImg] = useState(0);
   const [predefinedSize, setPredefinedSize] = useState(null);
   const [favorited, setFavorited] = useState(false);
-  const [customOpen, setCustomOpen] = useState(false);
   const [customForm, setCustomForm] = useState({ size: "Standard", frame: "No frame", finish: "Satin varnish", palette: "As created" });
   const [wall, setWall] = useState({ w: "", h: "", unit: "Feet" });
   const [wallFit, setWallFit] = useState(null);
@@ -157,6 +156,14 @@ export default function ProductDetail() {
     finish:  { "Satin varnish": 0, Matte: 0, "High gloss": 5, Unvarnished: 0 },
     palette: { "As created": 0, "Warmer tones": 10, "Cooler tones": 10, Monochrome: 15, Custom: 20 },
   };
+  const arType = (() => {
+    const m = (productData?.medium || "").toLowerCase();
+    if (m.includes("sculpture")) return "sculpture";
+    if (m.includes("mural") || m.includes("wallpaper")) return "mural";
+    return "painting";
+  })();
+  const arUrl = (imgUrl) => `/ar-launcher.html?image=${encodeURIComponent(imgUrl)}&type=${arType}`;
+
   const basePrice = productData?.price || 12000;
   const upchargePct = Object.entries(UPCHARGES).reduce((sum, [key, map]) => sum + (map[customForm[key]] ?? 0), 0) + wallUpcharge;
   const customPrice = Math.round(basePrice * (1 + upchargePct / 100));
@@ -203,7 +210,7 @@ export default function ProductDetail() {
               <CircleBtn>
                 <ZoomIcon size={16} />
               </CircleBtn>
-              <CircleBtn onClick={() => window.open('/ar-launcher.html?image=' + encodeURIComponent(productData.images[activeImg]), '_blank')}>
+              <CircleBtn onClick={() => window.open(arUrl(productData.images[activeImg]), '_blank')}>
                 <SparkIcon size={16} />
               </CircleBtn>
             </div>
@@ -401,211 +408,176 @@ export default function ProductDetail() {
             ENQUIRE NOW
           </motion.button>
 
-          {/* VIEW IN AR + CUSTOMISE row */}
-          <div className="pd-btn-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            <button
-              onClick={() => window.open('/ar-launcher.html?image=' + encodeURIComponent(productData.images[activeImg]), '_blank')}
-              style={{ ...pillBtn, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              <SparkIcon size={14} /> VIEW IN AR
-            </button>
-            <motion.button
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => setCustomOpen(v => !v)}
-              style={{
-                ...pillBtn,
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-                borderColor: customOpen ? "#D4AF37" : "rgba(212,175,55,0.4)",
-                color: customOpen ? "#D4AF37" : "#e8e0d0",
-                background: customOpen ? "rgba(212,175,55,0.07)" : "transparent",
-              }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-              </svg>
-              CUSTOMISE
-            </motion.button>
-          </div>
+          {/* VIEW IN AR */}
+          <button
+            onClick={() => window.open(arUrl(productData.images[activeImg]), '_blank')}
+            style={{ ...pillBtn, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
+            <SparkIcon size={14} /> VIEW IN AR
+          </button>
 
-          {/* Inline customisation panel */}
-          <AnimatePresence>
-            {customOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={{ overflow: "hidden", marginBottom: 16 }}>
-                <div style={{
-                  background: "rgba(212,175,55,0.04)",
-                  border: "1px solid rgba(212,175,55,0.18)",
-                  borderRadius: 12, padding: "20px 22px",
+          {/* Customisation panel — always visible when not predefined */}
+          {!isPredefined && (
+            <div style={{
+              background: "rgba(212,175,55,0.04)",
+              border: "1px solid rgba(212,175,55,0.18)",
+              borderRadius: 12, padding: "20px 22px", marginBottom: 16,
+            }}>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>CUSTOMISE YOUR PIECE</div>
+
+              <div className="pd-custom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                {[
+                  ["SIZE", "size", ["Standard", "Small (50%)", "Large (150%)", "Custom"]],
+                  ["FRAME", "frame", ["No frame", "Simple Wood", "Hand-finished Walnut", "Museum Grade UV Glass", "Custom Gilded"]],
+                  ["FINISH", "finish", ["Satin varnish", "Matte", "High gloss", "Unvarnished"]],
+                  ["PALETTE", "palette", ["As created", "Warmer tones", "Cooler tones", "Monochrome", "Custom"]],
+                ].map(([label, key, opts]) => (
+                  <div key={key}>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 5 }}>{label}</div>
+                    <select
+                      value={customForm[key]}
+                      onChange={e => setCustomForm(f => ({ ...f, [key]: e.target.value }))}
+                      style={{ width: "100%", padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, cursor: "pointer", outline: "none" }}>
+                      {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              {/* Wall size calculator */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 8 }}>ENTER YOUR WALL SIZE</div>
+                <div className="pd-wall-row" style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                  <input
+                    type="number" placeholder="Width" value={wall.w}
+                    onChange={e => { setWall(f => ({ ...f, w: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
+                    style={{ flex: 1, padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center" }}
+                  />
+                  <input
+                    type="number" placeholder="Height" value={wall.h}
+                    onChange={e => { setWall(f => ({ ...f, h: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
+                    style={{ flex: 1, padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center" }}
+                  />
+                  <select
+                    value={wall.unit} onChange={e => { setWall(f => ({ ...f, unit: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
+                    style={{ padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, cursor: "pointer", outline: "none" }}>
+                    <option>Feet</option>
+                    <option>Inches</option>
+                    <option>cm</option>
+                  </select>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                    onClick={calcWallFit}
+                    style={{ padding: "8px 16px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", border: "none", borderRadius: 6, color: "#0e0c0a", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    CALCULATE
+                  </motion.button>
+                </div>
+                {wallFit && wallFit.upcharge > 0 && (
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                    style={{ marginTop: 10, padding: "8px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.2)" }}>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: "#D4AF37" }}>
+                      +{wallFit.upcharge}% wall-size adjustment applied to price
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Price comparison */}
+              <div style={{ borderTop: "1px solid rgba(212,175,55,0.15)", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.45)", marginBottom: 3 }}>BASE MRP</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "rgba(200,191,160,0.55)", textDecoration: upchargePct !== 0 ? "line-through" : "none" }}>
+                    {fmtPrice(basePrice)}
+                  </div>
+                </div>
+                {upchargePct !== 0 && (
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 3 }}>
+                      CUSTOMISED PRICE {upchargePct > 0 ? `+${upchargePct}%` : `${upchargePct}%`}
+                    </div>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#D4AF37" }}>
+                      {fmtPrice(customPrice)}
+                    </div>
+                  </div>
+                )}
+                {upchargePct === 0 && (
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(200,191,160,0.35)" }}>
+                    NO ADDITIONAL COST
+                  </div>
+                )}
+              </div>
+
+              {/* Take it home CTA */}
+              <motion.button
+                whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate("/cart")}
+                style={{
+                  width: "100%", padding: "14px",
+                  background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+                  color: "#0e0c0a", border: "none", borderRadius: 999,
+                  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                 }}>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>CUSTOMISE YOUR PIECE</div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                TAKE IT HOME — {fmtPrice(customPrice)}
+              </motion.button>
+            </div>
+          )}
 
-                  <div className="pd-custom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                    {[
-                      ["SIZE", "size", ["Standard", "Small (50%)", "Large (150%)", "Custom"]],
-                      ["FRAME", "frame", ["No frame", "Simple Wood", "Hand-finished Walnut", "Museum Grade UV Glass", "Custom Gilded"]],
-                      ["FINISH", "finish", ["Satin varnish", "Matte", "High gloss", "Unvarnished"]],
-                      ["PALETTE", "palette", ["As created", "Warmer tones", "Cooler tones", "Monochrome", "Custom"]],
-                    ].map(([label, key, opts]) => (
-                      <div key={key}>
-                        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 5 }}>{label}</div>
-                        <select
-                          value={customForm[key]}
-                          onChange={e => setCustomForm(f => ({ ...f, [key]: e.target.value }))}
-                          style={{ width: "100%", padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, cursor: "pointer", outline: "none" }}>
-                          {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Wall size calculator */}
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 8 }}>ENTER YOUR WALL SIZE</div>
-                    <div className="pd-wall-row" style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-                      <input
-                        type="number" placeholder="Width" value={wall.w}
-                        onChange={e => { setWall(f => ({ ...f, w: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
-                        style={{ flex: 1, padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center" }}
-                      />
-                      <input
-                        type="number" placeholder="Height" value={wall.h}
-                        onChange={e => { setWall(f => ({ ...f, h: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
-                        style={{ flex: 1, padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center" }}
-                      />
-                      <select
-                        value={wall.unit} onChange={e => { setWall(f => ({ ...f, unit: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
-                        style={{ padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, cursor: "pointer", outline: "none" }}>
-                        <option>Feet</option>
-                        <option>Inches</option>
-                        <option>cm</option>
-                      </select>
-                      <motion.button
-                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                        onClick={calcWallFit}
-                        style={{ padding: "8px 16px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", border: "none", borderRadius: 6, color: "#0e0c0a", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                        CALCULATE
-                      </motion.button>
-                    </div>
-                    {wallFit && wallFit.upcharge > 0 && (
-                      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                        style={{ marginTop: 10, padding: "8px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.2)" }}>
-                        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: "#D4AF37" }}>
-                          +{wallFit.upcharge}% wall-size adjustment applied to price
-                        </div>
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {/* Price comparison */}
-                  <div style={{ borderTop: "1px solid rgba(212,175,55,0.15)", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
-                    <div>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.45)", marginBottom: 3 }}>BASE MRP</div>
-                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "rgba(200,191,160,0.55)", textDecoration: upchargePct !== 0 ? "line-through" : "none" }}>
-                        {fmtPrice(basePrice)}
-                      </div>
-                    </div>
-                    {upchargePct !== 0 && (
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 3 }}>
-                          CUSTOMISED PRICE {upchargePct > 0 ? `+${upchargePct}%` : `${upchargePct}%`}
-                        </div>
-                        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#D4AF37" }}>
-                          {fmtPrice(customPrice)}
-                        </div>
-                      </div>
-                    )}
-                    {upchargePct === 0 && (
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(200,191,160,0.35)" }}>
-                        NO ADDITIONAL COST
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Take it home CTA */}
+          {/* Predefined sizes panel — only when navigated from predefined collection */}
+          {isPredefined && (
+            <div style={{ background: "rgba(212,175,55,0.04)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, padding: "20px 22px", marginBottom: 16 }}>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>SELECT PREDEFINED SIZE</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+                {PREDEFINED_SIZES.map((sz) => (
                   <motion.button
-                    whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => navigate("/cart")}
-                    style={{
-                      width: "100%", padding: "14px",
-                      background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                      color: "#0e0c0a", border: "none", borderRadius: 999,
-                      fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
-                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                    }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
-                    TAKE IT HOME — {fmtPrice(customPrice)}
-                  </motion.button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Predefined sizes panel */}
-          <AnimatePresence>
-            {isPredefined && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={{ overflow: "hidden", marginBottom: 16 }}>
-                <div style={{ background: "rgba(212,175,55,0.04)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, padding: "20px 22px" }}>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>SELECT PREDEFINED SIZE</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-                    {PREDEFINED_SIZES.map((sz) => (
-                      <motion.button
-                        key={sz.label}
-                        onClick={() => setPredefinedSize(sz)}
-                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                        style={{
-                          padding: "14px 12px", borderRadius: 10, cursor: "pointer", textAlign: "left",
-                          background: predefinedSize?.label === sz.label ? "rgba(212,175,55,0.1)" : "rgba(255,255,255,0.02)",
-                          border: `1px solid ${predefinedSize?.label === sz.label ? "#D4AF37" : "rgba(212,175,55,0.18)"}`,
-                          transition: "all 0.15s",
-                        }}>
-                        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: predefinedSize?.label === sz.label ? "#D4AF37" : "#e8e0d0", marginBottom: 4 }}>{sz.label}</div>
-                        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)", marginBottom: 2 }}>{sz.dims}</div>
-                        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>{sz.desc}</div>
-                      </motion.button>
-                    ))}
-                  </div>
-                  {predefinedSize && (
-                    <AnimatePresence>
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 10, marginBottom: 14 }}>
-                        <div>
-                          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 2 }}>{predefinedSize.label} — {predefinedSize.dims}</div>
-                          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{predefinedSize.desc}</div>
-                        </div>
-                        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>
-                          {fmtPrice(Math.round(basePrice * predefinedSize.multiplier))}
-                        </div>
-                      </motion.div>
-                    </AnimatePresence>
-                  )}
-                  <motion.button
+                    key={sz.label}
+                    onClick={() => setPredefinedSize(sz)}
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    onClick={() => navigate("/cart")}
                     style={{
-                      width: "100%", padding: "14px",
-                      background: predefinedSize ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.08)",
-                      color: predefinedSize ? "#0e0c0a" : "#D4AF37",
-                      border: `1px solid ${predefinedSize ? "transparent" : "rgba(212,175,55,0.3)"}`,
-                      borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
-                      cursor: predefinedSize ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "all 0.2s",
+                      padding: "14px 12px", borderRadius: 10, cursor: "pointer", textAlign: "left",
+                      background: predefinedSize?.label === sz.label ? "rgba(212,175,55,0.1)" : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${predefinedSize?.label === sz.label ? "#D4AF37" : "rgba(212,175,55,0.18)"}`,
+                      transition: "all 0.15s",
                     }}>
-                    {predefinedSize ? `ENQUIRE — ${fmtPrice(Math.round(basePrice * predefinedSize.multiplier))}` : "SELECT A SIZE TO ENQUIRE"}
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: predefinedSize?.label === sz.label ? "#D4AF37" : "#e8e0d0", marginBottom: 4 }}>{sz.label}</div>
+                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)", marginBottom: 2 }}>{sz.dims}</div>
+                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>{sz.desc}</div>
                   </motion.button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                ))}
+              </div>
+              <AnimatePresence>
+                {predefinedSize && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 10, marginBottom: 14 }}>
+                    <div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 2 }}>{predefinedSize.label} — {predefinedSize.dims}</div>
+                      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{predefinedSize.desc}</div>
+                    </div>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>
+                      {fmtPrice(Math.round(basePrice * predefinedSize.multiplier))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                onClick={() => navigate("/cart")}
+                style={{
+                  width: "100%", padding: "14px",
+                  background: predefinedSize ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.08)",
+                  color: predefinedSize ? "#0e0c0a" : "#D4AF37",
+                  border: `1px solid ${predefinedSize ? "transparent" : "rgba(212,175,55,0.3)"}`,
+                  borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
+                  cursor: predefinedSize ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "all 0.2s",
+                }}>
+                {predefinedSize ? `ENQUIRE — ${fmtPrice(Math.round(basePrice * predefinedSize.multiplier))}` : "SELECT A SIZE TO ENQUIRE"}
+              </motion.button>
+            </div>
+          )}
         </motion.div>
       </div>
 

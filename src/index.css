@@ -3353,6 +3353,11 @@ input[type="email"] {
   color: rgba(200, 191, 160, 0.7);
   border: 1px solid rgba(200, 191, 160, 0.2);
 }
+.ev-page-tag-past {
+  background: rgba(100, 90, 75, 0.15);
+  color: rgba(160, 150, 130, 0.55);
+  border: 1px solid rgba(140, 130, 110, 0.18);
+}
 .ev-page-body {
   padding: 22px 24px 28px;
 }
@@ -3450,6 +3455,9 @@ input[type="email"] {
 .ev-section-dot-up {
   background: #d4af37;
   box-shadow: 0 0 12px rgba(212, 175, 55, 0.55);
+}
+.ev-section-dot-past {
+  background: rgba(150, 140, 120, 0.6);
 }
 @keyframes evPulse {
   0%,
@@ -4176,6 +4184,26 @@ input[type="email"] {
       rgba(0, 0, 0, 0.48) 27%,
       transparent 62%
     );
+}
+
+.coliseum-carousel-card-hover-cta {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #D4AF37;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.coliseum-carousel-card:hover .coliseum-carousel-card-hover-cta {
+  opacity: 1;
 }
 
 .coliseum-carousel-card-copy {
@@ -4978,6 +5006,41 @@ input[type="email"] {
   /* SubTypeDetail hero */
   .art-hero { height: 320px !important; }
   .art-main-container { padding: 36px 24px 80px !important; }
+}
+
+/* ── Community layout ── */
+.comm-layout {
+  display: flex;
+  gap: 24px;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 40px 24px 100px;
+  align-items: flex-start;
+}
+.comm-sidebar {
+  width: 252px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 88px;
+}
+.comm-feed {
+  flex: 1;
+  min-width: 0;
+  max-width: 720px;
+}
+@media (max-width: 900px) {
+  .comm-layout {
+    flex-direction: column;
+    gap: 20px;
+    padding: 28px 16px 80px;
+  }
+  .comm-sidebar {
+    width: 100%;
+    position: static;
+  }
+  .comm-feed {
+    max-width: 100%;
+  }
 }
 
 /* ── Universal overflow guard ── */

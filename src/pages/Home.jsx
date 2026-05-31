@@ -39,18 +39,38 @@ import e3 from "../assets/events/e3.png";
 
 /* ── Hero gallery ────────────────────────────────────────────────── */
 const HERO_GALLERY = [
-  { image: i1, text: "Golden Horizon" },
-  { image: i2, text: "Eternal Grace" },
-  { image: i6, text: "Cosmic Flow" },
-  { image: i4, text: "The Golden Tree" },
-  { image: i5, text: "Whispers of Silence" },
-  { image: "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop", text: "Crimson Reverie" },
-  { image: "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?w=900&q=80&auto=format&fit=crop", text: "Velvet Mirage" },
-  { image: i8, text: "Renaissance Study" },
-  { image: "https://images.unsplash.com/photo-1549887534-1541e9326642?w=900&q=80&auto=format&fit=crop", text: "Crimson Tides" },
-  { image: i3, text: "Azure Dreams" },
-  { image: "https://images.unsplash.com/photo-1551913902-c92207136625?w=900&q=80&auto=format&fit=crop", text: "Solstice" },
-  { image: i7, text: "Ocean Depths" },
+  { image: i1, text: "Ethereal Horizon", id: "p1" },
+  { image: i2, text: "Eternal Grace", id: null },
+  { image: i6, text: "Cosmic Flow", id: "p5" },
+  { image: i4, text: "The Golden Tree", id: "p6" },
+  { image: i5, text: "Whispers of Silence", id: "p7" },
+  {
+    image:
+      "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop",
+    text: "Crimson Reverie",
+    id: null,
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?w=900&q=80&auto=format&fit=crop",
+    text: "Velvet Mirage",
+    id: null,
+  },
+  { image: i8, text: "Renaissance Study", id: "p8" },
+  {
+    image:
+      "https://images.unsplash.com/photo-1549887534-1541e9326642?w=900&q=80&auto=format&fit=crop",
+    text: "Crimson Tides",
+    id: null,
+  },
+  { image: i3, text: "The Infinite Stair", id: "p4" },
+  {
+    image:
+      "https://images.unsplash.com/photo-1551913902-c92207136625?w=900&q=80&auto=format&fit=crop",
+    text: "Solstice",
+    id: null,
+  },
+  { image: i7, text: "Ocean Depths", id: "p9" },
 ];
 
 const FALLBACK_HERO_GALLERY = HERO_GALLERY;
@@ -377,90 +397,77 @@ function StackedCardsInteraction({ images }) {
 }
 
 /* ═══════════════ PRESERVATION — FLOATING ART IMAGES ═══════════════ */
-const PRESERVATION_TIERS = [
-  { label: "ASSESSMENT", icon: "◈", desc: "We examine your artwork's condition, medium, age, and structural integrity to determine preservation viability." },
-  { label: "TREATMENT PLAN", icon: "◆", desc: "A detailed restoration roadmap is created — specific to your piece. Not all art qualifies; we will tell you honestly." },
-  { label: "ARCHIVING", icon: "✦", desc: "High-resolution digital archiving, provenance documentation, and certificate of preservation issued upon completion." },
-];
-
 function AnimatedPreservation({ navigate }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
     <div ref={ref} className="pres-float-section">
-      {FLOAT_ART.map(({ src, top, left, right, bottom, size, mobileHide }, i) => (
-        <motion.div
-          key={i}
-          className={`pres-float-img${mobileHide ? " pres-float-hide-mobile" : ""}`}
-          style={{ top, left, right, bottom, width: size, height: size }}
-          initial={{ opacity: 0, scale: 0.55 }}
-          animate={inView ? { opacity: 1, scale: 1 } : {}}
-          transition={{ type: "spring", stiffness: 220, damping: 22, delay: i * 0.07 }}>
-          <motion.img
-            src={src} alt="" draggable={false}
-            animate={{ y: FLOAT_PARAMS[i].y }}
-            transition={{ duration: FLOAT_PARAMS[i].duration, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        </motion.div>
-      ))}
+      {FLOAT_ART.map(
+        ({ src, top, left, right, bottom, size, mobileHide }, i) => (
+          <motion.div
+            key={i}
+            className={`pres-float-img${mobileHide ? " pres-float-hide-mobile" : ""}`}
+            style={{ top, left, right, bottom, width: size, height: size }}
+            initial={{ opacity: 0, scale: 0.55 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{
+              type: "spring",
+              stiffness: 220,
+              damping: 22,
+              delay: i * 0.07,
+            }}>
+            <motion.img
+              src={src}
+              alt=""
+              draggable={false}
+              animate={{ y: FLOAT_PARAMS[i].y }}
+              transition={{
+                duration: FLOAT_PARAMS[i].duration,
+                repeat: Infinity,
+                repeatType: "reverse",
+                ease: "easeInOut",
+              }}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </motion.div>
+        ),
+      )}
       <motion.div
         className="pres-float-center"
         initial={{ opacity: 0, y: 30 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, delay: 0.3 }}>
-        <div className="gold-rule" style={{ justifyContent: "center", marginBottom: 20 }}>
-          <div className="grl" style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }} />
+        <div
+          className="gold-rule"
+          style={{ justifyContent: "center", marginBottom: 20 }}>
+          <div
+            className="grl"
+            style={{ background: "linear-gradient(90deg,transparent,#D4AF37)" }}
+          />
           <span className="grt">Our Commitment</span>
-          <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
+          <div
+            className="grl"
+            style={{ background: "linear-gradient(90deg,#D4AF37,transparent)" }}
+          />
         </div>
-        <h2 className="pres-float-heading">We Preserve<br /><em>Your Art</em></h2>
+        <h2 className="pres-float-heading">
+          Preservation
+          <br />
+          of <em>Art</em>
+        </h2>
         <p className="pres-float-desc">
-          Art is not merely an object — it is memory, culture, and the irreplaceable record of human feeling.
-          We preserve your art for generations to come. However,{" "}
-          <strong style={{ color: "#D4AF37", fontWeight: 500 }}>not all art can be preserved</strong> — condition,
-          medium, and age all determine feasibility. We assess each work honestly before committing to treatment.
-          Our preservation services carry a professional charge, reflective of the expertise, materials, and care involved.
+          Art is not merely object — it is memory, culture, and the
+          irreplaceable record of human feeling. We are committed to its
+          preservation: archiving provenance, supporting restoration, and
+          ensuring every work endures for generations to come.
         </p>
-
-        {/* Tiers */}
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", margin: "28px 0" }}>
-          {PRESERVATION_TIERS.map(({ label, icon, desc }) => (
-            <div key={label} style={{
-              flex: "1 1 200px", maxWidth: 240,
-              padding: "20px 20px",
-              background: "rgba(8,8,8,0.75)",
-              border: "1px solid rgba(212,175,55,0.2)",
-              borderRadius: 12, textAlign: "left",
-            }}>
-              <div style={{ color: "#D4AF37", fontSize: 16, marginBottom: 10 }}>{icon}</div>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>{label}</div>
-              <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.65)", lineHeight: 1.6, margin: 0 }}>{desc}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Pricing note */}
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 10,
-          padding: "10px 20px", marginBottom: 28,
-          background: "rgba(212,175,55,0.06)",
-          border: "1px solid rgba(212,175,55,0.25)",
-          borderRadius: 999,
-        }}>
-          <span style={{ color: "#D4AF37", fontSize: 12 }}>◆</span>
-          <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.15em", color: "rgba(212,175,55,0.85)" }}>
-            PROFESSIONAL CHARGES APPLY · CUSTOM QUOTE PER ARTWORK
-          </span>
-        </div>
-
         <div className="pres-float-btns">
           <motion.button
             className="btn-primary"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate("/contact")}>
-            REQUEST PRESERVATION ASSESSMENT →
+            CONTACT US →
           </motion.button>
         </div>
       </motion.div>
