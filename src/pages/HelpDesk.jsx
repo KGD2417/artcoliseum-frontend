@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { supabase } from "../utils/supabase";
+import { api } from "../utils/api";
 
 const FAQS = [
   {
@@ -31,15 +31,11 @@ export default function HelpDesk() {
 
   const submit = async (e) => {
     e.preventDefault();
-    const { error } = await supabase.from("support_tickets").insert({
-      name: form.name,
-      email: form.email,
-      subject: form.subject,
-      message: form.message,
-    });
-    if (error) { alert(error.message); return; }
-    alert(`Ticket submitted. Our concierge will respond to ${form.email} within 24 hours.`);
-    setForm({ name: "", email: "", subject: "", message: "" });
+    try {
+      await api.support.createTicket({ name: form.name, email: form.email, subject: form.subject, message: form.message });
+      alert(`Ticket submitted. Our concierge will respond to ${form.email} within 24 hours.`);
+      setForm({ name: "", email: "", subject: "", message: "" });
+    } catch (err) { alert(err.message); }
   };
 
   return (

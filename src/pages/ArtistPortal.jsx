@@ -1,986 +1,284 @@
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import SafeImage from "../components/SafeImage";
-import { supabase } from "../utils/supabase";
 import { useAuth } from "../context/Auth";
-import {
-  CloudIcon,
-  ImageIcon,
-  UploadIcon,
-  PlusIcon,
-} from "../components/Icons";
-import i1 from "../assets/i1.png";
-import i3 from "../assets/i3.png";
-import i6 from "../assets/i6.png";
+import { api } from "../utils/api";
 
-const ACTIVE_COLLECTION = [
-  {
-    id: 1,
-    title: "Celestial Fracture",
-    status: "AVAILABLE",
-    tags: ["DIGITAL PAINTING", "4K MASTER"],
-    thumb: i1,
-  },
-  {
-    id: 2,
-    title: "Architectural Silence",
-    status: "SOLD",
-    tags: ["3D SCULPTURE", "VR READY"],
-    thumb: i3,
-  },
-  {
-    id: 3,
-    title: "Obsidian Bloom",
-    status: "AVAILABLE",
-    tags: ["GENERATIVE ART", "LIMITED EDITION"],
-    thumb: i6,
-  },
-];
+const gold = "#D4AF37";
+const card = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 14, padding: 28, marginBottom: 22 };
+const label = { fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "rgba(212,175,55,0.7)", marginBottom: 6, display: "block" };
+const inputStyle = { width: "100%", boxSizing: "border-box", padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 14, outline: "none", marginBottom: 14 };
+const btn = { padding: "14px 26px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", fontWeight: 700, cursor: "pointer" };
 
-export default function ArtistPortal() {
-  const formRef = useRef(null);
-  const titleRef = useRef(null);
-
-  const SUB_CATEGORIES = {
-    "Digital Painting": ["Generative", "AI Assisted", "AR Ready", "NFT"],
-    Sculpture: ["Bronze", "Marble", "Kinetic", "Ceramic"],
-    Photography: ["Fine Art", "Documentary", "Landscape", "Abstract"],
-    "Generative Art": ["Procedural", "Algorithmic", "Code-driven"],
-    "Mixed Media": ["Collage", "Assemblage", "Found Object"],
-    Painting: ["Oil", "Acrylic", "Watercolor", "Mixed Media"],
-  };
-
-  const initialForm = {
-    title: "",
-    artistName: "",
-    artistBio: "",
-    category: "Digital Painting",
-    subCategory: "Generative",
-    materials: "",
-    aboutArt: "",
-    origin: "",
-    purpose: "",
-    storyBehind: "",
-    spreadAccepted: "",
-    specifications: "",
-  };
-
-  const [form, setForm] = useState(initialForm);
-  const [fileName, setFileName] = useState("");
-  const [assetName, setAssetName] = useState("");
-  const [artistPhoto, setArtistPhoto] = useState(null);
-  const [artworkFile, setArtworkFile] = useState(null);
-  const [artworkPreview, setArtworkPreview] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
-  // Check if user is an artist
-  useEffect(() => {
-    if (user) {
-      checkArtistStatus();
-    }
-  }, [user]);
-
-  const checkArtistStatus = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    if (data?.role !== "artist") {
-      // Show application form instead of artist dashboard
-    }
-  };
-
-  // Upload image to Supabase Storage
-  const uploadImage = async (file, bucket, folder) => {
-    if (!file) return null;
-
-    setUploading(true);
-    setUploadProgress(0);
-
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `${folder}/${fileName}`;
-
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (error) throw error;
-
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-      setUploading(false);
-      setUploadProgress(100);
-      return publicUrl;
-    } catch (error) {
-      console.error("Upload error:", error);
-      setUploading(false);
-      alert("Failed to upload image. Please try again.");
-      return null;
-    }
-  };
-
-  const onPhotoPick = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setArtistPhoto(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const onArtworkPick = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setArtworkFile(file);
-    setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => setArtworkPreview(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const updateField = (key, value) => {
-    setForm((prev) => {
-      const next = { ...prev, [key]: value };
-      if (key === "category") {
-        next.subCategory = SUB_CATEGORIES[value]?.[0] || "";
-      }
-      return next;
-    });
-  };
-
-  const STATS = [
-    {
-      label: "ENQUIRIES RECEIVED",
-      value: "184",
-      sub: "+12.4% THIS MONTH",
-      highlight: true,
-    },
-    { label: "PIECES PLACED", value: "18", sub: "LIFETIME CURATION" },
-    { label: "GALLERY VIEWS", value: "42.8K", sub: "HIGH ENGAGEMENT" },
-    { label: "COLLECTOR INDEX", value: "A+", sub: "TOP 5% ARTISTS" },
-  ];
-
-  const focusUploadForm = () => {
-    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => titleRef.current?.focus(), 350);
-  };
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.title || !form.artistName) {
-      return alert("Name of art and artist name are required.");
-    }
-
-    setUploading(true);
-
-    try {
-      // Upload artwork image if selected
-      let artworkImageUrl = null;
-      if (artworkFile) {
-        artworkImageUrl = await uploadImage(artworkFile, "artworks", "uploads");
-        if (!artworkImageUrl) {
-          setUploading(false);
-          return;
-        }
-      }
-
-      // Upload artist profile photo if selected
-      let artistImageUrl = null;
-      if (artistPhoto && !artistPhoto.startsWith("data:")) {
-        // It's already a URL from previous upload
-        artistImageUrl = artistPhoto;
-      } else if (artistPhoto && artistPhoto.startsWith("data:")) {
-        // It's a base64 string, need to convert and upload
-        const response = await fetch(artistPhoto);
-        const blob = await response.blob();
-        const file = new File([blob], "profile.jpg", { type: "image/jpeg" });
-        artistImageUrl = await uploadImage(file, "artists", "profiles");
-      }
-
-      const bio = [
-        form.artistBio,
-        form.aboutArt && `About: ${form.aboutArt}`,
-        form.storyBehind && `Story: ${form.storyBehind}`,
-        form.materials && `Materials: ${form.materials}`,
-        form.specifications && `Specs: ${form.specifications}`,
-      ]
-        .filter(Boolean)
-        .join("\n\n");
-
-      // Check if user is already an approved artist
-      let isArtist = false;
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        isArtist = profile?.role === "artist";
-      }
-
-      if (isArtist && artworkImageUrl) {
-        // Ensure the user has a row in public.artists (FK target for artworks.artist_id)
-        const artistRowId = `artist-${user.id}`;
-        await supabase.from("artists").upsert(
-          { id: artistRowId, name: form.artistName, bio },
-          { onConflict: "id" }
-        );
-
-        // Approved artist - create artwork directly
-        const artworkId = `art-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const { error: artworkError } = await supabase.from("artworks").insert({
-          id: artworkId,
-          title: form.title,
-          medium: form.subCategory,
-          artist_id: artistRowId,
-          artist_name: form.artistName,
-          year: new Date().getFullYear().toString(),
-          price: 0,
-          size: "medium",
-          style: form.category,
-          category_id: form.category.toLowerCase().replace(" ", "-"),
-          image_url: artworkImageUrl,
-          description: bio,
-          in_stock: true,
-        });
-
-        if (artworkError) {
-          alert(artworkError.message);
-        } else {
-          alert(`"${form.title}" has been added to your gallery!`);
-        }
-      } else {
-        if (!user) {
-          alert("Please sign in first so we can link this application to your account.");
-          setUploading(false);
-          return;
-        }
-        const { error } = await supabase.from("artist_applications").insert({
-          user_id: user.id,
-          full_name: form.artistName,
-          email: user.email || "unknown@unknown.com",
-          bio,
-          portfolio_url: artworkImageUrl || "",
-          sample_image_urls: artworkImageUrl ? [artworkImageUrl] : [],
-        });
-        if (error) {
-          alert(error.message);
-        } else {
-          alert(
-            `Welcome aboard! You're now an Art Coliseum artist. You can chat with other artists now.`,
-          );
-          navigate("/artist-chat");
-        }
-      }
-
-      setForm(initialForm);
-      setFileName("");
-      setAssetName("");
-      setArtistPhoto(null);
-      setArtworkFile(null);
-      setArtworkPreview(null);
-    } catch (err) {
-      console.error("Submit error:", err);
-      alert("An error occurred. Please try again.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <section
-      style={{ padding: "100px 24px 80px", maxWidth: 1300, margin: "0 auto" }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          gap: 18,
-          flexWrap: "wrap",
-          paddingBottom: 28,
-          marginBottom: 32,
-          borderBottom: "1px solid rgba(212,175,55,0.18)",
-        }}>
-        <div>
-          <h1
-            style={{
-              fontFamily: "'Cormorant Garamond',serif",
-              fontSize: 56,
-              fontWeight: 700,
-              color: "#fff",
-              lineHeight: 1,
-              marginBottom: 12,
-            }}>
-            Artist Portal
-          </h1>
-          <p
-            style={{
-              fontFamily: "'Raleway',sans-serif",
-              fontSize: 13,
-              color: "rgba(200,191,160,0.6)",
-              maxWidth: 460,
-              lineHeight: 1.6,
-            }}>
-            Curate your portfolio and monitor your presence within the Art Coliseum
-            digital ecosystem.
-          </p>
-        </div>
-        <motion.button
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={focusUploadForm}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "14px 26px",
-            background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-            color: "#111",
-            fontFamily: "'Cinzel',serif",
-            fontSize: 11,
-            letterSpacing: "0.18em",
-            border: "none",
-            borderRadius: 999,
-            cursor: "pointer",
-          }}>
-          <PlusIcon size={14} /> NEW UPLOAD
-        </motion.button>
-      </motion.div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: 14,
-          marginBottom: 44,
-        }}>
-        {STATS.map((s, i) => (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: i * 0.07 }}
-            style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(212,175,55,0.12)",
-              borderRadius: 8,
-              padding: "20px 22px",
-            }}>
-            <div
-              style={{
-                fontFamily: "'Cinzel',serif",
-                fontSize: 9,
-                letterSpacing: "0.18em",
-                color: "rgba(200,191,160,0.55)",
-                marginBottom: 12,
-              }}>
-              {s.label}
-            </div>
-            <div
-              className="num-value"
-              style={{
-                fontFamily: "'Raleway',sans-serif",
-                fontSize: 30,
-                fontWeight: 700,
-                color: s.highlight ? "#D4AF37" : "#fff",
-                marginBottom: 12,
-                letterSpacing: "0.005em",
-              }}>
-              {s.value}
-            </div>
-            <div
-              style={{
-                fontFamily: "'Raleway',sans-serif",
-                fontSize: 10,
-                letterSpacing: "0.1em",
-                color: s.highlight ? "#D4AF37" : "rgba(200,191,160,0.5)",
-              }}>
-              {s.sub}
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1.05fr", gap: 36 }}
-        className="ap-grid">
-        <motion.form
-          ref={formRef}
-          onSubmit={submit}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 22,
-              color: "#D4AF37",
-            }}>
-            <CloudIcon size={22} />
-            <h2
-              style={{
-                fontFamily: "'Cormorant Garamond',serif",
-                fontSize: 30,
-                fontWeight: 700,
-                color: "#fff",
-              }}>
-              Exhibition Entry
-            </h2>
-          </div>
-
-          <label
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "60px 20px",
-              marginBottom: 24,
-              border: "1.5px dashed rgba(212,175,55,0.3)",
-              borderRadius: 8,
-              background: "rgba(255,255,255,0.015)",
-              cursor: "pointer",
-              position: "relative",
-              overflow: "hidden",
-            }}>
-            <input
-              type="file"
-              onChange={onArtworkPick}
-              style={{ display: "none" }}
-              accept="image/*"
-            />
-            {artworkPreview ? (
-              <div
-                style={{
-                  width: "100%",
-                  maxHeight: 200,
-                  overflow: "hidden",
-                  borderRadius: 8,
-                }}>
-                <img
-                  src={artworkPreview}
-                  alt="Artwork preview"
-                  style={{
-                    width: "100%",
-                    height: "auto",
-                    objectFit: "contain",
-                  }}
-                />
-              </div>
-            ) : (
-              <>
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 6,
-                    background: "rgba(212,175,55,0.15)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 14,
-                    color: "#D4AF37",
-                  }}>
-                  <ImageIcon size={20} />
-                </div>
-                <div
-                  style={{
-                    fontFamily: "'Raleway',sans-serif",
-                    fontSize: 13,
-                    color: "rgba(200,191,160,0.7)",
-                    marginBottom: 4,
-                  }}>
-                  {fileName || "DROP MASTER FILE OR CLICK TO BROWSE"}
-                </div>
-                <div
-                  className="num-value"
-                  style={{
-                    fontFamily: "'Raleway',sans-serif",
-                    fontSize: 10,
-                    color: "rgba(200,191,160,0.4)",
-                  }}>
-                  TIFF, PNG or WEBP up to 100MB
-                </div>
-              </>
-            )}
-          </label>
-
-          <FieldGroup title="ARTIST PROFILE">
-            <Field label="PROFILE PHOTO">
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 18,
-                  padding: 14,
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(212,175,55,0.2)",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={onPhotoPick}
-                  style={{ display: "none" }}
-                />
-                <div
-                  style={{
-                    width: 76,
-                    height: 76,
-                    borderRadius: "50%",
-                    background: artistPhoto
-                      ? "transparent"
-                      : "rgba(212,175,55,0.1)",
-                    border: "1.5px dashed rgba(212,175,55,0.4)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                    flexShrink: 0,
-                    color: "#D4AF37",
-                  }}>
-                  {artistPhoto ? (
-                    <img
-                      src={artistPhoto}
-                      alt="Artist"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <UploadIcon size={20} />
-                  )}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontFamily: "'Cormorant Garamond',serif",
-                      fontSize: 18,
-                      fontWeight: 600,
-                      color: "#fff",
-                      marginBottom: 4,
-                    }}>
-                    {artistPhoto
-                      ? "Change profile photo"
-                      : "Upload your profile photo"}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'Raleway',sans-serif",
-                      fontSize: 12,
-                      color: "rgba(200,191,160,0.6)",
-                      lineHeight: 1.5,
-                    }}>
-                    Square image works best · JPG / PNG · max 5 MB. This appears
-                    on your artist profile and next to every work you upload.
-                  </div>
-                </div>
-                {artistPhoto && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setArtistPhoto(null);
-                    }}
-                    style={{
-                      background: "transparent",
-                      border: "1px solid rgba(212,175,55,0.3)",
-                      color: "rgba(200,191,160,0.7)",
-                      padding: "6px 12px",
-                      fontFamily: "'Cinzel',serif",
-                      fontSize: 9,
-                      letterSpacing: "0.18em",
-                      borderRadius: 999,
-                      cursor: "pointer",
-                    }}>
-                    REMOVE
-                  </button>
-                )}
-              </label>
-            </Field>
-          </FieldGroup>
-
-          <FieldGroup title="WORK BASICS">
-            <Field label="NAME OF ART *">
-              <input
-                ref={titleRef}
-                value={form.title}
-                onChange={(e) => updateField("title", e.target.value)}
-                placeholder="E.g., The Golden Zenith"
-                style={inp}
-              />
-            </Field>
-
-            <Field label="NAME OF ARTIST *">
-              <input
-                value={form.artistName}
-                onChange={(e) => updateField("artistName", e.target.value)}
-                placeholder="E.g., Elena Vance"
-                style={inp}
-              />
-            </Field>
-
-            <Field label="SHORT DESCRIPTION OF ARTIST">
-              <textarea
-                value={form.artistBio}
-                onChange={(e) => updateField("artistBio", e.target.value)}
-                placeholder="Florence-based painter exploring the intersection of digital abstraction and classical renaissance techniques."
-                rows={3}
-                style={{ ...inp, resize: "vertical" }}
-              />
-            </Field>
-          </FieldGroup>
-
-          <FieldGroup title="MEDIUM & CATEGORISATION">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 14,
-              }}>
-              <Field label="TYPE OF MEDIUM">
-                <select
-                  value={form.category}
-                  onChange={(e) => updateField("category", e.target.value)}
-                  style={{ ...inp, appearance: "none" }}>
-                  {Object.keys(SUB_CATEGORIES).map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="MEDIUM SUB-CATEGORY">
-                <select
-                  value={form.subCategory}
-                  onChange={(e) => updateField("subCategory", e.target.value)}
-                  style={{ ...inp, appearance: "none" }}>
-                  {(SUB_CATEGORIES[form.category] || []).map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-
-            <Field label="SPECIFICATIONS & MATERIALS">
-              <textarea
-                value={form.specifications}
-                onChange={(e) => updateField("specifications", e.target.value)}
-                placeholder="24k gold leaf, oil, gesso with bone-ash and ground basalt, on Belgian linen. 180 × 140 cm. Float-mounted in walnut frame, museum-grade UV glass."
-                rows={3}
-                style={{ ...inp, resize: "vertical" }}
-              />
-            </Field>
-
-            <Field label="MATERIALS / MEDIUM (SHORT)">
-              <input
-                value={form.materials}
-                onChange={(e) => updateField("materials", e.target.value)}
-                placeholder="Oil & 24k Gold on Linen"
-                style={inp}
-              />
-            </Field>
-          </FieldGroup>
-
-          <FieldGroup title="THE STORY">
-            <Field label="ABOUT THE ART">
-              <textarea
-                value={form.aboutArt}
-                onChange={(e) => updateField("aboutArt", e.target.value)}
-                placeholder="Marries the patience of classical gold-leaf gilding with the bold flatness of post-minimalist abstraction…"
-                rows={4}
-                style={{ ...inp, resize: "vertical" }}
-              />
-            </Field>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 14,
-              }}>
-              <Field label="ORIGIN">
-                <textarea
-                  value={form.origin}
-                  onChange={(e) => updateField("origin", e.target.value)}
-                  placeholder="Berlin, Germany — completed at Mitte studio…"
-                  rows={3}
-                  style={{ ...inp, resize: "vertical" }}
-                />
-              </Field>
-              <Field label="PURPOSE">
-                <textarea
-                  value={form.purpose}
-                  onChange={(e) => updateField("purpose", e.target.value)}
-                  placeholder="Created as the centrepiece of a private 2024 commission…"
-                  rows={3}
-                  style={{ ...inp, resize: "vertical" }}
-                />
-              </Field>
-            </div>
-            <Field label="STORY BEHIND">
-              <textarea
-                value={form.storyBehind}
-                onChange={(e) => updateField("storyBehind", e.target.value)}
-                placeholder="Begun on the winter solstice. One hour of natural daylight per day to apply gold leaf…"
-                rows={4}
-                style={{ ...inp, resize: "vertical" }}
-              />
-            </Field>
-            <Field label="SPREAD & ACCEPTED">
-              <textarea
-                value={form.spreadAccepted}
-                onChange={(e) => updateField("spreadAccepted", e.target.value)}
-                placeholder="Held in 12 private collections across Berlin, London, NY and HK. Featured in the 2024 monograph…"
-                rows={3}
-                style={{ ...inp, resize: "vertical" }}
-              />
-            </Field>
-          </FieldGroup>
-
-          <label
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "16px 18px",
-              marginBottom: 24,
-              border: "1px solid rgba(212,175,55,0.15)",
-              borderRadius: 6,
-              cursor: "pointer",
-              background: "rgba(255,255,255,0.02)",
-            }}>
-            <input
-              type="file"
-              onChange={(e) => setAssetName(e.target.files?.[0]?.name || "")}
-              style={{ display: "none" }}
-              accept=".glb,.gltf"
-            />
-            <div>
-              <div
-                style={{
-                  fontFamily: "'Cinzel',serif",
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  color: "#e8e0d0",
-                }}>
-                3D ASSET (OPTIONAL)
-              </div>
-              <div
-                style={{
-                  fontFamily: "'Raleway',sans-serif",
-                  fontSize: 10,
-                  color: "rgba(200,191,160,0.5)",
-                  marginTop: 4,
-                }}>
-                {assetName || "Include GLB/GLTF for AR exhibition"}
-              </div>
-            </div>
-            <span style={{ color: "#D4AF37", display: "flex" }}>
-              <UploadIcon size={16} />
-            </span>
-          </label>
-
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{ width: "100%" }}>
-            INITIALIZE MINT &amp; LIST
-          </button>
-        </motion.form>
-
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.25 }}>
-          <h2
-            style={{
-              fontFamily: "'Cormorant Garamond',serif",
-              fontSize: 30,
-              fontWeight: 700,
-              color: "#fff",
-              marginBottom: 22,
-            }}>
-            Active Collection
-          </h2>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-            {ACTIVE_COLLECTION.map((p, i) => (
-              <div
-                key={p.id}
-                style={{
-                  display: "flex",
-                  gap: 18,
-                  alignItems: "center",
-                  paddingBottom: 22,
-                  borderBottom:
-                    i !== ACTIVE_COLLECTION.length - 1
-                      ? "1px solid rgba(212,175,55,0.1)"
-                      : "none",
-                }}>
-                <SafeImage
-                  src={p.thumb}
-                  alt={p.title}
-                  fallbackIndex={i}
-                  style={{
-                    width: 66,
-                    height: 66,
-                    objectFit: "cover",
-                    borderRadius: 4,
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontFamily: "'Cormorant Garamond',serif",
-                      fontSize: 20,
-                      color: "#f0e8d8",
-                      fontWeight: 600,
-                    }}>
-                    {p.title}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'Cinzel',serif",
-                      fontSize: 10,
-                      letterSpacing: "0.16em",
-                      marginTop: 4,
-                      color:
-                        p.status === "SOLD"
-                          ? "rgba(200,191,160,0.45)"
-                          : "#D4AF37",
-                    }}>
-                    {p.status}
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      marginTop: 8,
-                      flexWrap: "wrap",
-                    }}>
-                    {p.tags.map((t) => (
-                      <span
-                        key={t}
-                        style={{
-                          fontFamily: "'Raleway',sans-serif",
-                          fontSize: 9,
-                          letterSpacing: "0.12em",
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                          background: "rgba(255,255,255,0.03)",
-                          border: "1px solid rgba(212,175,55,0.18)",
-                          color: "rgba(200,191,160,0.7)",
-                        }}>
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button
-            style={{
-              marginTop: 24,
-              width: "100%",
-              padding: "14px",
-              background: "transparent",
-              border: "1px solid rgba(212,175,55,0.3)",
-              color: "#e8e0d0",
-              fontFamily: "'Cinzel',serif",
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              borderRadius: 6,
-              cursor: "pointer",
-            }}>
-            VIEW ARCHIVE (24)
-          </button>
-        </motion.div>
-      </div>
-
-      <style>{`
-        @media (max-width: 900px) {
-          .ap-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-    </section>
-  );
+function Field({ l, children }) {
+  return <div><span style={label}>{l}</span>{children}</div>;
 }
 
-const inp = {
-  width: "100%",
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(212,175,55,0.2)",
-  padding: "12px 14px",
-  color: "#e8e0d0",
-  fontFamily: "'Raleway',sans-serif",
-  fontSize: 13,
-  outline: "none",
-  borderRadius: 6,
-};
-
-function Field({ label, children }) {
+/** Upload one or more files; calls onDone(urls[]). */
+function Uploader({ kind = "image", multiple = false, onDone, hint }) {
+  const [busy, setBusy] = useState(false);
+  const [names, setNames] = useState([]);
+  const handle = async (e) => {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    setBusy(true);
+    try {
+      const urls = [];
+      for (const f of files) { const r = await api.uploads.file(f, kind); urls.push(r.url); }
+      setNames(files.map(f => f.name));
+      onDone(urls);
+    } catch (err) { alert(err.message); } finally { setBusy(false); }
+  };
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div
-        style={{
-          fontFamily: "'Cinzel',serif",
-          fontSize: 9,
-          letterSpacing: "0.18em",
-          color: "rgba(200,191,160,0.65)",
-          marginBottom: 8,
-        }}>
-        {label}
-      </div>
-      {children}
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: "inline-block", padding: "9px 16px", border: `1px dashed ${gold}`, borderRadius: 8, cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold }}>
+        {busy ? "UPLOADING…" : hint || "UPLOAD"}
+        <input type="file" accept={kind === "video" ? "video/*" : kind === "model" ? ".glb,.gltf" : "image/*"} multiple={multiple} style={{ display: "none" }} onChange={handle} />
+      </label>
+      {names.length > 0 && <span style={{ marginLeft: 12, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)" }}>{names.join(", ")}</span>}
     </div>
   );
 }
 
-function FieldGroup({ title, children }) {
+export default function ArtistPortal() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [status, setStatus] = useState(null); // { artist_status, role }
+  const [competitions, setCompetitions] = useState([]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) { navigate("/signin"); return; }
+    api.artist.status().then(setStatus).catch(() => setStatus({ artist_status: "none", role: "user" }));
+    api.competitions.list().then(setCompetitions).catch(() => setCompetitions([]));
+  }, [user, loading]);
+
+  if (loading || !status) return <section style={{ padding: 120, textAlign: "center", color: gold }}>Loading…</section>;
+
   return (
-    <div
-      style={{
-        padding: "20px 22px 6px",
-        marginBottom: 22,
-        border: "1px solid rgba(212,175,55,0.12)",
-        borderRadius: 10,
-        background: "rgba(255,255,255,0.015)",
-      }}>
-      <div
-        style={{
-          fontFamily: "'Cinzel',serif",
-          fontSize: 10,
-          letterSpacing: "0.22em",
-          color: "#D4AF37",
-          marginBottom: 18,
-          paddingBottom: 10,
-          borderBottom: "1px solid rgba(212,175,55,0.15)",
-        }}>
-        {title}
+    <section style={{ padding: "110px 24px 80px", maxWidth: 820, margin: "0 auto" }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 30 }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: gold }}>ARTIST PORTAL</div>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 44, fontWeight: 700, color: "#fff", marginTop: 6 }}>
+          {status.artist_status === "verified" ? "Submit Your Artwork" : status.artist_status === "unverified" ? "The Competition" : "Become an Artist"}
+        </h1>
+        <StatusPill status={status.artist_status} />
+      </motion.div>
+
+      {status.artist_status === "none" && <KycForm onApplied={(s) => setStatus(s)} />}
+      {status.artist_status === "unverified" && <CompetitionPanel competitions={competitions} />}
+      {status.artist_status === "verified" && <ArtworkForm />}
+    </section>
+  );
+}
+
+function StatusPill({ status }) {
+  const map = {
+    none: ["NOT YET APPLIED", "rgba(200,191,160,0.5)"],
+    unverified: ["UNVERIFIED ARTIST", gold],
+    verified: ["VERIFIED ARTIST ✦", "#4ade80"],
+  };
+  const [txt, color] = map[status] || map.none;
+  return <div style={{ marginTop: 10, fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color }}>{txt}</div>;
+}
+
+function KycForm({ onApplied }) {
+  const [f, setF] = useState({ name: "", age: "", art_type: "", location: "", about: "" });
+  const [avatar, setAvatar] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const submit = async () => {
+    if (!f.name) return alert("Your name is required.");
+    setBusy(true);
+    try {
+      const s = await api.artist.apply({ ...f, age: f.age ? Number(f.age) : null, avatar_url: avatar });
+      onApplied(s);
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  return (
+    <div style={card}>
+      <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, marginBottom: 20 }}>
+        Tell us about yourself. Once you apply you become an <strong style={{ color: gold }}>unverified artist</strong> and may enter our monthly
+        competition. Win it — judged by an external jury — to unlock your seller profile.
+      </p>
+      <Field l="FULL NAME"><input style={inputStyle} value={f.name} onChange={set("name")} /></Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field l="AGE"><input style={inputStyle} type="number" value={f.age} onChange={set("age")} /></Field>
+        <Field l="WHERE YOU LIVE"><input style={inputStyle} value={f.location} onChange={set("location")} /></Field>
       </div>
-      {children}
+      <Field l="WHAT KIND OF ARTIST ARE YOU?"><input style={inputStyle} value={f.art_type} onChange={set("art_type")} placeholder="e.g. Oil painter, Sculptor" /></Field>
+      <Field l="ABOUT YOU"><textarea style={{ ...inputStyle, minHeight: 90 }} value={f.about} onChange={set("about")} /></Field>
+      <Field l="PROFILE PHOTO (OPTIONAL)"><Uploader kind="image" hint="UPLOAD PHOTO" onDone={(u) => setAvatar(u[0])} /></Field>
+      <button style={{ ...btn, opacity: busy ? 0.7 : 1 }} disabled={busy} onClick={submit}>{busy ? "SUBMITTING…" : "APPLY AS ARTIST"}</button>
+    </div>
+  );
+}
+
+function CompetitionPanel({ competitions }) {
+  const open = competitions.find((c) => c.status === "open") || competitions[0];
+  const [entry, setEntry] = useState({ title: "", description: "" });
+  const [images, setImages] = useState([]);
+  const [video, setVideo] = useState(null);
+  const [mine, setMine] = useState([]);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => { api.competitions.myEntries().then(setMine).catch(() => setMine([])); }, []);
+
+  const submit = async () => {
+    if (!open) return alert("No open competition right now.");
+    if (!entry.title) return alert("Give your entry a title.");
+    setBusy(true);
+    try {
+      await api.competitions.submitEntry(open.id, { ...entry, image_urls: images, video_url: video });
+      const m = await api.competitions.myEntries();
+      setMine(m);
+      setEntry({ title: "", description: "" }); setImages([]); setVideo(null);
+      alert("Entry submitted! Our jury will review it.");
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <>
+      <div style={card}>
+        {open ? (
+          <>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: "#fff" }}>{open.title}</div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, margin: "8px 0 20px" }}>{open.description}</div>
+            <Field l="ARTWORK TITLE"><input style={inputStyle} value={entry.title} onChange={(e) => setEntry({ ...entry, title: e.target.value })} /></Field>
+            <Field l="DESCRIPTION"><textarea style={{ ...inputStyle, minHeight: 80 }} value={entry.description} onChange={(e) => setEntry({ ...entry, description: e.target.value })} /></Field>
+            <Field l="IMAGES"><Uploader kind="image" multiple hint="UPLOAD IMAGES" onDone={setImages} /></Field>
+            <Field l="VIDEO (OPTIONAL)"><Uploader kind="video" hint="UPLOAD VIDEO" onDone={(u) => setVideo(u[0])} /></Field>
+            <button style={{ ...btn, opacity: busy ? 0.7 : 1 }} disabled={busy} onClick={submit}>{busy ? "SUBMITTING…" : "SUBMIT ENTRY"}</button>
+          </>
+        ) : (
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.6)" }}>No competition is open right now. Check back soon.</div>
+        )}
+      </div>
+      {mine.length > 0 && (
+        <div style={card}>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: gold, marginBottom: 14 }}>YOUR ENTRIES</div>
+          {mine.map((m) => (
+            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(212,175,55,0.1)" }}>
+              <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#f0e8d8" }}>{m.title}</span>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: m.status === "winner" ? "#4ade80" : gold }}>{m.status.toUpperCase()}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function ArtworkForm() {
+  const [cats, setCats] = useState([]);
+  const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", price: "" });
+  const [images, setImages] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [model3d, setModel3d] = useState(null);
+  const [predefined, setPredefined] = useState([]);
+  const [newStyle, setNewStyle] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const loadCats = () => api.catalog.categories().then(setCats).catch(() => setCats([]));
+  useEffect(() => { loadCats(); }, []);
+
+  const mains = cats.filter((c) => c.kind === "main");
+  const subtypes = cats.filter((c) => c.kind === "subtype" && (!f.category_id || c.parent_id === f.category_id));
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  const addStyle = async () => {
+    if (!newStyle || !f.category_id) return alert("Pick a main medium first, then name the style.");
+    try { const c = await api.artist.addSubtype(newStyle, f.category_id); await loadCats(); setF((p) => ({ ...p, subtype_id: c.id })); setNewStyle(""); }
+    catch (e) { alert(e.message); }
+  };
+
+  const submit = async () => {
+    if (!f.title || !f.category_id) return alert("Title and main medium are required.");
+    setBusy(true);
+    try {
+      await api.artist.createArtwork({
+        title: f.title, narrative: f.narrative, medium: f.medium, category_id: f.category_id,
+        subtype_id: f.subtype_id || null, base_dimensions: f.base_dimensions,
+        customizable: f.customizable,
+        price_per_unit: f.customizable && f.price_per_unit ? Number(f.price_per_unit) : null,
+        unit: f.customizable ? f.unit : null,
+        predefined_sizes: f.customizable ? [] : predefined,
+        images, videos, model_3d_url: model3d, price: f.price ? Number(f.price) : 0,
+      });
+      alert(`"${f.title}" has been added to the collection!`);
+      setF({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", price: "" });
+      setImages([]); setVideos([]); setModel3d(null); setPredefined([]);
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div style={card}>
+      <Field l="ARTWORK NAME"><input style={inputStyle} value={f.title} onChange={set("title")} /></Field>
+      <Field l="NARRATIVE — WHAT IT MEANS"><textarea style={{ ...inputStyle, minHeight: 90 }} value={f.narrative} onChange={set("narrative")} /></Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field l="MAIN MEDIUM">
+          <select style={inputStyle} value={f.category_id} onChange={set("category_id")}>
+            <option value="">Select…</option>
+            {mains.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+          </select>
+        </Field>
+        <Field l="STYLE / SUBTYPE">
+          <select style={inputStyle} value={f.subtype_id} onChange={set("subtype_id")}>
+            <option value="">None</option>
+            {subtypes.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="Add a new style (e.g. Luminism)" value={newStyle} onChange={(e) => setNewStyle(e.target.value)} />
+        <button onClick={addStyle} style={{ ...btn, padding: "11px 18px", whiteSpace: "nowrap" }}>+ STYLE</button>
+      </div>
+      <Field l="MEDIUM (TEXT, e.g. Oil on Canvas)"><input style={inputStyle} value={f.medium} onChange={set("medium")} /></Field>
+      <Field l="BASE DIMENSIONS"><input style={inputStyle} value={f.base_dimensions} onChange={set("base_dimensions")} placeholder="e.g. 90 × 60 cm" /></Field>
+
+      <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
+        <input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} />
+        This artwork is customizable (priced per unit)
+      </label>
+
+      {f.customizable ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field l="PRICE PER UNIT"><input style={inputStyle} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></Field>
+          <Field l="UNIT">
+            <select style={inputStyle} value={f.unit} onChange={set("unit")}>
+              <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+            </select>
+          </Field>
+        </div>
+      ) : (
+        <PredefinedSizes sizes={predefined} setSizes={setPredefined} />
+      )}
+
+      <Field l="STARTING / DISPLAY PRICE"><input style={inputStyle} type="number" value={f.price} onChange={set("price")} /></Field>
+      <Field l="IMAGES"><Uploader kind="image" multiple hint="UPLOAD IMAGES" onDone={setImages} /></Field>
+      <Field l="VIDEOS (OPTIONAL)"><Uploader kind="video" multiple hint="UPLOAD VIDEOS" onDone={setVideos} /></Field>
+      <Field l="3D MODEL — GLB (FOR SCULPTURE/MURAL)"><Uploader kind="model" hint="UPLOAD 3D MODEL" onDone={(u) => setModel3d(u[0])} /></Field>
+
+      <button style={{ ...btn, opacity: busy ? 0.7 : 1, marginTop: 8 }} disabled={busy} onClick={submit}>{busy ? "PUBLISHING…" : "PUBLISH ARTWORK"}</button>
+    </div>
+  );
+}
+
+function PredefinedSizes({ sizes, setSizes }) {
+  const add = () => setSizes([...sizes, { label: "", width: "", height: "", unit: "cm", price: "" }]);
+  const upd = (i, k, v) => setSizes(sizes.map((s, j) => j === i ? { ...s, [k]: v } : s));
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <span style={label}>PREDEFINED SIZES & PRICES</span>
+      {sizes.map((s, i) => (
+        <div key={i} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="Label" value={s.label} onChange={(e) => upd(i, "label", e.target.value)} />
+          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="W" value={s.width} onChange={(e) => upd(i, "width", e.target.value)} />
+          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="H" value={s.height} onChange={(e) => upd(i, "height", e.target.value)} />
+          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="Price" value={s.price} onChange={(e) => upd(i, "price", e.target.value)} />
+        </div>
+      ))}
+      <button onClick={add} style={{ ...btn, padding: "8px 16px", background: "transparent", color: gold, border: `1px solid ${gold}` }}>+ ADD SIZE</button>
     </div>
   );
 }

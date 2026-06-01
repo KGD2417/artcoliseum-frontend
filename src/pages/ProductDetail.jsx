@@ -1,45 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import ChatModal from "../components/ChatModal";
 import { HeartIcon, ZoomIcon, SparkIcon } from "../components/Icons";
-import i1 from "../assets/i1.png";
-import i2 from "../assets/i2.png";
-import i3 from "../assets/i3.png";
+import { api } from "../utils/api";
+import { useAuth } from "../context/Auth";
 import i4 from "../assets/i4.png";
-import i5 from "../assets/i5.png";
-import i6 from "../assets/i6.png";
-import i7 from "../assets/i7.png";
-import i8 from "../assets/i8.png";
-
-const ARTWORK_MAP = {
-  p1: { title: "Ethereal Horizon", artist: "Marcus Thomas", year: "2024", price: 8400, images: [i1, i6, i4, i2], medium: "Acrylic on Canvas", dimensions: "120 × 90 cm", description: "A sweeping composition that dissolves the boundary between sky and sea, evoking an infinite sense of calm and possibility." },
-  p2: { title: "Fractured Silence", artist: "Elena Vance", year: "2023", price: 12500, images: [i7, i1, i6, i4], medium: "Mixed Media", dimensions: "100 × 80 cm", description: "Layered textures and torn paper fragments coalesce into a meditation on memory and the spaces between sound." },
-  p3: { title: "Obsidian Flow", artist: "Julian Aris", year: "2024", price: 16800, images: [i6, i4, i1, i2], medium: "Acrylic & Oil", dimensions: "150 × 100 cm", description: "Dark pigments pour and solidify across the canvas, channelling the raw energy of volcanic geology." },
-  p4: { title: "The Infinite Stair", artist: "Soren Klein", year: "2024", price: 22000, images: [i3, i6, i1, i4], medium: "Bronze Sculpture", dimensions: "40 × 40 × 60 cm", description: "A cast bronze staircase that spirals inward with no apparent beginning or end, questioning the nature of progress." },
-  p5: { title: "Cosmic Flow", artist: "Hideo Tanaka", year: "2024", price: 9800, images: [i6, i7, i1, i4], medium: "Mixed Media with Gold Leaf", dimensions: "60 × 60 cm", description: "Gold leaf and iridescent pigment capture the swirling motion of nebulae in a surprisingly intimate format." },
-  p6: { title: "The Golden Tree", artist: "Chen Wei", year: "2024", price: 14200, images: [i4, i6, i1, i2], medium: "Oil on Canvas", dimensions: "90 × 70 cm", description: "An ancient tree rendered in luminous gold and amber, standing as a symbol of endurance and quiet majesty." },
-  p7: { title: "Whispers of Silence", artist: "Lena Bach", year: "2025", price: 7600, images: [i5, i1, i6, i4], medium: "Oil on Canvas", dimensions: "50 × 50 cm", description: "A near-monochromatic study where barely perceptible brushwork creates an atmosphere of profound stillness." },
-  p8: { title: "Renaissance Study", artist: "Elena Rossi", year: "2023", price: 19500, images: [i8, i6, i1, i4], medium: "Oil on Panel", dimensions: "80 × 60 cm", description: "Old-master technique meets contemporary subject matter — a daring recontextualisation of 15th century portraiture." },
-  p9: { title: "Ocean Depths", artist: "Hideo Tanaka", year: "2024", price: 5400, images: [i7, i6, i1, i4], medium: "Archival Digital Print", dimensions: "70 × 50 cm", description: "Algorithmically generated depth maps transformed into a high-definition archival print, evoking the abyssal ocean floor." },
-  // Oil on Canvas gallery items
-  o1: { title: "The Golden Meadow", artist: "Claire Bouchard", year: "2024", price: 11200, images: ["https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "120 × 90 cm", description: "A luminous pastoral landscape rendered in layered glazes of cadmium yellow and viridian, evoking the golden light of late afternoon." },
-  o2: { title: "Storm Over the Valley", artist: "Henry Ashford", year: "2023", price: 18600, images: ["https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80","https://images.unsplash.com/photo-1567359781514-3b964e2b04d6?w=1200&q=80"], medium: "Oil on Linen", dimensions: "150 × 100 cm", description: "Churning cloud formations rendered in thick impasto, the canvas surface alive with the physical urgency of the mark." },
-  o3: { title: "Interior with Red", artist: "Marta Voss", year: "2025", price: 9400, images: ["https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "80 × 80 cm", description: "A meditation on domestic space — the room as psychological interior, the red as both colour and feeling." },
-  o4: { title: "Portrait of the Afternoon", artist: "Elena Rossi", year: "2024", price: 7800, images: ["https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"], medium: "Oil on Board", dimensions: "60 × 50 cm", description: "Loosely painted figures dissolve into the warm light of a summer afternoon, form surrendering to atmosphere." },
-  o5: { title: "The Old Harbour", artist: "James Calloway", year: "2023", price: 13500, images: ["https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "100 × 70 cm", description: "Working boats at rest in the harbour, the still water a mirror of masts and sky — a study in horizontal calm." },
-  o6: { title: "Nocturne in Blue", artist: "Lena Bach", year: "2024", price: 10200, images: ["https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "90 × 90 cm", description: "A nocturnal composition of deep Prussian blue and silver, the night reduced to its most essential tonal architecture." },
-  o7: { title: "The Ancient Tree", artist: "Chen Wei", year: "2025", price: 16400, images: ["https://images.unsplash.com/photo-1567359781514-3b964e2b04d6?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Oil on Linen", dimensions: "140 × 100 cm", description: "A solitary oak recorded with the patient attention of the naturalist and the emotional depth of the romantic." },
-  o8: { title: "Figure Study No. 7", artist: "Marcus Thomas", year: "2024", price: 8900, images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "70 × 50 cm", description: "The human form in repose — painted with the directness of Freud and the tonal sensitivity of Rembrandt." },
-  o9: { title: "Seascape at Dusk", artist: "Ingrid Halvor", year: "2023", price: 14800, images: ["https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1567359781514-3b964e2b04d6?w=1200&q=80"], medium: "Oil on Canvas", dimensions: "110 × 80 cm", description: "The horizon line as the painting's true subject — a thin band of gold between the weight of sea and sky." },
-  // Default gallery fallback items
-  d1: { title: "Ethereal Horizon", artist: "Marcus Thomas", year: "2024", price: 8400, images: ["https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Mixed Media", dimensions: "120 × 90 cm", description: "A sweeping composition that dissolves the boundary between sky and sea, evoking an infinite sense of calm and possibility." },
-  d2: { title: "Fractured Silence", artist: "Elena Vance", year: "2023", price: 12500, images: ["https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80"], medium: "Mixed Media", dimensions: "100 × 80 cm", description: "Layered textures coalesce into a meditation on memory and the spaces between sound." },
-  d3: { title: "Obsidian Flow", artist: "Julian Aris", year: "2024", price: 16800, images: ["https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80"], medium: "Mixed Media", dimensions: "150 × 100 cm", description: "Dark pigments pour and solidify, channelling the raw energy of volcanic geology." },
-  d4: { title: "The Golden Tree", artist: "Chen Wei", year: "2024", price: 14200, images: ["https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80"], medium: "Mixed Media", dimensions: "90 × 70 cm", description: "An ancient form rendered in luminous gold and amber, standing as a symbol of endurance." },
-  d5: { title: "Whispers of Silence", artist: "Lena Bach", year: "2025", price: 7600, images: ["https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=1200&q=80"], medium: "Mixed Media", dimensions: "50 × 50 cm", description: "A near-monochromatic study where barely perceptible marks create an atmosphere of profound stillness." },
-  d6: { title: "Renaissance Study", artist: "Elena Rossi", year: "2023", price: 19500, images: ["https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200&q=80","https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1200&q=80","https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=1200&q=80","https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=1200&q=80"], medium: "Mixed Media", dimensions: "80 × 60 cm", description: "Old-master technique meets contemporary subject matter." },
-};
 
 const FALLBACK_PRODUCT = {
   default: {
@@ -89,25 +56,101 @@ const FALLBACK_PRODUCT = {
   },
 };
 
-const PREDEFINED_SIZES = [
-  { label: "Small", dims: "30 × 25 cm", desc: "Perfect for intimate spaces", multiplier: 0.65 },
-  { label: "Standard", dims: "60 × 50 cm", desc: "The most versatile format", multiplier: 1.0 },
-  { label: "Large", dims: "90 × 70 cm", desc: "Statement wall presence", multiplier: 1.45 },
-  { label: "Monumental", dims: "120 × 90 cm", desc: "Gallery-grade installation", multiplier: 2.1 },
-];
-
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isPredefined = searchParams.get("mode") === "predefined";
   const [activeImg, setActiveImg] = useState(0);
-  const [predefinedSize, setPredefinedSize] = useState(null);
   const [favorited, setFavorited] = useState(false);
   const [customForm, setCustomForm] = useState({ size: "Standard", frame: "No frame", finish: "Satin varnish", palette: "As created" });
   const [wall, setWall] = useState({ w: "", h: "", unit: "Feet" });
   const [wallFit, setWallFit] = useState(null);
   const [wallUpcharge, setWallUpcharge] = useState(0);
+  const [matched, setMatched] = useState(null);
+  const [customizable, setCustomizable] = useState(true);
+  const [artistInfo, setArtistInfo] = useState(null);
+  const [sizes, setSizes] = useState([]);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const { user } = useAuth();
+  const [gate, setGate] = useState({ state: "enquire" });
+  const [chatOpen, setChatOpen] = useState(false);
+  const [ctaBusy, setCtaBusy] = useState(false);
+  // Predefined (fixed-price) works show their price and can be bought directly;
+  // customizable works hide price until the curator reveals it during an enquiry.
+  const isPredefined = !customizable;
+
+  // Fetch the buy gate for this artwork + user.
+  useEffect(() => {
+    if (!id || !user) { setGate({ state: "enquire" }); return; }
+    let cancelled = false;
+    api.enquiries.gate(id)
+      .then((g) => { if (!cancelled) setGate(g); })
+      .catch(() => { if (!cancelled) setGate({ state: "enquire" }); });
+    return () => { cancelled = true; };
+  }, [id, user, chatOpen]);
+
+  const bringHome = async () => {
+    setCtaBusy(true);
+    try {
+      const body = { artwork_id: id, fulfillment: "transport_setup" };
+      if (selectedSize) body.size_id = selectedSize.id;
+      await api.cart.addItem(body);
+      navigate("/cart");
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setCtaBusy(false);
+    }
+  };
+
+  const handlePrimaryCta = async () => {
+    if (!user) { navigate("/signin"); return; }
+    // Predefined (fixed-price) works, or an already-approved enquiry, go straight to cart.
+    if (!customizable || gate.state === "bring_home") { bringHome(); return; }
+    setCtaBusy(true);
+    try {
+      await api.enquiries.create(id);
+      setChatOpen(true);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setCtaBusy(false);
+    }
+  };
+
+  const isApproved = gate.state === "bring_home" || isPredefined;
+
+  // Fetch the artwork from the catalog API.
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) { setMatched(null); return; }
+    api.catalog
+      .artwork(id)
+      .then((a) => {
+        if (cancelled) return;
+        setCustomizable(a.customizable !== false);
+        setSizes(a.sizes || []);
+        setSelectedSize(a.sizes && a.sizes.length ? a.sizes[0] : null);
+        setActiveImg(0);
+        setMatched({
+          title: a.title,
+          artist: a.artist_name,
+          year: a.year,
+          price: a.price,
+          images: a.images?.length ? a.images : [i4],
+          medium: a.medium,
+          dimensions: a.base_dimensions,
+          description: a.description || a.narrative,
+        });
+        // Pull the real artist profile (bio, photo) so the artist block isn't dummy.
+        if (a.artist_id) {
+          api.catalog.artist(a.artist_id)
+            .then((ar) => { if (!cancelled) setArtistInfo(ar); })
+            .catch(() => {});
+        }
+      })
+      .catch(() => { if (!cancelled) setMatched(null); });
+    return () => { cancelled = true; };
+  }, [id]);
 
   const calcWallFit = () => {
     const w = parseFloat(wall.w), h = parseFloat(wall.h);
@@ -125,28 +168,17 @@ export default function ProductDetail() {
     setWallFit({ fits, scaleW, scaleH, maxScale, upcharge });
   };
 
-  const matched = id && ARTWORK_MAP[id];
   const productData = matched
     ? {
-        ...FALLBACK_PRODUCT.default,
         ...matched,
-        badge: "AVAILABLE FOR ENQUIRY",
-        availability: "Available for Enquiry",
+        badge: customizable ? "AVAILABLE FOR ENQUIRY" : "AVAILABLE NOW",
+        availability: customizable ? "Available for Enquiry" : "Ready to bring home",
         certificate: "Digital Ledger Authenticity",
-        artistImg: FALLBACK_PRODUCT.default.artistImg,
-        artistBio: FALLBACK_PRODUCT.default.artistBio,
-        quote: FALLBACK_PRODUCT.default.quote,
+        artistImg: artistInfo?.image_url || FALLBACK_PRODUCT.default.artistImg,
+        artistBio: artistInfo?.bio || "",
+        artistRole: artistInfo?.role || "",
+        artistId: artistInfo?.id || matched.artist_id || null,
         aboutArt: matched.description,
-        origin: FALLBACK_PRODUCT.default.origin,
-        purpose: FALLBACK_PRODUCT.default.purpose,
-        story: FALLBACK_PRODUCT.default.story,
-        spread: FALLBACK_PRODUCT.default.spread,
-        specs: [
-          { k: "Edition", v: "Unique work, signed verso" },
-          { k: "Medium", v: matched.medium },
-          { k: "Dimensions", v: matched.dimensions },
-          { k: "Year", v: matched.year },
-        ],
       }
     : FALLBACK_PRODUCT.default;
 
@@ -215,31 +247,45 @@ export default function ProductDetail() {
               </CircleBtn>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-            {productData.images.map((img, i) => (
-              <div
-                key={i}
-                onClick={() => setActiveImg(i)}
-                style={{
-                  flex: 1,
-                  aspectRatio: "1/1",
-                  border:
-                    activeImg === i
-                      ? "1px solid #D4AF37"
-                      : "1px solid rgba(212,175,55,0.15)",
-                  borderRadius: 4,
-                  overflow: "hidden",
-                  cursor: "pointer",
-                }}>
-                <SafeImage
-                  src={img}
-                  alt=""
-                  fallbackIndex={i}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-            ))}
-          </div>
+          {/* Thumbnail strip — small, fixed-size, horizontally scrollable (only when >1 image) */}
+          {productData.images.length > 1 && (
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                marginTop: 12,
+                overflowX: "auto",
+                paddingBottom: 4,
+                scrollbarWidth: "thin",
+              }}>
+              {productData.images.map((img, i) => (
+                <div
+                  key={i}
+                  onClick={() => setActiveImg(i)}
+                  style={{
+                    flex: "0 0 auto",
+                    width: 68,
+                    height: 68,
+                    border:
+                      activeImg === i
+                        ? "2px solid #D4AF37"
+                        : "1px solid rgba(212,175,55,0.18)",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    opacity: activeImg === i ? 1 : 0.6,
+                    transition: "opacity 0.2s",
+                  }}>
+                  <SafeImage
+                    src={img}
+                    alt=""
+                    fallbackIndex={i}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* info */}
@@ -383,7 +429,8 @@ export default function ProductDetail() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => window.dispatchEvent(new Event("open-artcoliseum-chat"))}
+            onClick={handlePrimaryCta}
+            disabled={ctaBusy}
             style={{
               width: "100%",
               padding: "16px",
@@ -394,7 +441,7 @@ export default function ProductDetail() {
               letterSpacing: "0.2em",
               border: "none",
               borderRadius: 999,
-              cursor: "pointer",
+              cursor: ctaBusy ? "wait" : "pointer",
               boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
               marginBottom: 12,
               display: "inline-flex",
@@ -402,10 +449,16 @@ export default function ProductDetail() {
               justifyContent: "center",
               gap: 10,
             }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            ENQUIRE NOW
+            {isApproved ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            )}
+            {isApproved ? "BRING IT HOME" : "ENQUIRE NOW"}
           </motion.button>
 
           {/* VIEW IN AR */}
@@ -481,105 +534,115 @@ export default function ProductDetail() {
                 )}
               </div>
 
-              {/* Price comparison */}
-              <div style={{ borderTop: "1px solid rgba(212,175,55,0.15)", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.45)", marginBottom: 3 }}>BASE MRP</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "rgba(200,191,160,0.55)", textDecoration: upchargePct !== 0 ? "line-through" : "none" }}>
-                    {fmtPrice(basePrice)}
-                  </div>
+              {/* Pricing note — customizable works are priced by the curator after you enquire */}
+              <div style={{ borderTop: "1px solid rgba(212,175,55,0.15)", paddingTop: 14, marginBottom: 16 }}>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", lineHeight: 1.6 }}>
+                  Your selections and wall dimensions are shared with our curator. The final price for
+                  this customised piece is revealed in your enquiry chat.
                 </div>
-                {upchargePct !== 0 && (
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 3 }}>
-                      CUSTOMISED PRICE {upchargePct > 0 ? `+${upchargePct}%` : `${upchargePct}%`}
-                    </div>
-                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#D4AF37" }}>
-                      {fmtPrice(customPrice)}
-                    </div>
-                  </div>
-                )}
-                {upchargePct === 0 && (
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(200,191,160,0.35)" }}>
-                    NO ADDITIONAL COST
-                  </div>
-                )}
               </div>
 
-              {/* Take it home CTA */}
+              {/* Gate-driven CTA */}
               <motion.button
                 whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => navigate("/cart")}
+                onClick={handlePrimaryCta}
+                disabled={ctaBusy}
                 style={{
                   width: "100%", padding: "14px",
                   background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
                   color: "#0e0c0a", border: "none", borderRadius: 999,
                   fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                  cursor: ctaBusy ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                TAKE IT HOME — {fmtPrice(customPrice)}
+                {isApproved ? "BRING IT HOME" : "ENQUIRE NOW"}
               </motion.button>
             </div>
           )}
 
-          {/* Predefined sizes panel — only when navigated from predefined collection */}
+          {/* Predefined (fixed-price) panel — size options + price, bought directly */}
           {isPredefined && (
             <div style={{ background: "rgba(212,175,55,0.04)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, padding: "20px 22px", marginBottom: 16 }}>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>SELECT PREDEFINED SIZE</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-                {PREDEFINED_SIZES.map((sz) => (
-                  <motion.button
-                    key={sz.label}
-                    onClick={() => setPredefinedSize(sz)}
-                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    style={{
-                      padding: "14px 12px", borderRadius: 10, cursor: "pointer", textAlign: "left",
-                      background: predefinedSize?.label === sz.label ? "rgba(212,175,55,0.1)" : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${predefinedSize?.label === sz.label ? "#D4AF37" : "rgba(212,175,55,0.18)"}`,
-                      transition: "all 0.15s",
-                    }}>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: predefinedSize?.label === sz.label ? "#D4AF37" : "#e8e0d0", marginBottom: 4 }}>{sz.label}</div>
-                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)", marginBottom: 2 }}>{sz.dims}</div>
-                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>{sz.desc}</div>
-                  </motion.button>
-                ))}
-              </div>
-              <AnimatePresence>
-                {predefinedSize && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 10, marginBottom: 14 }}>
-                    <div>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 2 }}>{predefinedSize.label} — {predefinedSize.dims}</div>
-                      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{predefinedSize.desc}</div>
-                    </div>
-                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>
-                      {fmtPrice(Math.round(basePrice * predefinedSize.multiplier))}
-                    </div>
-                  </motion.div>
+              {sizes.length > 0 && (
+                <>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 12 }}>SELECT SIZE</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
+                    {sizes.map((sz) => {
+                      const sel = selectedSize?.id === sz.id;
+                      return (
+                        <button
+                          key={sz.id}
+                          onClick={() => setSelectedSize(sz)}
+                          style={{
+                            textAlign: "left", padding: "12px 14px", borderRadius: 10, cursor: "pointer",
+                            background: sel ? "rgba(212,175,55,0.12)" : "rgba(255,255,255,0.02)",
+                            border: `1px solid ${sel ? "#D4AF37" : "rgba(212,175,55,0.18)"}`,
+                            transition: "all 0.15s",
+                          }}>
+                          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.12em", color: sel ? "#D4AF37" : "#e8e0d0", marginBottom: 3 }}>{sz.label}</div>
+                          {(sz.width || sz.height) && (
+                            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>
+                              {sz.width} × {sz.height} {sz.unit || ""}
+                            </div>
+                          )}
+                          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, fontWeight: 700, color: "#D4AF37" }}>{fmtPrice(sz.price)}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 18, borderTop: sizes.length ? "1px solid rgba(212,175,55,0.12)" : "none", paddingTop: sizes.length ? 14 : 0 }}>
+                <div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>
+                    {selectedSize ? `${selectedSize.label.toUpperCase()} · TOTAL` : "PRICE"}
+                  </div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>
+                    {fmtPrice(selectedSize ? selectedSize.price : basePrice)}
+                  </div>
+                </div>
+                {!sizes.length && productData.dimensions && (
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)" }}>{productData.dimensions}</div>
                 )}
-              </AnimatePresence>
+              </div>
               <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                onClick={() => navigate("/cart")}
+                whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }} whileTap={{ scale: 0.97 }}
+                onClick={handlePrimaryCta}
+                disabled={ctaBusy}
                 style={{
                   width: "100%", padding: "14px",
-                  background: predefinedSize ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.08)",
-                  color: predefinedSize ? "#0e0c0a" : "#D4AF37",
-                  border: `1px solid ${predefinedSize ? "transparent" : "rgba(212,175,55,0.3)"}`,
+                  background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+                  color: "#0e0c0a", border: "none",
                   borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
-                  cursor: predefinedSize ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "all 0.2s",
+                  cursor: ctaBusy ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                 }}>
-                {predefinedSize ? `ENQUIRE — ${fmtPrice(Math.round(basePrice * predefinedSize.multiplier))}` : "SELECT A SIZE TO ENQUIRE"}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
               </motion.button>
             </div>
           )}
         </motion.div>
       </div>
+
+      <ChatModal
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        conversationKey={`enquiry:${id}`}
+        title={productData.title}
+        subtitle={`Enquiry · ${productData.artist}`}
+        avatar={productData.images?.[0]}
+        intro={[
+          `Thanks for your interest in "${productData.title}". A curator will share pricing and details with you shortly.`,
+        ]}
+        showTakeItHome={isApproved}
+        takeItHomeLabel="Bring it home →"
+        onTakeItHome={bringHome}
+      />
 
       {/* artist block */}
       <div
@@ -628,37 +691,43 @@ export default function ProductDetail() {
             }}>
             {productData.artist}
           </h2>
-          <div
-            style={{
-              fontFamily: "'Cormorant Garamond',serif",
-              fontStyle: "italic",
-              fontSize: 16,
-              color: "rgba(200,191,160,0.85)",
-              marginBottom: 14,
-              lineHeight: 1.6,
-            }}>
-            {productData.quote}
-          </div>
-          <p
-            style={{
-              fontFamily: "'Raleway',sans-serif",
-              fontSize: 13,
-              color: "rgba(200,191,160,0.65)",
-              lineHeight: 1.7,
-              marginBottom: 14,
-            }}>
-            {productData.artistBio}
-          </p>
-          <Link
-            to="/artists/elena-vance"
-            style={{
-              fontFamily: "'Cinzel',serif",
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              color: "#D4AF37",
-            }}>
-            VIEW FULL MONOGRAPH →
-          </Link>
+          {productData.artistRole && (
+            <div
+              style={{
+                fontFamily: "'Cormorant Garamond',serif",
+                fontStyle: "italic",
+                fontSize: 16,
+                color: "rgba(200,191,160,0.85)",
+                marginBottom: 14,
+                lineHeight: 1.6,
+              }}>
+              {productData.artistRole}
+            </div>
+          )}
+          {productData.artistBio && (
+            <p
+              style={{
+                fontFamily: "'Raleway',sans-serif",
+                fontSize: 13,
+                color: "rgba(200,191,160,0.65)",
+                lineHeight: 1.7,
+                marginBottom: 14,
+              }}>
+              {productData.artistBio}
+            </p>
+          )}
+          {productData.artistId && (
+            <Link
+              to={`/artists/${productData.artistId}`}
+              style={{
+                fontFamily: "'Cinzel',serif",
+                fontSize: 11,
+                letterSpacing: "0.16em",
+                color: "#D4AF37",
+              }}>
+              VIEW FULL MONOGRAPH →
+            </Link>
+          )}
         </div>
       </div>
 

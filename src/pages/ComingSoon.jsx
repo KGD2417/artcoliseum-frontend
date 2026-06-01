@@ -33,7 +33,7 @@ const PAGE_INFO = {
     title: "Sarjaan Setu",
     subtitle: "Finding the Right Expert for Your Needs",
     description:
-      "A unqiue platform that helps you connect with nearby and skilled Sarjaans based on your requirements. View detailed profiles and choose the best match for your work.",
+      "A unqiue platform that helps you connect with nearby and Sarjaans based on your requirements. View detailed profiles and choose the best match as per your requirements.",
     icon: "✧",
     features: [
       "Search Sarjaans by area and specialization",

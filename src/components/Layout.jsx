@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Navigation from './Navigation';
 import Footer from './Footer';
 import ChatbotWidget from './ChatbotWidget';
+import MessagesWidget from './MessagesWidget';
 
 export default function Layout() {
   return (
@@ -12,6 +13,7 @@ export default function Layout() {
       </main>
       <Footer />
       <ChatbotWidget />
+      <MessagesWidget />
     </div>
   );
 }

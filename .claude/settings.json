@@ -1,4 +1,35 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/python -c \"from app.main import app; print\\('app imports OK; routes:', len\\(app.routes\\)\\)\")",
+      "Bash(.venv/bin/uvicorn app.main:app --port 8000 --log-level warning)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/uploads/images/d0aae44944ba4dcdb496047dc8d4a241.png)",
+      "Bash(cat vite.config.js)",
+      "Bash(cat vite.config.*)",
+      "Bash(.venv/bin/python -c \"from app.main import app; print\\('routes:', len\\(app.routes\\)\\)\")",
+      "Bash(.venv/bin/python -m app.seed)",
+      "Bash(curl -s -X PATCH http://localhost:8000/auth/me -H 'Authorization: Bearer __TRACKED_VAR__' -H 'Content-Type: application/json' -d '{\"full_name\":\"User A Updated\",\"phone\":\"+91 99999\"}')",
+      "Bash(sed -n '124,130p' src/pages/AdminDashboard.jsx)",
+      "Bash(sed -n '233,238p' src/pages/AdminDashboard.jsx)",
+      "Bash(.venv/bin/python -m py_compile app/routers/admin.py app/routers/cart.py app/routers/enquiries.py app/routers/artworks.py app/schemas/extra.py)",
+      "Bash(.venv/bin/python -c \"import app.main; print\\('backend imports OK — routers registered:', len\\(app.main.app.routes\\)\\)\")",
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(curl -s -m 3 http://localhost:8000/health)",
+      "Bash(.venv/bin/uvicorn app.main:app --port 8000)",
+      "Bash(echo \"started pid $!\")",
+      "Bash(kill 64168)",
+      "Bash(.venv/bin/python -c \"import app.main; print\\('OK', len\\(app.main.app.routes\\), 'routes'\\)\")",
+      "Bash(grep -v \"utils/supabase.js$\")",
+      "Bash(grep -rn \"categories/\\\\${\\\\|categories/\\\\`\\\\|to=\\\\\"/categories/\\\\|/categories/\\\\$\" .)",
+      "Bash(grep -rn \"categories/[a-z\\\\$\\\\`{]\" .)",
+      "Bash(.venv/bin/python -m app.seed_subtypes)",
+      "Bash(grep -n \"categories/\\\\${medium}\\\\|MEDIUM_DATA = \\\\|^  [a-z].*: {\" pages/ArtTypeDescription.jsx)",
+      "Bash(sed -n '1,4p' pages/ArtTypeDescription.jsx)",
+      "Bash(sed -n '1,5p' pages/SubTypeDetail.jsx)",
+      "Bash(.venv/bin/python -c \"import app.main; print\\('import OK', len\\(app.main.app.routes\\), 'routes'\\)\")"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {

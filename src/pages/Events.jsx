@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import { supabase } from "../utils/supabase";
+import { api } from "../utils/api";
 import e4 from "../assets/events/e4.png";
 import e5 from "../assets/events/e5.png";
 import e6 from "../assets/events/e6.png";
@@ -190,10 +190,9 @@ export default function Events() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from("events")
-        .select("id, title, description, status, starts_at, ends_at, location, image_url");
-      if (error) { console.error(error); return; }
+      let data;
+      try { data = await api.events.list(); } catch (e) { console.error(e); return; }
+      if (!data || data.length === 0) return; // keep fallback demo data
       const fmt = (s, e) => {
         if (!s) return "";
         const d1 = new Date(s).toLocaleDateString("en-US", { month: "long", day: "numeric" });
@@ -239,14 +238,9 @@ export default function Events() {
   const submit = async (e) => {
     e.preventDefault();
     if (activeEvent?.id) {
-      const { error } = await supabase.from("event_registrations").insert({
-        event_id: activeEvent.id,
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        message: form.message,
-      });
-      if (error) { alert(error.message); return; }
+      try {
+        await api.events.register(activeEvent.id, { name: form.name, email: form.email, phone: form.phone, message: form.message });
+      } catch (err) { alert(err.message); return; }
     }
     setDone(true);
     setTimeout(() => { setActiveEvent(null); setDone(false); }, 2400);

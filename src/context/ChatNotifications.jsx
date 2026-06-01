@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { supabase } from "../utils/supabase";
+import { api, realtime } from "../utils/api";
 import { useAuth } from "./Auth";
 
 /**
@@ -15,8 +15,8 @@ import { useAuth } from "./Auth";
 const Ctx = createContext({ unread: 0, setUnread: () => {} });
 
 export function ChatNotificationsProvider({ children }) {
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, role } = useAuth();
+  const isAdmin = role === "admin";
   const [toasts, setToasts] = useState([]);
   const [unread, setUnread] = useState(0);
   const seen = useRef(new Set());
@@ -27,21 +27,6 @@ export function ChatNotificationsProvider({ children }) {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().catch(() => {});
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle();
-      setIsAdmin(!!data?.is_admin);
-    })();
   }, [user]);
 
   useEffect(() => {
@@ -81,31 +66,10 @@ export function ChatNotificationsProvider({ children }) {
       }, 5000);
     };
 
-    // Users: filter to their own user_id (RLS would block other rows anyway,
-    // but the filter saves bandwidth). Admins: subscribe to all inserts.
-    const channel = supabase.channel(
-      `notifications:${user.id}:${isAdmin ? "admin" : "user"}`,
-    );
-    if (isAdmin) {
-      channel.on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_messages" },
-        (payload) => handle(payload.new),
-      );
-    } else {
-      channel.on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => handle(payload.new),
-      );
-    }
-    channel.subscribe();
-    return () => supabase.removeChannel(channel);
+    // The server scopes delivery (own threads for users, all for admins), so we
+    // subscribe to everything this client receives.
+    const sub = realtime.channel("*").on("message", handle).subscribe();
+    return () => sub.unsubscribe();
   }, [user, isAdmin]);
 
   return (
@@ -166,48 +130,21 @@ export function ChatNotificationsProvider({ children }) {
 
 export const useChatNotifications = () => useContext(Ctx);
 
-// Helper to get unread count using chat_reads table
-export async function getUnreadCount(userId) {
-  if (!userId) return 0;
+// Helper to get the user's unread count from the backend.
+export async function getUnreadCount() {
   try {
-    const { data: reads } = await supabase
-      .from("chat_reads")
-      .select("conversation_key, last_read_at")
-      .eq("user_id", userId);
-
-    const { data: messages, error } = await supabase
-      .from("chat_messages")
-      .select("id, conversation_key, created_at")
-      .eq("user_id", userId)
-      .neq("sender", "me");
-
-    if (error) throw error;
-    if (!messages) return 0;
-
-    const readMap = Object.fromEntries(
-      (reads || []).map((r) => [r.conversation_key, r.last_read_at])
-    );
-
-    return messages.filter((m) => {
-      const lastRead = readMap[m.conversation_key];
-      return !lastRead || new Date(m.created_at) > new Date(lastRead);
-    }).length;
+    const { unread } = await api.chat.unread();
+    return unread || 0;
   } catch (err) {
     console.error("Error getting unread count:", err);
     return 0;
   }
 }
 
-// Helper to mark messages as read via chat_reads upsert
-export async function markMessagesAsRead(userId, conversationKey) {
-  if (!userId) return;
+// Helper to mark a conversation as read.
+export async function markMessagesAsRead(_userId, conversationKey) {
   try {
-    await supabase
-      .from("chat_reads")
-      .upsert(
-        { user_id: userId, conversation_key: conversationKey, last_read_at: new Date().toISOString() },
-        { onConflict: "user_id,conversation_key" }
-      );
+    await api.chat.read(conversationKey);
   } catch (err) {
     console.error("Error marking messages as read:", err);
   }

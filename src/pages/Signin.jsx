@@ -24,11 +24,9 @@ export default function SignIn() {
         : await signUp({ email, password, fullName: name, phone });
       if (error) {
         setError(error.message);
-      } else if (isLogin) {
-        navigate('/profile');
       } else {
-        setError('Account created. Check your email to confirm, then sign in.');
-        setIsLogin(true);
+        // Both login and registration return tokens → user is signed in.
+        navigate('/profile');
       }
     } finally {
       setBusy(false);

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../utils/supabase";
+import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
 
 export default function AdminInbox() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(null);
+  const isAdmin = role === "admin" ? true : (authLoading ? null : false);
   const [rows, setRows] = useState([]);
   const [active, setActive] = useState(null); // { user_id, conversation_key }
   const [thread, setThread] = useState([]);
@@ -17,38 +17,23 @@ export default function AdminInbox() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate("/signin"); return; }
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle();
-      setIsAdmin(!!data?.is_admin);
-    })();
   }, [user, authLoading, navigate]);
 
-  // Load all messages (admins only — RLS enforces this).
+  // Load all messages (admins only — backend enforces this).
   useEffect(() => {
-    if (!isAdmin) return;
+    if (isAdmin !== true) return;
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .select("id, user_id, conversation_key, sender, text, created_at")
-        .order("created_at", { ascending: true });
-      if (cancelled) return;
-      if (error) { console.error(error); return; }
-      setRows(data || []);
+      try {
+        const data = await api.chat.adminAll();
+        if (!cancelled) setRows(data || []);
+      } catch (e) { console.error(e); }
     })();
-    const channel = supabase
-      .channel("admin-inbox")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_messages" },
-        (payload) => setRows(prev => [...prev, payload.new])
-      )
+    const sub = realtime
+      .channel("*")
+      .on("message", (m) => setRows(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m]))
       .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(channel); };
+    return () => { cancelled = true; sub.unsubscribe(); };
   }, [isAdmin]);
 
   // Group rows into one entry per (user_id, conversation_key).
@@ -88,14 +73,18 @@ export default function AdminInbox() {
     setSending(true);
     setReply("");
     const sender = active.conversation_key.startsWith("artist:") ? "artist" : "curator";
-    const { error } = await supabase.from("chat_messages").insert({
-      user_id: active.user_id,
-      conversation_key: active.conversation_key,
-      sender,
-      text,
-    });
-    setSending(false);
-    if (error) alert(error.message);
+    try {
+      await api.chat.send({
+        conversation_key: active.conversation_key,
+        sender,
+        text,
+        target_user_id: active.user_id,
+      });
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   if (authLoading || isAdmin === null) {
@@ -106,10 +95,10 @@ export default function AdminInbox() {
       <section style={{ padding: "120px 24px", textAlign: "center", color: "#e8e0d0" }}>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#fff" }}>Admins only</h1>
         <p style={{ marginTop: 12, color: "rgba(200,191,160,0.6)" }}>
-          Run this in Supabase SQL Editor to grant access:
+          Run this against the database to grant access, then sign in again:
         </p>
         <pre style={{ display: "inline-block", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", padding: 14, borderRadius: 8, color: "#D4AF37", marginTop: 10, fontFamily: "monospace", fontSize: 12 }}>
-{`update public.profiles set is_admin = true where id = '${user.id}';`}
+{`UPDATE profiles SET role='admin', is_admin=true WHERE user_id='${user?.id || "<your-id>"}';`}
         </pre>
       </section>
     );

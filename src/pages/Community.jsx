@@ -1,99 +1,52 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { api, realtime } from "../utils/api";
+import { useAuth } from "../context/Auth";
 
 const COMMUNITIES = [
-  { id: "all",          name: "All Communities", desc: "Browse everything",                               members: null,  color: "#D4AF37" },
-  { id: "painting",     name: "Painting",         desc: "Oil, acrylic, watercolour and all painted works", members: 2847,  color: "#8B4513" },
-  { id: "sculpture",    name: "Sculpture",         desc: "Clay, bronze, marble and mixed 3D forms",         members: 1243,  color: "#4A7C59" },
-  { id: "digital",      name: "Digital Art",       desc: "Digital, generative, NFT and new media",          members: 3621,  color: "#2C5A8E" },
-  { id: "photography",  name: "Photography",       desc: "Fine art and documentary photography",            members: 2156,  color: "#6E2C4A" },
-  { id: "mixed",        name: "Mixed Media",       desc: "Collage, installation and experimental",          members: 987,   color: "#4A2C7E" },
-  { id: "marketplace",  name: "Marketplace",       desc: "Buy, sell and trade original artworks",           members: 5124,  color: "#B87333" },
-  { id: "general",      name: "General",           desc: "Art news, events and open conversations",         members: 8931,  color: "#2C8E6E" },
+  { id: "all",          name: "All Communities", desc: "Browse everything",                               color: "#D4AF37" },
+  { id: "painting",     name: "Painting",         desc: "Oil, acrylic, watercolour and all painted works", color: "#8B4513" },
+  { id: "sculpture",    name: "Sculpture",         desc: "Clay, bronze, marble and mixed 3D forms",         color: "#4A7C59" },
+  { id: "digital",      name: "Digital Art",       desc: "Digital, generative, NFT and new media",          color: "#2C5A8E" },
+  { id: "photography",  name: "Photography",       desc: "Fine art and documentary photography",            color: "#6E2C4A" },
+  { id: "mixed",        name: "Mixed Media",       desc: "Collage, installation and experimental",          color: "#4A2C7E" },
+  { id: "marketplace",  name: "Marketplace",       desc: "Buy, sell and trade original artworks",           color: "#B87333" },
+  { id: "general",      name: "General",           desc: "Art news, events and open conversations",         color: "#2C8E6E" },
 ];
 
 const NOTIF_LEVELS = ["All", "Highlights", "Off"];
 
-const SAMPLE_POSTS = [
-  {
-    id: 1, community: "painting", type: "discussion",
-    author: "Elena Vance", avatar: "EV", avatarColor: "#8B4513", time: "2 hours ago",
-    text: "Just finished the underpainting for my latest oil piece — 'Amber Threshold'. The warm ochre ground is doing something magical with the cadmium layers. There's a quality of light I haven't achieved before.",
-    images: ["https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=700&q=80"], video: null,
-    likes: 142, comments: 18, liked: false,
-    commentsList: [
-      { author: "Daniel Hoffmann", text: "The ochre ground trick is everything. Rembrandt knew it too." },
-      { author: "Aria Patel", text: "Can't wait to see the final! Your colour work is extraordinary." },
-    ],
-  },
-  {
-    id: 2, community: "sculpture", type: "discussion",
-    author: "Daniel Hoffmann", avatar: "DH", avatarColor: "#2C4A6E", time: "5 hours ago",
-    text: "I recently acquired a 1.2m bronze figure and I'm genuinely struggling with placement. The light by the east window seems too harsh. Any collectors with experience placing monumental sculpture in residential spaces?",
-    images: null, video: null,
-    likes: 67, comments: 24, liked: false,
-    commentsList: [
-      { author: "Chen Wei", text: "Indirect northern light completely transformed my piece. Try the north wall." },
-      { author: "Elena Vance", text: "A small focused spotlight from below creates extraordinary shadow play." },
-    ],
-  },
-  {
-    id: 3, community: "marketplace", type: "listing",
-    author: "Chen Wei", avatar: "CW", avatarColor: "#4A2C6E", time: "1 day ago",
-    title: "Original Oil on Canvas — 'Meridian Lines'",
-    text: "One of 22 paintings from my Florence solo exhibition. 80×100cm, oil on linen. Certificate of authenticity included. Ships worldwide with specialist art courier.",
-    images: ["https://images.unsplash.com/photo-1566438480900-0609be27a4be?w=700&q=80"], video: null,
-    condition: "Excellent", location: "Florence, Italy",
-    likes: 89, comments: 12, liked: false,
-    commentsList: [
-      { author: "Aria Patel", text: "Is this still available? DM'd you." },
-      { author: "Marcus Reyes", text: "Stunning. What are the shipping costs to Mumbai?" },
-    ],
-  },
-  {
-    id: 4, community: "general", type: "discussion",
-    author: "Aria Patel", avatar: "AP", avatarColor: "#2C6E4A", time: "1 day ago",
-    text: "The most interesting artists I'm seeing right now deliberately reintroduce physical imperfection into digital work — grain, handwriting, material texture. It's as if they're mourning something that hasn't quite died yet.",
-    images: null, video: null,
-    likes: 211, comments: 52, liked: false,
-    commentsList: [
-      { author: "Elena Vance", text: "The yearning for the haptic is real. I catch myself running my hands over screens sometimes." },
-      { author: "Daniel Hoffmann", text: "The most sought-after digital pieces all have a deliberate 'flaw' language." },
-    ],
-  },
-  {
-    id: 5, community: "marketplace", type: "listing",
-    author: "Marcus Reyes", avatar: "MR", avatarColor: "#6E2C2C", time: "2 days ago",
-    title: "Vintage Copper Sculpture — 'Solitude'",
-    text: "Hand-cast copper, 45cm tall. Acquired Art Basel 2019. Includes provenance documentation and artist certificate. Reason for sale: relocating internationally.",
-    images: ["https://images.unsplash.com/photo-1520420097861-e4959843b682?w=700&q=80"], video: null,
-    condition: "Very Good", location: "Delhi, India",
-    likes: 54, comments: 8, liked: false,
-    commentsList: [
-      { author: "Yuki Tanaka", text: "This is exceptional. Is there any flexibility on price?" },
-    ],
-  },
-  {
-    id: 6, community: "photography", type: "discussion",
-    author: "Rania Khalil", avatar: "RK", avatarColor: "#6E4A2C", time: "3 days ago",
-    text: "Shooting 'Threshold Series' on a Hasselblad 500C/M with HP5 pushed two stops in Rodinal. The grain is the texture. A few contact sheet selects below.",
-    images: ["https://images.unsplash.com/photo-1452830978618-d6feae7d0ffa?w=700&q=80"], video: null,
-    likes: 176, comments: 33, liked: false,
-    commentsList: [
-      { author: "Marcus Reyes", text: "HP5 pushed in Rodinal is a revelation. The grain structure is unlike anything else." },
-    ],
-  },
-  {
-    id: 7, community: "digital", type: "discussion",
-    author: "Yuki Tanaka", avatar: "YT", avatarColor: "#2C5A6E", time: "3 days ago",
-    text: "My Art Coliseum collection now spans 12 works across 4 mediums. What started as a single impulse purchase — a small graphite drawing — has become something I build my life around.",
-    images: ["https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=700&q=80"], video: null,
-    likes: 89, comments: 11, liked: false,
-    commentsList: [
-      { author: "Chen Wei", text: "A collection with genuine integrity and intention." },
-    ],
-  },
-];
+// ── Helpers: derive presentation from the real backend post ──────────────────
+const PALETTE = ["#8B4513", "#4A7C59", "#2C5A8E", "#6E2C4A", "#4A2C7E", "#B87333", "#2C8E6E", "#2C4A6E"];
+function colorFor(name) {
+  let h = 0; for (const ch of (name || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+function initialsOf(name) {
+  return (name || "?").split(/\s+/).map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+}
+function timeAgo(iso) {
+  if (!iso) return "";
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+  if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+  return Math.floor(diff / 86400) + "d ago";
+}
+function mapPost(p) {
+  return {
+    id: p.id, community: p.community, type: p.type,
+    author: p.author || "Member", avatar: initialsOf(p.author), avatarColor: colorFor(p.author),
+    time: timeAgo(p.created_at),
+    text: p.text,
+    images: p.images && p.images.length ? p.images : null,
+    video: p.video || null,
+    title: p.title, condition: p.condition, location: p.location,
+    likes: p.likes || 0, liked: !!p.liked,
+    comments: (p.comments || []).length, commentsList: p.comments || [],
+    userId: p.user_id,
+  };
+}
 
 // ─── Avatar ────────────────────────────────────────────────────────────────────
 function Avatar({ initials, color, size = 40 }) {
@@ -258,7 +211,7 @@ function CommunitySidebarRow({ community, joined, notifLevel, onJoin, onNotif, a
 }
 
 // ─── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, onLike, onDelete, onEdit, onChat }) {
+function PostCard({ post, onLike, onDelete, onEdit, onChat, isOwn }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState(post.commentsList);
@@ -266,11 +219,14 @@ function PostCard({ post, onLike, onDelete, onEdit, onChat }) {
   const [saved, setSaved] = useState(false);
   const isListing = post.type === "listing";
 
-  const submitComment = () => {
+  const submitComment = async () => {
     const t = commentText.trim();
     if (!t) return;
-    setComments(prev => [...prev, { author: "You", text: t }]);
     setCommentText("");
+    try {
+      const updated = await api.community.comment(post.id, t);
+      setComments(updated.comments || []);
+    } catch (e) { alert(e.message); }
   };
 
   return (
@@ -305,13 +261,13 @@ function PostCard({ post, onLike, onDelete, onEdit, onChat }) {
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div
-            style={{ display: "flex", alignItems: "center", gap: 11, cursor: post.author !== "You" ? "pointer" : "default" }}
-            onClick={() => post.author !== "You" && onChat({ name: post.author, avatar: post.avatar, avatarColor: post.avatarColor })}>
+            style={{ display: "flex", alignItems: "center", gap: 11, cursor: !isOwn ? "pointer" : "default" }}
+            onClick={() => !isOwn && onChat({ name: post.author, avatar: post.avatar, avatarColor: post.avatarColor, userId: post.userId })}>
             <Avatar initials={post.avatar} color={post.avatarColor} />
             <div>
               <div
                 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600, color: "#f0e8d8", transition: "color 0.2s" }}
-                onMouseEnter={e => { if (post.author !== "You") e.currentTarget.style.color = "#D4AF37"; }}
+                onMouseEnter={e => { if (!isOwn) e.currentTarget.style.color = "#D4AF37"; }}
                 onMouseLeave={e => { e.currentTarget.style.color = "#f0e8d8"; }}>
                 {post.author}
               </div>
@@ -322,7 +278,7 @@ function PostCard({ post, onLike, onDelete, onEdit, onChat }) {
           </div>
 
           {/* Three-dot menu — own posts only */}
-          <div style={{ visibility: post.author === "You" ? "visible" : "hidden", position: "relative", marginRight: isListing ? 68 : 0 }}>
+          <div style={{ visibility: isOwn ? "visible" : "hidden", position: "relative", marginRight: isListing ? 68 : 0 }}>
             <button
               onClick={() => setMenuOpen(v => !v)}
               style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(200,191,160,0.4)", padding: "4px 8px", borderRadius: 6, transition: "color 0.2s" }}
@@ -459,7 +415,7 @@ function PostCard({ post, onLike, onDelete, onEdit, onChat }) {
               {saved ? "Saved" : "Save"}
             </button>
             <button
-              onClick={() => onChat({ name: post.author, avatar: post.avatar, avatarColor: post.avatarColor })}
+              onClick={() => onChat({ name: post.author, avatar: post.avatar, avatarColor: post.avatarColor, userId: post.userId })}
               style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(184,115,51,0.1)", border: "1px solid rgba(184,115,51,0.3)", cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 9, letterSpacing: "0.09em", fontWeight: 700, color: "#B87333", padding: "5px 13px", borderRadius: 999, transition: "all 0.18s" }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(184,115,51,0.18)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "rgba(184,115,51,0.1)"; }}>
@@ -520,22 +476,21 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
 
   const isMarketplace = community === "marketplace";
 
-  const handleImages = (e) => {
-    Array.from(e.target.files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = ev => setImages(prev => [...prev, ev.target.result]);
-      reader.readAsDataURL(file);
-    });
+  const handleImages = async (e) => {
+    const files = Array.from(e.target.files);
     e.target.value = "";
+    for (const file of files) {
+      try { const { url } = await api.uploads.file(file, "image"); setImages((prev) => [...prev, url]); }
+      catch (err) { alert(err.message); }
+    }
   };
 
-  const handleVideo = (e) => {
+  const handleVideo = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setVideo(ev.target.result);
-    reader.readAsDataURL(file);
     e.target.value = "";
+    if (!file) return;
+    try { const { url } = await api.uploads.file(file, "video"); setVideo(url); }
+    catch (err) { alert(err.message); }
   };
 
   const removeImage = i => setImages(prev => prev.filter((_, idx) => idx !== i));
@@ -694,23 +649,36 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
   );
 }
 
-// ─── Direct chat ───────────────────────────────────────────────────────────────
+// ─── Direct chat (real peer thread over the backend) ─────────────────────────────
 function DirectChat({ user, onClose }) {
-  const [messages, setMessages] = useState([
-    { id: 1, from: "them", text: "Hi! Thanks for reaching out.", time: "Just now" },
-  ]);
+  const { user: me } = useAuth();
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const bottomRef = useRef(null);
+  const peerKey = me && user.userId ? `peer:${[me.id, user.userId].sort().join(":")}` : null;
+
+  useEffect(() => {
+    if (!peerKey) return;
+    let cancelled = false;
+    api.chat.conversation(peerKey).then((d) => { if (!cancelled) setMessages(d); }).catch(() => {});
+    const sub = realtime.channel(peerKey).on("message", (m) => {
+      setMessages((prev) => prev.find((x) => x.id === m.id) ? prev : [...prev, m]);
+    }).subscribe();
+    return () => { cancelled = true; sub.unsubscribe(); };
+  }, [peerKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const send = () => {
+  const send = async () => {
     const t = input.trim();
-    if (!t) return;
-    setMessages(prev => [...prev, { id: Date.now(), from: "me", text: t, time: "Just now" }]);
+    if (!t || !peerKey) return;
     setInput("");
+    try {
+      const m = await api.chat.send({ conversation_key: peerKey, sender: "me", text: t });
+      setMessages((prev) => prev.find((x) => x.id === m.id) ? prev : [...prev, m]);
+    } catch (e) { alert(e.message); }
   };
 
   return (
@@ -741,19 +709,32 @@ function DirectChat({ user, onClose }) {
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 8px", maxHeight: 300, display: "flex", flexDirection: "column", gap: 10 }}>
-          {messages.map(msg => (
-            <div key={msg.id} style={{ display: "flex", justifyContent: msg.from === "me" ? "flex-end" : "flex-start" }}>
-              <div style={{ maxWidth: "78%", padding: "9px 13px", borderRadius: msg.from === "me" ? "12px 12px 2px 12px" : "12px 12px 12px 2px", background: msg.from === "me" ? "linear-gradient(135deg,#D4AF37,#c9a52e)" : "rgba(255,255,255,0.06)", border: msg.from === "me" ? "none" : "1px solid rgba(212,175,55,0.12)", color: msg.from === "me" ? "#0e0c0a" : "rgba(200,191,160,0.85)", fontFamily: "'Cormorant Garamond',serif", fontSize: 15, lineHeight: 1.5 }}>
-                {msg.text}
-              </div>
+          {!peerKey && (
+            <div style={{ textAlign: "center", padding: 20, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)" }}>
+              Please sign in to message {user.name}.
             </div>
-          ))}
+          )}
+          {peerKey && messages.length === 0 && (
+            <div style={{ textAlign: "center", padding: 20, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.45)" }}>
+              Say hello to start the conversation.
+            </div>
+          )}
+          {messages.map((msg) => {
+            const mine = me && msg.user_id === me.id;
+            return (
+              <div key={msg.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
+                <div style={{ maxWidth: "78%", padding: "9px 13px", borderRadius: mine ? "12px 12px 2px 12px" : "12px 12px 12px 2px", background: mine ? "linear-gradient(135deg,#D4AF37,#c9a52e)" : "rgba(255,255,255,0.06)", border: mine ? "none" : "1px solid rgba(212,175,55,0.12)", color: mine ? "#0e0c0a" : "rgba(200,191,160,0.85)", fontFamily: "'Cormorant Garamond',serif", fontSize: 15, lineHeight: 1.5 }}>
+                  {msg.text}
+                </div>
+              </div>
+            );
+          })}
           <div ref={bottomRef} />
         </div>
 
         {/* Input */}
         <div style={{ display: "flex", gap: 8, padding: "10px 12px", borderTop: "1px solid rgba(212,175,55,0.1)", background: "rgba(0,0,0,0.2)" }}>
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder="Type a message…"
+          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} placeholder={peerKey ? "Type a message…" : "Sign in to chat"} disabled={!peerKey}
             style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(212,175,55,0.15)", borderRadius: 999, padding: "8px 14px", color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none" }}
           />
           <button onClick={send} style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: input.trim() ? "linear-gradient(135deg,#D4AF37,#c9a52e)" : "rgba(212,175,55,0.15)", border: "none", cursor: input.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
@@ -769,16 +750,23 @@ function DirectChat({ user, onClose }) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function Community() {
-  const [posts, setPosts] = useState(SAMPLE_POSTS);
+  const { user } = useAuth();
+  const [posts, setPosts] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [chatUser, setChatUser] = useState(null);
   const [activeCommunity, setActiveCommunity] = useState("all");
-  const [joined, setJoined] = useState(new Set(["painting", "general", "marketplace"]));
-  const [notifications, setNotifications] = useState({
-    painting: "All", general: "Highlights", marketplace: "Highlights",
-    sculpture: "Off", digital: "Off", photography: "Off", mixed: "Off",
-  });
+  const [joined, setJoined] = useState(new Set());
+  const [notifications, setNotifications] = useState({});
+
+  // Load the real feed for the active community.
+  useEffect(() => {
+    let cancelled = false;
+    api.community.posts(activeCommunity)
+      .then((rows) => { if (!cancelled) setPosts((rows || []).map(mapPost)); })
+      .catch(() => { if (!cancelled) setPosts([]); });
+    return () => { cancelled = true; };
+  }, [activeCommunity]);
 
   const handleJoin = id => {
     setJoined(prev => {
@@ -790,24 +778,41 @@ export default function Community() {
 
   const handleNotif = (id, level) => setNotifications(prev => ({ ...prev, [id]: level }));
 
-  const filteredPosts = activeCommunity === "all" ? posts : posts.filter(p => p.community === activeCommunity);
+  const filteredPosts = posts;
 
-  const handleLike = id => setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p));
-
-  const handlePost = data => {
-    setPosts(prev => [{
-      id: Date.now(), author: "You", avatar: "YO", avatarColor: "#4A3728",
-      time: "Just now", likes: 0, comments: 0, liked: false, commentsList: [], ...data,
-    }, ...prev]);
+  const handleLike = async (id) => {
+    if (!user) { alert("Please sign in to like posts."); return; }
+    try { const updated = await api.community.like(id); setPosts(prev => prev.map(p => p.id === id ? mapPost(updated) : p)); }
+    catch (e) { alert(e.message); }
   };
 
-  const handleDelete = id => setPosts(prev => prev.filter(p => p.id !== id));
+  const handlePost = async (data) => {
+    try { const created = await api.community.createPost(data); setPosts(prev => [mapPost(created), ...prev]); }
+    catch (e) { alert(e.message); }
+  };
+
+  const handleDelete = async (id) => {
+    try { await api.community.deletePost(id); setPosts(prev => prev.filter(p => p.id !== id)); }
+    catch (e) { alert(e.message); }
+  };
 
   const handleEdit = post => { setEditingPost(post); setShowModal(true); };
 
-  const handleEditSave = data => {
-    setPosts(prev => prev.map(p => p.id === editingPost.id ? { ...p, ...data } : p));
+  const handleEditSave = async (data) => {
+    try { const updated = await api.community.updatePost(editingPost.id, data); setPosts(prev => prev.map(p => p.id === editingPost.id ? mapPost(updated) : p)); }
+    catch (e) { alert(e.message); }
     setEditingPost(null);
+  };
+
+  const openChat = (target) => {
+    if (!user) { alert("Please sign in to send messages."); return; }
+    if (target.userId === user.id) return;
+    setChatUser(target);
+  };
+
+  const openCreate = () => {
+    if (!user) { alert("Please sign in to create a post."); return; }
+    setShowModal(true);
   };
 
   const activeCommunityData = COMMUNITIES.find(c => c.id === activeCommunity);
@@ -885,7 +890,7 @@ export default function Community() {
             <motion.button
               whileHover={{ scale: 1.04, boxShadow: "0 8px 24px rgba(212,175,55,0.22)" }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => setShowModal(true)}
+              onClick={openCreate}
               style={{ padding: "10px 20px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#0e0c0a", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -899,7 +904,8 @@ export default function Community() {
               <PostCard
                 key={post.id} post={post}
                 onLike={handleLike} onDelete={handleDelete}
-                onEdit={handleEdit} onChat={setChatUser}
+                onEdit={handleEdit} onChat={openChat}
+                isOwn={!!user && post.userId === user.id}
               />
             )) : (
               <motion.div

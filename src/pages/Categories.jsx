@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
-import { supabase } from "../utils/supabase";
+import { api } from "../utils/api";
 import m1 from "../assets/mediums/m1.png";
 import m2 from "../assets/mediums/m2.png";
 import m3 from "../assets/mediums/m3.png";
@@ -60,37 +60,36 @@ export default function Categories() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    let cancelled = false;
+    const assetBySlug = { paintings: m1, sculptures: m2, sculpture: m2, photography: m3, digital: m4, oil: m1 };
+    (async () => {
       try {
-        // const { data, error } = await supabase
-        //   .from("categories")
-        //   .select("*")
-        //   .order("label");
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          const transformed = data.map((cat) => ({
-            slug: cat.slug || cat.label.toLowerCase().replace(/\s+/g, "-"),
-            name: cat.label,
-            description: cat.description || "",
-            count: cat.artwork_count
-              ? `${cat.artwork_count}+ works`
-              : "0 works",
-            img:
-              cat.image_url ||
-              FALLBACK_CATEGORIES.find((f) => f.slug === cat.slug)?.img ||
-              "",
-          }));
-          setCategories(transformed);
-        }
+        const [cats, arts] = await Promise.all([
+          api.catalog.categories(),
+          api.catalog.artworks({}),
+        ]);
+        if (cancelled) return;
+        const mains = (cats || []).filter((c) => c.kind === "main");
+        if (!mains.length) return; // keep fallback if catalog is empty
+        const mapped = mains.map((c) => {
+          const inCat = (arts || []).filter((a) => a.category_id === c.id);
+          const withImg = inCat.find((a) => a.images && a.images.length);
+          return {
+            slug: c.id,
+            name: c.label,
+            description: "",
+            count: `${inCat.length} work${inCat.length === 1 ? "" : "s"}`,
+            img: withImg?.images?.[0] || assetBySlug[c.id] || m1,
+          };
+        });
+        setCategories(mapped);
       } catch (err) {
         console.error("Error fetching categories:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
-    fetchCategories();
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const [search, setSearch] = useState("");

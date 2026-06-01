@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { SearchIcon } from "../components/Icons";
-import { supabase } from "../utils/supabase";
+import { api } from "../utils/api";
 
 const DEMO_ARTISTS = [
   {
@@ -122,8 +122,20 @@ export default function Artists() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setArtists(DEMO_ARTISTS);
-    setLoading(false);
+    let cancelled = false;
+    api.catalog
+      .artists()
+      .then((rows) => {
+        if (cancelled) return;
+        setArtists(rows.map((a) => ({ ...a, image: a.image_url, works: a.works_count })));
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setArtists(DEMO_ARTISTS); // fallback to bundled demo data if API is down
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, []);
 
   const filtered = useMemo(() => {

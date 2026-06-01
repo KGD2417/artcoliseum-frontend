@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { api } from "../utils/api";
 
 const MEDIUM_DATA = {
   paintings: {
@@ -333,16 +334,51 @@ const MEDIUM_DATA = {
 
 const TAB_ICONS = ["✦", "◆", "✳", "◈", "❖", "◇"];
 
+// Map real DB medium ids to the closest editorial prose block (purely for the
+// hero/history copy — subtypes & counts come live from the database).
+const PROSE_KEY = { oil: "paintings", sculpture: "sculptures", digital: "digital", mixed: "paintings" };
+
 export default function ArtTypeDescription() {
   const { medium } = useParams();
   const navigate = useNavigate();
-  const data = MEDIUM_DATA[medium] || MEDIUM_DATA.paintings;
+  const data = MEDIUM_DATA[medium] || MEDIUM_DATA[PROSE_KEY[medium]] || MEDIUM_DATA.paintings;
   const [activeTab, setActiveTab] = useState(0);
+  const [subtypes, setSubtypes] = useState([]);
+  const [mediumLabel, setMediumLabel] = useState(null);
+
+  // Real subtypes + artwork counts for this medium.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [cats, arts] = await Promise.all([
+          api.catalog.categories(),
+          api.catalog.artworks({ category: medium }),
+        ]);
+        if (cancelled) return;
+        setMediumLabel((cats || []).find((c) => c.id === medium)?.label || null);
+        const subs = (cats || [])
+          .filter((c) => c.kind === "subtype" && c.parent_id === medium)
+          .map((c) => {
+            const inSub = (arts || []).filter((a) => a.subtype_id === c.id);
+            return {
+              slug: c.id, label: c.label, count: inSub.length,
+              img: inSub.find((a) => a.images && a.images.length)?.images?.[0] || null,
+            };
+          });
+        setSubtypes(subs);
+      } catch { /* keep hardcoded fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [medium]);
+
+  const title = mediumLabel || data.title;
+  const displaySubtypes = subtypes.length ? subtypes : data.subtypes;
 
   const tabs = [
     {
       label: "About the Art",
-      heading: `The Art of ${data.title}`,
+      heading: `The Art of ${title}`,
       body: data.origin[0],
       img: data.heroImg,
     },
@@ -375,18 +411,18 @@ export default function ArtTypeDescription() {
 
       {/* HERO */}
       <div className="art-hero" style={{ position: "relative", height: 440, overflow: "hidden" }}>
-        <img src={data.heroImg} alt={data.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <img src={data.heroImg} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(8,8,8,0.25) 0%, rgba(8,8,8,0.55) 50%, rgba(8,8,8,1) 100%)" }} />
         <div className="art-hero-padding" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 56px 48px", maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
             <Link to="/categories" style={{ color: "rgba(200,191,160,0.5)", textDecoration: "none" }}>Collections</Link>
             <span style={{ color: "rgba(212,175,55,0.4)" }}>›</span>
-            <span style={{ color: "#D4AF37" }}>{data.title}</span>
+            <span style={{ color: "#D4AF37" }}>{title}</span>
           </div>
           <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.24em", color: "#D4AF37", marginBottom: 12 }}>{data.label}</div>
             <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(52px,6vw,84px)", fontWeight: 700, color: "#fff", lineHeight: 0.95, letterSpacing: "-0.01em", margin: 0 }}>
-              {data.title}
+              {title}
             </h1>
           </motion.div>
         </div>
@@ -576,11 +612,11 @@ export default function ArtTypeDescription() {
             <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.24em", color: "#D4AF37" }}>STYLES & FORMS</span>
             <div style={{ flex: 1, height: 1, background: "rgba(212,175,55,0.15)" }} />
             <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontStyle: "italic", color: "rgba(200,191,160,0.4)" }}>
-              {data.subtypes.length} Distinct Styles
+              {displaySubtypes.length} Distinct Styles
             </span>
           </div>
           <div className="art-styles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-            {data.subtypes.map(s => (
+            {displaySubtypes.map(s => (
               <div
                 key={s.slug}
                 onClick={() => navigate(`/categories/${medium}/${s.slug}`)}
@@ -601,11 +637,13 @@ export default function ArtTypeDescription() {
                   e.currentTarget.style.transform = "scale(1)";
                   e.currentTarget.style.boxShadow = "none";
                 }}>
-                <img src={s.img} alt={s.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <img src={s.img || data.heroImg} alt={s.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.9) 0%, rgba(8,8,8,0.15) 60%)" }} />
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "14px 16px" }}>
                   <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{s.label}</div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 4 }}>{s.count} WORKS</div>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 4 }}>
+                    {typeof s.count === "number" ? `${s.count} work${s.count === 1 ? "" : "s"} · EXPLORE →` : "EXPLORE →"}
+                  </div>
                 </div>
               </div>
             ))}
@@ -620,9 +658,9 @@ export default function ArtTypeDescription() {
           <motion.button
             whileHover={{ scale: 1.04, boxShadow: "0 12px 36px rgba(212,175,55,0.3)" }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => navigate(`/gallery?medium=${medium}`)}
+            onClick={() => navigate(`/categories/${medium}/all`)}
             style={{ padding: "14px 40px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#0e0c0a", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", fontWeight: 600, cursor: "pointer" }}>
-            EXPLORE ALL {data.title.toUpperCase()}
+            EXPLORE ALL {title.toUpperCase()}
           </motion.button>
         </div>
       </div>

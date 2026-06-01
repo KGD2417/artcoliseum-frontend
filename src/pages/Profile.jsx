@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { useLocale, LANGS } from "../context/Locale";
 import { CheckIcon } from "../components/Icons";
-import { supabase } from "../utils/supabase";
+import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
 import i3 from "../assets/i3.png";
 import i6 from "../assets/i6.png";
@@ -13,7 +13,7 @@ const TABS = [
   { id: "details",  label: "Account Details" },
   { id: "orders",   label: "Order Tracking" },
   { id: "inbox",    label: "Messages" },
-  { id: "cart",     label: "Cart Items" },
+  { id: "collection", label: "My Collection" },
   { id: "help",     label: "Help Desk" },
   { id: "notifs",   label: "Notifications" },
   { id: "language", label: "Language" },
@@ -42,6 +42,7 @@ export default function Profile() {
   const [user, setUser] = useState(EMPTY_USER);
   const [draft, setDraft] = useState(EMPTY_USER);
   const [orders, setOrders] = useState([]);
+  const [owned, setOwned] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
   const [convThread, setConvThread] = useState([]);
@@ -56,47 +57,34 @@ export default function Profile() {
   useEffect(() => {
     if (!authUser) return;
     (async () => {
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("full_name, phone, avatar_url")
-        .eq("id", authUser.id)
-        .maybeSingle();
+      let prof = {};
+      try { prof = await api.auth.me(); } catch { /* ignore */ }
       const next = {
-        name: prof?.full_name || authUser.user_metadata?.full_name || "",
+        name: prof?.full_name || "",
         email: authUser.email || "",
-        phone: prof?.phone || authUser.user_metadata?.phone || "",
+        phone: prof?.phone || "",
         address: "",
         password: "••••••••••",
       };
       setUser(next);
       setDraft(next);
 
-      const { data: ords } = await supabase
-        .from("orders")
-        .select("id, total, status, created_at, order_items(title)")
-        .eq("user_id", authUser.id)
-        .order("created_at", { ascending: false });
-      setOrders(
-        (ords ?? []).map(o => ({
+      try {
+        const ords = await api.orders.mine();
+        setOrders(ords.map(o => ({
           id: "AU-" + o.id.slice(0, 6).toUpperCase(),
-          item: o.order_items?.map(i => i.title).join(", ") || "Order",
+          item: (o.items || []).map(i => i.title).filter(Boolean).join(", ") || "Order",
           total: Number(o.total),
           status: (o.status || "pending").toUpperCase(),
           eta: new Date(o.created_at).toLocaleDateString(),
-        }))
-      );
+        })));
+      } catch { setOrders([]); }
+      try { setOwned(await api.owned()); } catch { setOwned([]); }
 
-      const [{ data: msgs }, { data: reads }] = await Promise.all([
-        supabase
-          .from("chat_messages")
-          .select("conversation_key, sender, text, created_at")
-          .eq("user_id", authUser.id)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("chat_reads")
-          .select("conversation_key, last_read_at")
-          .eq("user_id", authUser.id),
-      ]);
+      let msgs = [], reads = [];
+      try {
+        [msgs, reads] = await Promise.all([api.chat.mine(), api.chat.reads()]);
+      } catch { /* ignore */ }
       const readMap = new Map((reads ?? []).map(r => [r.conversation_key, new Date(r.last_read_at)]));
       const grouped = new Map();
       for (const m of msgs ?? []) {
@@ -119,13 +107,10 @@ export default function Profile() {
   // Realtime: append new messages to active thread + bump conversation list.
   useEffect(() => {
     if (!authUser) return;
-    const ch = supabase
-      .channel(`profile-inbox:${authUser.id}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_messages", filter: `user_id=eq.${authUser.id}` },
-        (payload) => {
-          const m = payload.new;
+    const sub = realtime
+      .channel("*")
+      .on("message", (m) => {
+          if (m.user_id !== authUser.id) return;
           setConversations(prev => {
             const idx = prev.findIndex(c => c.conversation_key === m.conversation_key);
             const next = idx >= 0 ? [...prev] : [{ conversation_key: m.conversation_key, unread: 0 }, ...prev];
@@ -142,28 +127,19 @@ export default function Profile() {
           if (activeConv === m.conversation_key) {
             setConvThread(prev => prev.find(x => x.created_at === m.created_at && x.text === m.text) ? prev : [...prev, m]);
           }
-        }
-      )
+        })
       .subscribe();
-    return () => supabase.removeChannel(ch);
+    return () => sub.unsubscribe();
   }, [authUser, activeConv]);
 
   const openConversation = async (key) => {
     setActiveConv(key);
     setConvReply("");
-    const { data } = await supabase
-      .from("chat_messages")
-      .select("id, sender, text, created_at")
-      .eq("user_id", authUser.id)
-      .eq("conversation_key", key)
-      .order("created_at", { ascending: true });
-    setConvThread(data ?? []);
-    // mark as read
-    await supabase.from("chat_reads").upsert({
-      user_id: authUser.id,
-      conversation_key: key,
-      last_read_at: new Date().toISOString(),
-    }, { onConflict: "user_id,conversation_key" });
+    try {
+      const data = await api.chat.conversation(key);
+      setConvThread(data ?? []);
+      await api.chat.read(key);
+    } catch (e) { console.error(e); }
     setConversations(prev => prev.map(c => c.conversation_key === key ? { ...c, unread: 0 } : c));
   };
 
@@ -171,22 +147,16 @@ export default function Profile() {
     const text = convReply.trim();
     if (!text || !activeConv) return;
     setConvReply("");
-    const { error } = await supabase.from("chat_messages").insert({
-      user_id: authUser.id,
-      conversation_key: activeConv,
-      sender: "me",
-      text,
-    });
-    if (error) alert(error.message);
+    try {
+      const m = await api.chat.send({ conversation_key: activeConv, sender: "me", text });
+      setConvThread(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m]);
+    } catch (e) { alert(e.message); }
   };
 
   const startEdit = () => { setDraft(user); setEditing(true); };
   const save = async () => {
     if (authUser) {
-      await supabase
-        .from("profiles")
-        .update({ full_name: draft.name, phone: draft.phone })
-        .eq("id", authUser.id);
+      try { await api.auth.updateMe({ full_name: draft.name, phone: draft.phone }); } catch { /* ignore */ }
     }
     setUser(draft);
     setEditing(false);
@@ -387,25 +357,30 @@ export default function Profile() {
                 </Card>
               )}
 
-              {tab === "cart" && (
-                <Card title="Cart Items" action={
-                  <Link to="/cart" className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11, textDecoration: "none" }}>VIEW CART</Link>
+              {tab === "collection" && (
+                <Card title="My Collection" action={
+                  <Link to="/gallery" className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11, textDecoration: "none" }}>BROWSE MORE</Link>
                 }>
-                  {CART.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: 40, color: "rgba(200,191,160,0.5)" }}>Your cart is empty.</div>
+                  {owned.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: 40, color: "rgba(200,191,160,0.5)" }}>
+                      Your collection is empty. Acquired pieces — in digital and physical form — appear here.
+                    </div>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                      {CART.map(c => (
-                        <div key={c.id} style={{
-                          display: "flex", gap: 16, alignItems: "center", padding: 14,
-                          border: "1px solid rgba(212,175,55,0.1)", borderRadius: 8,
-                        }}>
-                          <SafeImage src={c.img} alt={c.title} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 4 }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#f0e8d8" }}>{c.title}</div>
-                            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 2 }}>{c.artist}</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 16 }}>
+                      {owned.map(o => (
+                        <div key={o.id} style={{ border: "1px solid rgba(212,175,55,0.12)", borderRadius: 10, overflow: "hidden", background: "rgba(255,255,255,0.02)" }}>
+                          <div style={{ position: "relative" }}>
+                            <SafeImage src={o.image} alt={o.title} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
+                            <span style={{
+                              position: "absolute", top: 8, right: 8, padding: "4px 10px", borderRadius: 999,
+                              fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em",
+                              background: o.kind === "physical" ? "rgba(74,222,128,0.9)" : "rgba(212,175,55,0.92)", color: "#111",
+                            }}>{o.kind === "physical" ? "PHYSICAL" : "DIGITAL"}</span>
                           </div>
-                          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600, color: "#D4AF37" }}>ENQUIRE →</div>
+                          <div style={{ padding: "10px 12px" }}>
+                            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#f0e8d8", lineHeight: 1.2 }}>{o.title}</div>
+                            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.14em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{(o.artist_name || "").toUpperCase()}</div>
+                          </div>
                         </div>
                       ))}
                     </div>

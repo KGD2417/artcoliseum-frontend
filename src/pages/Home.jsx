@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
+import { api } from "../utils/api";
 import SafeImage from "../components/SafeImage";
 import ColiseumCarousel from "../components/ColiseumCarousel";
 import { CircularTestimonials } from "../components/ui/CircularTestimonials";
@@ -538,10 +539,60 @@ export default function Home() {
   const navigate = useNavigate();
   const [heroGallery,   setHeroGallery]   = useState(FALLBACK_HERO_GALLERY);
   const [carouselItems, setCarouselItems] = useState(FALLBACK_CAROUSEL);
+  const [eventsData,    setEventsData]    = useState(EVENTS_DATA);
   const [email, setEmail]                 = useState("");
   const [registerEvent, setRegisterEvent] = useState(null);
   const [regForm, setRegForm]             = useState({ name: "", email: "", phone: "", message: "" });
   const [regDone, setRegDone]             = useState(false);
+
+  // Featured paintings (hero + "Art of Seasons") come from the database.
+  // Falls back to the static gallery only if the API is unreachable.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        let arts = await api.catalog.artworks({ featured: true });
+        if (!arts || arts.length === 0) arts = await api.catalog.artworks({});
+        if (cancelled || !arts || arts.length === 0) return;
+        const withImg = arts.filter((a) => a.images && a.images.length);
+        const src = (withImg.length ? withImg : arts).slice(0, 12);
+        setHeroGallery(src.map((a) => ({ image: a.images?.[0], text: a.title, id: a.id })));
+        setCarouselItems(src.map((a) => ({ img: a.images?.[0], title: a.title, medium: a.medium || "" })));
+      } catch { /* keep fallback assets */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Events come from the database (ongoing + upcoming).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.events.list();
+        if (cancelled || !data || data.length === 0) return;
+        const fmtDate = (s, e) => {
+          if (!s) return "";
+          const d1 = new Date(s).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+          const d2 = e ? new Date(e).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
+          return d2 ? `${d1} – ${d2}` : d1;
+        };
+        const mapped = data
+          .filter((r) => r.status !== "past")
+          .slice(0, 3)
+          .map((r) => ({
+            title: r.title,
+            date: fmtDate(r.starts_at, r.ends_at),
+            time: "",
+            location: r.location || "",
+            desc: r.description || "",
+            img: r.image_url || e1,
+            tag: (r.status || "ongoing").toUpperCase(),
+          }));
+        if (mapped.length) setEventsData(mapped);
+      } catch { /* keep fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleRegSubmit = (e) => {
     e.preventDefault();
@@ -795,7 +846,7 @@ export default function Home() {
           sub="Immersive exhibitions and curated experiences from across the globe."
         />
         <div className="events-tilt-grid">
-          {EVENTS_DATA.map((ev, i) => (
+          {eventsData.map((ev, i) => (
             <TiltCard
               key={ev.title}
               event={ev}

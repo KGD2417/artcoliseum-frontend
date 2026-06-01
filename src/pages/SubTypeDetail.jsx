@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import { api } from "../utils/api";
 
 const SUBTYPE_DATA = {
   paintings: {
@@ -370,77 +371,98 @@ const SUBTYPE_DATA = {
   },
 };
 
-const SUBTYPE_GALLERY = {
-  paintings: {
-    oil: [
-      { id: "o1", title: "The Golden Meadow", medium: "Oil on Canvas", artist: "CLAIRE BOUCHARD", year: "2024", img: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=800&q=80", dimensions: "120 × 90 cm", description: "A luminous pastoral landscape rendered in layered glazes of cadmium yellow and viridian, evoking the golden light of late afternoon." },
-      { id: "o2", title: "Storm Over the Valley", medium: "Oil on Linen", artist: "HENRY ASHFORD", year: "2023", img: "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=800&q=80", dimensions: "150 × 100 cm", description: "Churning cloud formations rendered in thick impasto, the canvas surface alive with the physical urgency of the mark." },
-      { id: "o3", title: "Interior with Red", medium: "Oil on Canvas", artist: "MARTA VOSS", year: "2025", img: "https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=800&q=80", dimensions: "80 × 80 cm", description: "A meditation on domestic space — the room as psychological interior, the red as both colour and feeling." },
-      { id: "o4", title: "Portrait of the Afternoon", medium: "Oil on Board", artist: "ELENA ROSSI", year: "2024", img: "https://images.unsplash.com/photo-1579762715118-a6f1d4b934f1?w=800&q=80", dimensions: "60 × 50 cm", description: "Loosely painted figures dissolve into the warm light of a summer afternoon, form surrendering to atmosphere." },
-      { id: "o5", title: "The Old Harbour", medium: "Oil on Canvas", artist: "JAMES CALLOWAY", year: "2023", img: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=800&q=80", dimensions: "100 × 70 cm", description: "Working boats at rest in the harbour, the still water a mirror of masts and sky — a study in horizontal calm." },
-      { id: "o6", title: "Nocturne in Blue", medium: "Oil on Canvas", artist: "LENA BACH", year: "2024", img: "https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=800&q=80", dimensions: "90 × 90 cm", description: "A nocturnal composition of deep Prussian blue and silver, the night reduced to its most essential tonal architecture." },
-      { id: "o7", title: "The Ancient Tree", medium: "Oil on Linen", artist: "CHEN WEI", year: "2025", img: "https://images.unsplash.com/photo-1567359781514-3b964e2b04d6?w=800&q=80", dimensions: "140 × 100 cm", description: "A solitary oak recorded with the patient attention of the naturalist and the emotional depth of the romantic." },
-      { id: "o8", title: "Figure Study No. 7", medium: "Oil on Canvas", artist: "MARCUS THOMAS", year: "2024", img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&q=80", dimensions: "70 × 50 cm", description: "The human form in repose — painted with the directness of Freud and the tonal sensitivity of Rembrandt." },
-      { id: "o9", title: "Seascape at Dusk", medium: "Oil on Canvas", artist: "INGRID HALVOR", year: "2023", img: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=800&q=80", dimensions: "110 × 80 cm", description: "The horizon line as the painting's true subject — a thin band of gold between the weight of sea and sky." },
-    ],
-  },
-};
-
-const DEFAULT_GALLERY = [
-  { id: "d1", title: "Ethereal Horizon", medium: "Mixed Media", artist: "MARCUS THOMAS", year: "2024", img: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=800&q=80", dimensions: "120 × 90 cm", description: "A sweeping composition that dissolves the boundary between sky and sea." },
-  { id: "d2", title: "Fractured Silence", medium: "Mixed Media", artist: "ELENA VANCE", year: "2023", img: "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=800&q=80", dimensions: "100 × 80 cm", description: "Layered textures coalesce into a meditation on memory and the spaces between sound." },
-  { id: "d3", title: "Obsidian Flow", medium: "Mixed Media", artist: "JULIAN ARIS", year: "2024", img: "https://images.unsplash.com/photo-1541680670548-88e8cd23c0f4?w=800&q=80", dimensions: "150 × 100 cm", description: "Dark pigments pour and solidify across the canvas, channelling the raw energy of volcanic geology." },
-  { id: "d4", title: "The Golden Tree", medium: "Mixed Media", artist: "CHEN WEI", year: "2024", img: "https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=800&q=80", dimensions: "90 × 70 cm", description: "An ancient form rendered in luminous gold and amber, standing as a symbol of endurance." },
-  { id: "d5", title: "Whispers of Silence", medium: "Mixed Media", artist: "LENA BACH", year: "2025", img: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=800&q=80", dimensions: "50 × 50 cm", description: "A near-monochromatic study where barely perceptible marks create an atmosphere of profound stillness." },
-  { id: "d6", title: "Renaissance Study", medium: "Mixed Media", artist: "ELENA ROSSI", year: "2023", img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&q=80", dimensions: "80 × 60 cm", description: "Old-master technique meets contemporary subject matter." },
-];
-
-const PREDEFINED_SIZES = [
-  { label: "Small", dims: "30 × 25 cm", desc: "Perfect for intimate spaces", multiplier: 0.65 },
-  { label: "Standard", dims: "60 × 50 cm", desc: "The most versatile format", multiplier: 1.0 },
-  { label: "Large", dims: "90 × 70 cm", desc: "Statement wall presence", multiplier: 1.45 },
-  { label: "Monumental", dims: "120 × 90 cm", desc: "Gallery-grade installation", multiplier: 2.1 },
-];
-
+const titleCase = (s) => (s || "").replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
 
 export default function SubTypeDetail() {
   const { medium, sub } = useParams();
   const navigate = useNavigate();
   const [collectionTab, setCollectionTab] = useState("predefined");
   const [hoveredId, setHoveredId] = useState(null);
+  const [items, setItems] = useState([]);
+  const [meta, setMeta] = useState(null); // { label, mediumLabel }
 
-  const data = SUBTYPE_DATA[medium]?.[sub];
-  const galleryItems = SUBTYPE_GALLERY[medium]?.[sub] ?? DEFAULT_GALLERY;
+  const fallback = SUBTYPE_DATA[medium]?.[sub];
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Real subtype + medium labels from the categories table.
+      try {
+        const cats = await api.catalog.categories();
+        if (!cancelled) {
+          const subCat = (cats || []).find((c) => c.id === sub);
+          const mainCat = (cats || []).find((c) => c.id === medium);
+          setMeta({
+            label: subCat?.label || fallback?.label || titleCase(sub),
+            mediumLabel: mainCat?.label || titleCase(medium),
+          });
+        }
+      } catch {
+        if (!cancelled) setMeta({ label: fallback?.label || titleCase(sub), mediumLabel: titleCase(medium) });
+      }
+      // Real artworks: "all" = the whole medium; otherwise filter by subtype.
+      try {
+        let rows;
+        if (sub === "all") {
+          rows = await api.catalog.artworks({ category: medium });
+        } else {
+          rows = await api.catalog.artworks({ subtype: sub });
+          if (!rows || rows.length === 0) {
+            const all = await api.catalog.artworks({ category: medium });
+            const sublc = (sub || "").toLowerCase();
+            rows = (all || []).filter(
+              (a) => (a.subtype_id || "").toLowerCase() === sublc || (a.style || "").toLowerCase() === sublc
+            );
+          }
+        }
+        if (!cancelled) {
+          setItems((rows || []).map((a) => ({
+            id: a.id, title: a.title, artist: (a.artist_name || "").toUpperCase(),
+            year: a.year, medium: a.medium, img: a.images?.[0],
+            dimensions: a.base_dimensions, description: a.description || a.narrative,
+            customizable: a.customizable !== false, price: a.price,
+          })));
+        }
+      } catch {
+        if (!cancelled) setItems([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [medium, sub]);
+
+  // "Predefined Sizes" tab = fixed-price works; "Customization" = made-to-order works.
+  const galleryItems = items.filter((it) =>
+    collectionTab === "predefined" ? !it.customizable : it.customizable
+  );
 
   useEffect(() => { window.scrollTo(0, 0); }, [medium, sub]);
 
-  if (!data) {
-    return (
-      <div style={{ background: "#080808", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ color: "rgba(200,191,160,0.5)", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.2em" }}>COLLECTION NOT FOUND</p>
-      </div>
-    );
-  }
+  const heroLabel = sub === "all"
+    ? `All ${meta?.mediumLabel || titleCase(medium)}`
+    : (meta?.label || titleCase(sub));
+  const heroSub = fallback?.sublabel || `${meta?.mediumLabel || titleCase(medium)} collection`;
+  const heroImg = items[0]?.img || fallback?.heroImg
+    || "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1600&q=80";
 
   return (
     <div style={{ background: "#080808", minHeight: "100vh" }}>
 
       {/* HERO */}
       <div className="art-hero" style={{ position: "relative", height: 440, overflow: "hidden" }}>
-        <img src={data.heroImg} alt={data.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <img src={heroImg} alt={heroLabel} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(8,8,8,0.25) 0%, rgba(8,8,8,0.55) 50%, rgba(8,8,8,1) 100%)" }} />
         <div className="art-hero-padding" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 56px 48px", maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
             <Link to="/categories" style={{ color: "rgba(200,191,160,0.5)", textDecoration: "none" }}>Collections</Link>
             <span style={{ color: "rgba(212,175,55,0.4)" }}>›</span>
-            <Link to={`/categories/${medium}`} style={{ color: "rgba(200,191,160,0.5)", textDecoration: "none", textTransform: "capitalize" }}>{medium}</Link>
+            <Link to={`/categories/${medium}`} style={{ color: "rgba(200,191,160,0.5)", textDecoration: "none" }}>{meta?.mediumLabel || titleCase(medium)}</Link>
             <span style={{ color: "rgba(212,175,55,0.4)" }}>›</span>
-            <span style={{ color: "#D4AF37" }}>{data.label}</span>
+            <span style={{ color: "#D4AF37" }}>{heroLabel}</span>
           </div>
           <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.24em", color: "#D4AF37", marginBottom: 12 }}>{data.sublabel}</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.24em", color: "#D4AF37", marginBottom: 12 }}>{heroSub}</div>
             <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(52px,6vw,84px)", fontWeight: 700, color: "#fff", lineHeight: 0.95, letterSpacing: "-0.01em", margin: 0 }}>
-              {data.label}
+              {heroLabel}
             </h1>
           </motion.div>
         </div>
@@ -493,6 +515,7 @@ export default function SubTypeDetail() {
                 transition={{ duration: 0.5, delay: (i % 3) * 0.07 }}
                 onMouseEnter={() => setHoveredId(item.id)}
                 onMouseLeave={() => setHoveredId(null)}
+                onClick={() => navigate(`/product/${item.id}`)}
                 style={{ cursor: "pointer" }}>
                 <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 6, overflow: "hidden", background: "rgba(255,255,255,0.03)", position: "relative" }}>
                   <SafeImage
@@ -552,21 +575,34 @@ export default function SubTypeDetail() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{item.title}</div>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.45)", marginTop: 4 }}>{item.artist}</div>
+                    {!item.customizable && item.price > 0 && (
+                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
+                        ${Number(item.price).toLocaleString("en-US")}
+                      </div>
+                    )}
                   </div>
                   <button
-                    onClick={() => navigate(`/product/${item.id}${collectionTab === "predefined" ? "?mode=predefined" : ""}`)}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/product/${item.id}`); }}
                     style={{ background: "transparent", border: "none", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600, color: "#D4AF37", whiteSpace: "nowrap", cursor: "pointer", padding: 0, paddingTop: 4 }}>
-                    ENQUIRE →
+                    {item.customizable ? "ENQUIRE →" : "VIEW →"}
                   </button>
                 </div>
               </motion.div>
             ))}
           </div>
 
-          <div style={{ margin: "60px auto 0", maxWidth: 360, textAlign: "center", paddingTop: 30, borderTop: "1px solid rgba(212,175,55,0.18)" }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "rgba(200,191,160,0.55)", marginBottom: 14 }}>SHOWING {galleryItems.length} OF 152 MASTERPIECES</div>
-            <button style={{ padding: "12px 26px", background: "transparent", border: "1px solid rgba(212,175,55,0.3)", color: "#D4AF37", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", borderRadius: 999, cursor: "pointer" }}>LOAD MORE ARTWORKS ⌄</button>
-          </div>
+          {galleryItems.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "'Cormorant Garamond',serif", fontSize: 19, color: "rgba(200,191,160,0.4)" }}>
+              No {collectionTab === "predefined" ? "ready-to-buy" : "made-to-order"} works in this collection yet.
+            </div>
+          )}
+          {galleryItems.length > 0 && (
+            <div style={{ margin: "60px auto 0", maxWidth: 360, textAlign: "center", paddingTop: 30, borderTop: "1px solid rgba(212,175,55,0.18)" }}>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "rgba(200,191,160,0.55)" }}>
+                SHOWING {galleryItems.length} WORK{galleryItems.length === 1 ? "" : "S"}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* CTA */}

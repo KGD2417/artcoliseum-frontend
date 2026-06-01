@@ -1,58 +1,76 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../utils/supabase';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { api } from '../utils/api';
 
-const AuthContext = createContext({ user: null, loading: true, role: 'user' });
+const AuthContext = createContext({ user: null, loading: true, role: 'user', artistStatus: 'none' });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState('user');
+  const [artistStatus, setArtistStatus] = useState('none');
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => sub.subscription.unsubscribe();
+  const applyMe = useCallback((me) => {
+    setUser(me?.user ?? null);
+    setRole(me?.role || 'user');
+    setArtistStatus(me?.artist_status || 'none');
   }, []);
 
+  // Restore session on mount (if we have a refresh token).
   useEffect(() => {
-    if (!user) { setRole('user'); return; }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (!cancelled) setRole(data?.role || 'user');
+      if (!api.hasSession()) { setLoading(false); return; }
+      try {
+        const me = await api.auth.me();
+        if (!cancelled) applyMe(me);
+      } catch {
+        if (!cancelled) { api.clearTokens(); applyMe(null); }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    const ch = supabase
-      .channel(`profile-role:${user.id}`)
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-        (payload) => setRole(payload.new.role || 'user'))
-      .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(ch); };
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [applyMe]);
 
-  const signUp = ({ email, password, fullName, phone }) =>
-    supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName, phone } },
-    });
+  // Re-sync role/status when the tab regains focus (cheap stand-in for realtime).
+  useEffect(() => {
+    if (!user) return;
+    const onFocus = async () => {
+      try { applyMe(await api.auth.me()); } catch { /* ignore */ }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [user, applyMe]);
 
-  const signIn = ({ email, password }) =>
-    supabase.auth.signInWithPassword({ email, password });
+  // Keep the Supabase-style { error } return shape so SignIn.jsx is unchanged.
+  const signUp = async ({ email, password, fullName, phone }) => {
+    try {
+      const data = await api.auth.register({ email, password, full_name: fullName, phone });
+      applyMe({ user: data.user, role: data.role, artist_status: data.artist_status });
+      return { data, error: null };
+    } catch (e) {
+      return { data: null, error: { message: e.message } };
+    }
+  };
 
-  const signOut = () => supabase.auth.signOut();
+  const signIn = async ({ email, password }) => {
+    try {
+      const data = await api.auth.login({ email, password });
+      applyMe({ user: data.user, role: data.role, artist_status: data.artist_status });
+      return { data, error: null };
+    } catch (e) {
+      return { data: null, error: { message: e.message } };
+    }
+  };
+
+  const signOut = async () => {
+    await api.auth.logout();
+    applyMe(null);
+    return { error: null };
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, role, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, role, artistStatus, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

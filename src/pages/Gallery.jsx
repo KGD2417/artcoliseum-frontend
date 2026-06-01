@@ -1,73 +1,10 @@
-import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import ArtworkHoverCard from "../components/ArtworkHoverCard";
 import { SearchIcon } from "../components/Icons";
-import i1 from "../assets/i1.png";
-import i3 from "../assets/i3.png";
-import i4 from "../assets/i4.png";
-import i5 from "../assets/i5.png";
-import i6 from "../assets/i6.png";
-import i7 from "../assets/i7.png";
-import i8 from "../assets/i8.png";
-
-const GALLERY_ITEMS = [
-  {
-    id: "p1", title: "Ethereal Horizon", medium: "Acrylic on Canvas", artist: "MARCUS THOMAS",
-    year: "2024", size: "medium", style: "Abstract", category: "oil", img: i1,
-    dimensions: "120 × 90 cm",
-    description: "A sweeping composition that dissolves the boundary between sky and sea, evoking an infinite sense of calm and possibility.",
-  },
-  {
-    id: "p2", title: "Fractured Silence", medium: "Mixed Media", artist: "ELENA VANCE",
-    year: "2023", size: "medium", style: "Abstract", category: "mixed", img: i7,
-    dimensions: "100 × 80 cm",
-    description: "Layered textures and torn paper fragments coalesce into a meditation on memory and the spaces between sound.",
-  },
-  {
-    id: "p3", title: "Obsidian Flow", medium: "Acrylic & Oil", artist: "JULIAN ARIS",
-    year: "2024", size: "medium", style: "Abstract", category: "oil", img: i6,
-    dimensions: "150 × 100 cm",
-    description: "Dark pigments pour and solidify across the canvas, channelling the raw energy of volcanic geology.",
-  },
-  {
-    id: "p4", title: "The Infinite Stair", medium: "Sculpture", artist: "SOREN KLEIN",
-    year: "2024", size: "small", style: "Minimalism", category: "sculpture", img: i3,
-    dimensions: "40 × 40 × 60 cm",
-    description: "A cast bronze staircase that spirals inward with no apparent beginning or end, questioning the nature of progress.",
-  },
-  {
-    id: "p5", title: "Cosmic Flow", medium: "Mixed Media", artist: "HIDEO TANAKA",
-    year: "2024", size: "small", style: "Impressionist", category: "mixed", img: i6,
-    dimensions: "60 × 60 cm",
-    description: "Gold leaf and iridescent pigment capture the swirling motion of nebulae in a surprisingly intimate format.",
-  },
-  {
-    id: "p6", title: "The Golden Tree", medium: "Oil on Canvas", artist: "CHEN WEI",
-    year: "2024", size: "medium", style: "Impressionist", category: "oil", img: i4,
-    dimensions: "90 × 70 cm",
-    description: "An ancient tree rendered in luminous gold and amber, standing as a symbol of endurance and quiet majesty.",
-  },
-  {
-    id: "p7", title: "Whispers of Silence", medium: "Oil on Canvas", artist: "LENA BACH",
-    year: "2025", size: "small", style: "Minimalism", category: "oil", img: i5,
-    dimensions: "50 × 50 cm",
-    description: "A near-monochromatic study where barely perceptible brushwork creates an atmosphere of profound stillness.",
-  },
-  {
-    id: "p8", title: "Renaissance Study", medium: "Oil on Panel", artist: "ELENA ROSSI",
-    year: "2023", size: "medium", style: "Digital Fusion", category: "oil", img: i8,
-    dimensions: "80 × 60 cm",
-    description: "Old-master technique meets contemporary subject matter — a daring recontextualisation of 15th century portraiture.",
-  },
-  {
-    id: "p9", title: "Ocean Depths", medium: "Digital Print", artist: "HIDEO TANAKA",
-    year: "2024", size: "small", style: "Digital Fusion", category: "digital", img: i7,
-    dimensions: "70 × 50 cm",
-    description: "Algorithmically generated depth maps transformed into a high-definition archival print, evoking the abyssal ocean floor.",
-  },
-];
+import { api, adaptArtwork } from "../utils/api";
 
 const STYLES = [
   { label: "Minimalism",     count: "12" },
@@ -91,14 +28,28 @@ const SIZES = [
 
 export default function Gallery() {
   const navigate = useNavigate();
-  const { medium, sub } = useParams();
+  // `/gallery` carries the medium as a query param (?medium=sculpture), not a path param.
+  const params = useParams();
+  const [searchParams] = useSearchParams();
+  const medium = params.medium || searchParams.get("medium") || undefined;
+  const sub = params.sub;
   const [styleFilter, setStyleFilter] = useState("Abstract");
   const [catFilter, setCatFilter]     = useState("sculpture");
   const [sizeFilter, setSizeFilter]   = useState("medium");
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [items, setItems] = useState([]);
 
-  const filtered = GALLERY_ITEMS.filter(it => {
+  useEffect(() => {
+    let cancelled = false;
+    api.catalog
+      .artworks(medium ? { category: medium } : {})
+      .then((rows) => { if (!cancelled) setItems(rows.map(adaptArtwork)); })
+      .catch(() => { if (!cancelled) setItems([]); });
+    return () => { cancelled = true; };
+  }, [medium]);
+
+  const filtered = items.filter(it => {
     if (search && !`${it.title} ${it.artist}`.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -252,11 +203,17 @@ export default function Gallery() {
                   </div>
                 </ArtworkHoverCard>
 
-                {/* Card footer — title, artist, enquire link */}
+                {/* Card footer — title, artist, price/enquire link */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{item.title}</div>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{item.artist}</div>
+                    {/* Predefined works show their fixed price; customizable works are priced after enquiry */}
+                    {item.customizable === false && item.price > 0 && (
+                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
+                        ${Number(item.price).toLocaleString("en-US")}
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => navigate(`/product/${item.id}`)}
@@ -273,7 +230,7 @@ export default function Gallery() {
                       cursor: "pointer",
                       padding: 0,
                     }}>
-                    ENQUIRE →
+                    {item.customizable === false ? "VIEW →" : "ENQUIRE →"}
                   </button>
                 </div>
               </motion.div>

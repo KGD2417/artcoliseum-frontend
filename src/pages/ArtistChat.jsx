@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../utils/supabase";
+import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
 
 const peerKey = (a, b) => {
@@ -27,13 +27,10 @@ export default function ArtistChat() {
   useEffect(() => {
     if (role !== "artist" && role !== "admin") return;
     (async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url")
-        .eq("role", "artist")
-        .neq("id", user.id);
-      if (error) { console.error(error); return; }
-      setArtists(data ?? []);
+      try {
+        const data = await api.chat.peers();
+        setArtists((data ?? []).map(p => ({ id: p.id, full_name: p.full_name, avatar_url: p.avatar_url })));
+      } catch (e) { console.error(e); }
     })();
   }, [role, user]);
 
@@ -43,24 +40,16 @@ export default function ArtistChat() {
     const key = peerKey(user.id, active.id);
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("chat_messages")
-        .select("id, sender, text, user_id, created_at")
-        .eq("conversation_key", key)
-        .order("created_at", { ascending: true });
-      if (!cancelled) setThread(data ?? []);
+      try {
+        const data = await api.chat.conversation(key);
+        if (!cancelled) setThread(data ?? []);
+      } catch (e) { console.error(e); }
     })();
-    const ch = supabase
-      .channel(`peer:${key}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_messages", filter: `conversation_key=eq.${key}` },
-        (payload) => setThread(prev =>
-          prev.find(x => x.id === payload.new.id) ? prev : [...prev, payload.new]
-        )
-      )
+    const sub = realtime
+      .channel(key)
+      .on("message", (m) => setThread(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m]))
       .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(ch); };
+    return () => { cancelled = true; sub.unsubscribe(); };
   }, [active, user]);
 
   useEffect(() => {
@@ -72,14 +61,14 @@ export default function ArtistChat() {
     if (!text || !active || sending) return;
     setSending(true);
     setInput("");
-    const { error } = await supabase.from("chat_messages").insert({
-      user_id: user.id,
-      conversation_key: peerKey(user.id, active.id),
-      sender: "me",
-      text,
-    });
-    setSending(false);
-    if (error) alert(error.message);
+    try {
+      const m = await api.chat.send({ conversation_key: peerKey(user.id, active.id), sender: "me", text });
+      setThread(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m]);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   if (loading) return <section style={{ padding: 100, textAlign: "center", color: "#D4AF37" }}>Loading…</section>;

@@ -1,81 +1,36 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../utils/supabase";
+import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/Auth";
+import { api } from "../utils/api";
 
+const gold = "#D4AF37";
 const TABS = [
-  { id: "overview",  label: "Overview" },
-  { id: "artworks",  label: "Artworks" },
-  { id: "highlights", label: "Highlights" },
-  { id: "events",    label: "Events" },
-  { id: "orders",    label: "Orders" },
-  { id: "artists",   label: "Artists" },
-  { id: "messages",  label: "Messages" },
-  { id: "contact",   label: "Contact" },
-  { id: "support",   label: "Support" },
+  ["overview", "Overview"], ["enquiries", "Enquiries"], ["orders", "Orders"],
+  ["artworks", "Artworks"], ["events", "Events"], ["artists", "Artists & Competition"],
+  ["contact", "Contact"], ["support", "Support"], ["messages", "Messages"],
 ];
+
+const STAGES = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
 
 export default function AdminDashboard() {
   const { user, role, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState("overview");
-
-  // Live counts for Overview / sidebar badges
-  const [counts, setCounts] = useState({
-    pendingOrders: 0,
-    unreadMessages: 0,
-    newRegistrations: 0,
-    newArtworks: 0,
-    contactCount: 0,
-    supportOpen: 0,
-  });
+  const [stats, setStats] = useState({});
 
   useEffect(() => {
     if (loading) return;
-    if (!user) navigate("/signin");
-  }, [user, loading, navigate]);
-
-  // Load counts
-  const loadCounts = async () => {
-    const [ordersRes, msgRes, regRes, artRes, contactRes, supRes, appRes] = await Promise.all([
-      supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("chat_messages").select("id", { count: "exact", head: true }).eq("sender", "me"),
-      supabase.from("event_registrations").select("id", { count: "exact", head: true }),
-      supabase.from("artworks").select("id", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
-      supabase.from("contact_messages").select("id", { count: "exact", head: true }),
-      supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "open"),
-      supabase.from("artist_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    ]);
-    setCounts({
-      pendingOrders: ordersRes.count || 0,
-      unreadMessages: msgRes.count || 0,
-      newRegistrations: regRes.count || 0,
-      newArtworks: artRes.count || 0,
-      contactCount: contactRes.count || 0,
-      supportOpen: supRes.count || 0,
-      pendingArtists: appRes.count || 0,
-    });
-  };
-
-  useEffect(() => {
-    if (role !== "admin") return;
-    loadCounts();
-    const channels = ["orders", "chat_messages", "event_registrations", "artworks", "contact_messages", "support_tickets", "artist_applications"]
-      .map(t => supabase.channel(`admin-counts-${t}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: t }, () => loadCounts())
-        .subscribe());
-    return () => channels.forEach(c => supabase.removeChannel(c));
-  }, [role]);
+    if (!user) { navigate("/signin"); return; }
+    if (role === "admin") api.admin.stats().then(setStats).catch(() => {});
+  }, [user, role, loading]);
 
   if (loading) return <Center>Loading…</Center>;
   if (role !== "admin") {
     return (
       <Center>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#fff" }}>Admins only</h1>
-        <p style={{ marginTop: 12, color: "rgba(200,191,160,0.6)", fontFamily: "'Raleway',sans-serif" }}>
-          Run this in Supabase SQL Editor:
-        </p>
-        <pre style={preStyle}>{`update public.profiles set role = 'admin' where id = '${user?.id}';`}</pre>
+        <p style={{ marginTop: 12, color: "rgba(200,191,160,0.6)", fontFamily: "'Raleway',sans-serif" }}>Run this against the DB, then sign in again:</p>
+        <pre style={preStyle}>{`UPDATE profiles SET role='admin', is_admin=true WHERE user_id='${user?.id || "<id>"}';`}</pre>
       </Center>
     );
   }
@@ -83,849 +38,431 @@ export default function AdminDashboard() {
   return (
     <section style={{ padding: "100px 24px 60px", maxWidth: 1400, margin: "0 auto", color: "#e8e0d0" }}>
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37" }}>ADMIN</div>
-        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#fff", marginTop: 4 }}>Dashboard</h1>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: gold }}>ADMIN</div>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#fff", marginTop: 4 }}>Control Panel</h1>
       </div>
-
       <div style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 20 }}>
         <aside style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, background: "rgba(255,255,255,0.02)", padding: 12, height: "fit-content" }}>
-          {TABS.map(t => {
-            const badge =
-              t.id === "orders"   ? counts.pendingOrders :
-              t.id === "messages" ? counts.unreadMessages :
-              t.id === "events"   ? counts.newRegistrations :
-              t.id === "support"  ? counts.supportOpen :
-              t.id === "contact"  ? counts.contactCount :
-              t.id === "artists"  ? counts.pendingArtists : 0;
+          {TABS.map(([id, lbl]) => {
+            const badge = { orders: stats.pending_orders, support: stats.open_tickets, contact: stats.contact_messages, artists: stats.pending_artists }[id] || 0;
             return (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  width: "100%", padding: "10px 14px", marginBottom: 4, border: "none",
-                  background: tab === t.id ? "rgba(212,175,55,0.10)" : "transparent",
-                  color: tab === t.id ? "#D4AF37" : "rgba(200,191,160,0.7)",
-                  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em",
-                  borderRadius: 8, cursor: "pointer",
-                }}>
-                <span>{t.label.toUpperCase()}</span>
-                {badge > 0 && (
-                  <span style={{ background: "#D4AF37", color: "#111", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
-                    {badge}
-                  </span>
-                )}
+              <button key={id} onClick={() => setTab(id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "10px 14px", marginBottom: 4, border: "none", background: tab === id ? "rgba(212,175,55,0.10)" : "transparent", color: tab === id ? gold : "rgba(200,191,160,0.7)", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.12em", borderRadius: 8, cursor: "pointer" }}>
+                <span>{lbl.toUpperCase()}</span>
+                {badge > 0 && <span style={{ background: gold, color: "#111", borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{badge}</span>}
               </button>
             );
           })}
         </aside>
-
-        <div>
-          {tab === "overview"  && <Overview counts={counts} setTab={setTab} />}
-          {tab === "artworks"  && <ArtworksTab />}
-          {tab === "highlights"&& <HighlightsTab />}
-          {tab === "events"    && <EventsTab />}
-          {tab === "orders"    && <OrdersTab />}
-          {tab === "artists"   && <ArtistsTab />}
-          {tab === "messages"  && <MessagesTab />}
-          {tab === "contact"   && <ContactTab />}
-          {tab === "support"   && <SupportTab />}
+        <div style={{ minHeight: 400 }}>
+          {tab === "overview" && <Overview stats={stats} />}
+          {tab === "enquiries" && <Enquiries />}
+          {tab === "orders" && <Orders />}
+          {tab === "artworks" && <Artworks />}
+          {tab === "events" && <Events />}
+          {tab === "artists" && <Artists />}
+          {tab === "contact" && <ContactList />}
+          {tab === "support" && <Support />}
+          {tab === "messages" && <Panel title="Messages"><Link to="/admin/inbox" className="btn-gold-main" style={{ textDecoration: "none", padding: "12px 24px", fontSize: 12 }}>OPEN INBOX →</Link></Panel>}
         </div>
       </div>
     </section>
   );
 }
 
-/* ════════════════ OVERVIEW ════════════════ */
-function Overview({ counts, setTab }) {
+function Overview({ stats }) {
   const cards = [
-    { label: "Pending Orders",      value: counts.pendingOrders,   to: "orders" },
-    { label: "Unread Messages",     value: counts.unreadMessages,  to: "messages" },
-    { label: "Event Registrations", value: counts.newRegistrations, to: "events" },
-    { label: "Open Support",        value: counts.supportOpen,     to: "support" },
-    { label: "Contact Messages",    value: counts.contactCount,    to: "contact" },
-    { label: "New Artworks (7d)",   value: counts.newArtworks,     to: "artworks" },
-    { label: "Pending Artist Apps", value: counts.pendingArtists,  to: "artists" },
+    ["Pending orders", stats.pending_orders], ["Unread messages", stats.unread_messages],
+    ["Event registrations", stats.event_registrations], ["New artworks (7d)", stats.recent_artworks],
+    ["Contact messages", stats.contact_messages], ["Open tickets", stats.open_tickets],
+    ["Pending artists", stats.pending_artists],
   ];
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }}>
-      {cards.map(c => (
-        <button key={c.label} onClick={() => setTab(c.to)} style={{
-          textAlign: "left", padding: "20px 22px", border: "1px solid rgba(212,175,55,0.18)",
-          background: "rgba(255,255,255,0.02)", borderRadius: 10, cursor: "pointer", color: "#e8e0d0",
-        }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.6)" }}>{c.label.toUpperCase()}</div>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, fontWeight: 700, color: c.value > 0 ? "#D4AF37" : "#fff", marginTop: 6 }}>{c.value}</div>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ════════════════ ARTWORKS ════════════════ */
-function ArtworksTab() {
-  const [items, setItems] = useState([]);
-  const [edit, setEdit] = useState(null);
-  const [showNew, setShowNew] = useState(false);
-
-  const load = async () => {
-    const { data } = await supabase.from("artworks").select("*").order("created_at", { ascending: false });
-    setItems(data || []);
-  };
-  useEffect(() => { load(); }, []);
-
-  const remove = async (id) => {
-    if (!confirm("Delete this artwork? This cannot be undone.")) return;
-    const { error } = await supabase.from("artworks").delete().eq("id", id);
-    if (error) alert(error.message); else load();
-  };
-
-  const toggleFeatured = async (it) => {
-    const { error } = await supabase.from("artworks").update({ featured: !it.featured }).eq("id", it.id);
-    if (error) alert(error.message); else load();
-  };
-
-  return (
-    <Card title="Artworks" right={<GoldButton onClick={() => setShowNew(true)}>+ NEW</GoldButton>}>
-      <table style={tableStyle}>
-        <thead><tr>{["Title", "Artist", "Price", "Status", "Featured", ""].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-        <tbody>
-          {items.map(it => (
-            <tr key={it.id} style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
-              <td style={tdStyle}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  {it.image_url && <img src={it.image_url} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }} />}
-                  <div>
-                    <div style={{ color: "#fff" }}>{it.title}</div>
-                    <div style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>{it.id}</div>
-                  </div>
-                </div>
-              </td>
-              <td style={tdStyle}>{it.artist_name}</td>
-              <td style={tdStyle}>₹{Number(it.price).toLocaleString()}</td>
-              <td style={tdStyle}>{it.status || "published"}</td>
-              <td style={tdStyle}>
-                <button onClick={() => toggleFeatured(it)} style={chip(it.featured)}>{it.featured ? "★ FEATURED" : "—"}</button>
-              </td>
-              <td style={tdStyle}>
-                <button style={linkBtn} onClick={() => setEdit(it)}>EDIT</button>
-                {" · "}
-                <button style={{ ...linkBtn, color: "#ff8a8a" }} onClick={() => remove(it.id)}>DELETE</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {edit && <ArtworkEditor item={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}
-      {showNew && <ArtworkEditor onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); load(); }} isNew />}
-    </Card>
-  );
-}
-
-function ArtworkEditor({ item, isNew, onClose, onSaved }) {
-  const [form, setForm] = useState(item || {
-    id: `art-${Date.now()}`,
-    title: "", medium: "", artist_name: "", year: "2026",
-    price: 0, size: "medium", style: "", category_id: "oil",
-    image_url: "", description: "", status: "published", in_stock: true,
-  });
-  const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
-  const upload = async (file) => {
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop();
-      const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
-      const { error } = await supabase.storage.from("artworks").upload(path, file);
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from("artworks").getPublicUrl(path);
-      setForm(f => ({ ...f, image_url: publicUrl }));
-    } catch (e) { alert(e.message); } finally { setUploading(false); }
-  };
-
-  const save = async () => {
-    setBusy(true);
-    const payload = { ...form, price: Number(form.price) };
-    const { error } = isNew
-      ? await supabase.from("artworks").insert(payload)
-      : await supabase.from("artworks").update(payload).eq("id", form.id);
-    setBusy(false);
-    if (error) { alert(error.message); return; }
-    onSaved();
-  };
-
-  return (
-    <Modal onClose={onClose} title={isNew ? "New Artwork" : `Edit · ${form.title}`}>
-      <div style={{ display: "grid", gap: 10 }}>
-        <Field label="Title"      value={form.title}       onChange={v => setForm({ ...form, title: v })} />
-        <Field label="Artist"     value={form.artist_name} onChange={v => setForm({ ...form, artist_name: v })} />
-        <Field label="Medium"     value={form.medium}      onChange={v => setForm({ ...form, medium: v })} />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-          <Field label="Price"    value={form.price}       onChange={v => setForm({ ...form, price: v })} type="number" />
-          <Field label="Year"     value={form.year}        onChange={v => setForm({ ...form, year: v })} />
-          <Field label="Size"     value={form.size}        onChange={v => setForm({ ...form, size: v })} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-          <Field label="Style"    value={form.style}       onChange={v => setForm({ ...form, style: v })} />
-          <Field label="Category" value={form.category_id} onChange={v => setForm({ ...form, category_id: v })} />
-          <Field label="Status"   value={form.status}      onChange={v => setForm({ ...form, status: v })} />
-        </div>
-        <Field label="Description" value={form.description || ""} onChange={v => setForm({ ...form, description: v })} multiline />
-        <div>
-          <Label>Image</Label>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {form.image_url && <img src={form.image_url} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 4 }} />}
-            <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && upload(e.target.files[0])} />
-            {uploading && <span style={{ color: "#D4AF37", fontSize: 11 }}>Uploading…</span>}
-          </div>
-        </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-          <button onClick={onClose} style={ghostBtn}>CANCEL</button>
-          <button onClick={save} disabled={busy} style={goldBtnStyle}>{busy ? "Saving…" : "SAVE"}</button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-/* ════════════════ HIGHLIGHTS ════════════════ */
-function HighlightsTab() {
-  const [items, setItems] = useState([]);
-  const [all, setAll]     = useState([]);
-
-  const load = async () => {
-    const [feat, every] = await Promise.all([
-      supabase.from("artworks").select("*").eq("featured", true).order("created_at", { ascending: false }),
-      supabase.from("artworks").select("id, title, artist_name, image_url, featured").order("title"),
-    ]);
-    setItems(feat.data || []);
-    setAll(every.data || []);
-  };
-  useEffect(() => { load(); }, []);
-
-  const toggle = async (it) => {
-    const { error } = await supabase.from("artworks").update({ featured: !it.featured }).eq("id", it.id);
-    if (error) alert(error.message); else load();
-  };
-
-  return (
-    <Card title="Homepage Highlights">
-      <p style={muted}>These artworks appear in the homepage highlights section.</p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
-        {items.length === 0 && <div style={{ ...muted, gridColumn: "1/-1" }}>No featured artworks yet.</div>}
-        {items.map(it => (
-          <div key={it.id} style={{ position: "relative", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, overflow: "hidden" }}>
-            <img src={it.image_url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
-            <button onClick={() => toggle(it)} style={{
-              position: "absolute", top: 6, right: 6, padding: "4px 8px", borderRadius: 999,
-              background: "rgba(0,0,0,0.65)", color: "#D4AF37", border: "1px solid #D4AF37",
-              fontSize: 9, cursor: "pointer",
-            }}>REMOVE</button>
-            <div style={{ padding: 8, fontSize: 12, color: "#fff" }}>{it.title}</div>
+    <Panel title="Overview">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 14 }}>
+        {cards.map(([l, v]) => (
+          <div key={l} style={{ padding: 20, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 40, fontWeight: 700, color: gold }}>{v ?? 0}</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(200,191,160,0.6)", marginTop: 4 }}>{l.toUpperCase()}</div>
           </div>
         ))}
       </div>
-      <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", margin: "20px 0 10px" }}>ALL ARTWORKS</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 360, overflowY: "auto" }}>
-        {all.map(a => (
-          <label key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", border: "1px solid rgba(212,175,55,0.1)", borderRadius: 6, cursor: "pointer" }}>
-            <input type="checkbox" checked={!!a.featured} onChange={() => toggle(a)} style={{ accentColor: "#D4AF37" }} />
-            {a.image_url && <img src={a.image_url} alt="" style={{ width: 28, height: 28, objectFit: "cover", borderRadius: 4 }} />}
-            <span style={{ flex: 1, fontSize: 13 }}>{a.title} — <span style={muted}>{a.artist_name}</span></span>
-          </label>
-        ))}
-      </div>
-    </Card>
+    </Panel>
   );
 }
 
-/* ════════════════ EVENTS ════════════════ */
-function EventsTab() {
-  const [events, setEvents] = useState([]);
-  const [edit, setEdit] = useState(null);
-  const [showNew, setShowNew] = useState(false);
-  const [showRegs, setShowRegs] = useState(null);
-
-  const load = async () => {
-    const { data } = await supabase.from("events").select("*").order("starts_at", { ascending: false });
-    setEvents(data || []);
-  };
-  useEffect(() => { load(); }, []);
-
-  const remove = async (id) => {
-    if (!confirm("Delete event?")) return;
-    const { error } = await supabase.from("events").delete().eq("id", id);
-    if (error) alert(error.message); else load();
-  };
-
-  return (
-    <Card title="Events" right={<GoldButton onClick={() => setShowNew(true)}>+ NEW</GoldButton>}>
-      <table style={tableStyle}>
-        <thead><tr>{["Title", "Status", "Dates", "Location", ""].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-        <tbody>
-          {events.map(e => (
-            <tr key={e.id} style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
-              <td style={tdStyle}>{e.title}</td>
-              <td style={tdStyle}>{e.status}</td>
-              <td style={tdStyle}>{e.starts_at?.slice(0, 10)} → {e.ends_at?.slice(0, 10)}</td>
-              <td style={tdStyle}>{e.location}</td>
-              <td style={tdStyle}>
-                <button style={linkBtn} onClick={() => setShowRegs(e)}>REGISTRATIONS</button>
-                {" · "}
-                <button style={linkBtn} onClick={() => setEdit(e)}>EDIT</button>
-                {" · "}
-                <button style={{ ...linkBtn, color: "#ff8a8a" }} onClick={() => remove(e.id)}>DELETE</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {edit && <EventEditor item={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}
-      {showNew && <EventEditor onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); load(); }} isNew />}
-      {showRegs && <RegistrationsModal event={showRegs} onClose={() => setShowRegs(null)} />}
-    </Card>
-  );
-}
-
-function EventEditor({ item, isNew, onClose, onSaved }) {
-  const [form, setForm] = useState(item || {
-    title: "", description: "", status: "upcoming",
-    starts_at: "", ends_at: "", location: "", image_url: "",
-  });
-  const [busy, setBusy] = useState(false);
-
-  const save = async () => {
-    setBusy(true);
-    const payload = { ...form, starts_at: form.starts_at || null, ends_at: form.ends_at || null };
-    const { error } = isNew
-      ? await supabase.from("events").insert(payload)
-      : await supabase.from("events").update(payload).eq("id", form.id);
-    setBusy(false);
-    if (error) { alert(error.message); return; }
-    onSaved();
-  };
-
-  return (
-    <Modal onClose={onClose} title={isNew ? "New Event" : `Edit · ${form.title}`}>
-      <div style={{ display: "grid", gap: 10 }}>
-        <Field label="Title"     value={form.title} onChange={v => setForm({ ...form, title: v })} />
-        <Field label="Status"    value={form.status} onChange={v => setForm({ ...form, status: v })} />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="Starts At" value={form.starts_at?.slice(0,10) || ""} onChange={v => setForm({ ...form, starts_at: v })} type="date" />
-          <Field label="Ends At"   value={form.ends_at?.slice(0,10) || ""}   onChange={v => setForm({ ...form, ends_at: v })}   type="date" />
-        </div>
-        <Field label="Location"  value={form.location || ""} onChange={v => setForm({ ...form, location: v })} />
-        <Field label="Image URL" value={form.image_url || ""} onChange={v => setForm({ ...form, image_url: v })} />
-        <Field label="Description" value={form.description || ""} onChange={v => setForm({ ...form, description: v })} multiline />
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-          <button onClick={onClose} style={ghostBtn}>CANCEL</button>
-          <button onClick={save} disabled={busy} style={goldBtnStyle}>{busy ? "Saving…" : "SAVE"}</button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function RegistrationsModal({ event, onClose }) {
-  const [regs, setRegs] = useState([]);
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("event_registrations")
-        .select("name, email, phone, message, created_at")
-        .eq("event_id", event.id)
-        .order("created_at", { ascending: false });
-      setRegs(data || []);
-    })();
-  }, [event.id]);
-  return (
-    <Modal onClose={onClose} title={`Registrations · ${event.title}`}>
-      {regs.length === 0 ? <div style={muted}>No registrations.</div> : (
-        <table style={tableStyle}>
-          <thead><tr>{["Name","Email","Phone","When","Message"].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-          <tbody>
-            {regs.map((r, i) => (
-              <tr key={i} style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
-                <td style={tdStyle}>{r.name}</td>
-                <td style={tdStyle}>{r.email}</td>
-                <td style={tdStyle}>{r.phone}</td>
-                <td style={tdStyle}>{new Date(r.created_at).toLocaleString()}</td>
-                <td style={tdStyle}>{r.message}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </Modal>
-  );
-}
-
-/* ════════════════ ORDERS ════════════════ */
-function OrdersTab() {
-  const [orders, setOrders] = useState([]);
-  const [active, setActive] = useState(null);
-  const [items, setItems] = useState([]);
-
-  const load = async () => {
-    const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-    setOrders(data || []);
-  };
-  useEffect(() => { load(); }, []);
-
-  useEffect(() => {
-    if (!active) { setItems([]); return; }
-    (async () => {
-      const { data } = await supabase.from("order_items").select("*").eq("order_id", active.id);
-      setItems(data || []);
-    })();
-  }, [active]);
-
-  const setStatus = async (id, status) => {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
-    if (error) alert(error.message); else load();
-  };
-
-  return (
-    <Card title="Orders">
-      <table style={tableStyle}>
-        <thead><tr>{["Order","Customer","Total","Status","Date",""].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-        <tbody>
-          {orders.map(o => (
-            <tr key={o.id} style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
-              <td style={tdStyle}>{o.id.slice(0, 8).toUpperCase()}</td>
-              <td style={tdStyle}>{o.full_name}<br /><span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>{o.email}</span></td>
-              <td style={tdStyle}>₹{Number(o.total).toLocaleString()}</td>
-              <td style={tdStyle}>
-                <select value={o.status} onChange={e => setStatus(o.id, e.target.value)} style={selectStyle}>
-                  {["pending","paid","shipped","delivered","cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </td>
-              <td style={tdStyle}>{new Date(o.created_at).toLocaleDateString()}</td>
-              <td style={tdStyle}><button style={linkBtn} onClick={() => setActive(o)}>VIEW</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {active && (
-        <Modal onClose={() => setActive(null)} title={`Order · ${active.id.slice(0,8).toUpperCase()}`}>
-          <div style={{ marginBottom: 10 }}>
-            <div style={muted}>Customer</div>
-            <div>{active.full_name} · {active.email} · {active.phone}</div>
-          </div>
-          <div style={{ marginBottom: 10 }}>
-            <div style={muted}>Shipping</div>
-            <pre style={{ ...preStyle, fontSize: 11 }}>{JSON.stringify(active.shipping_address, null, 2)}</pre>
-          </div>
-          <div style={muted}>Items</div>
-          <table style={tableStyle}>
-            <thead><tr>{["Title","Price","Qty"].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-            <tbody>
-              {items.map(it => (
-                <tr key={it.id}><td style={tdStyle}>{it.title}</td><td style={tdStyle}>₹{Number(it.price).toLocaleString()}</td><td style={tdStyle}>{it.qty}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </Modal>
-      )}
-    </Card>
-  );
-}
-
-/* ════════════════ MESSAGES (chat inbox) ════════════════ */
-function MessagesTab() {
-  const { user } = useAuth();
+function Enquiries() {
   const [rows, setRows] = useState([]);
-  const [active, setActive] = useState(null);
-  const [thread, setThread] = useState([]);
-  const [reply, setReply] = useState("");
-  const [sending, setSending] = useState(false);
-  const scrollRef = useRef(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("chat_messages")
-        .select("id, user_id, conversation_key, sender, text, created_at")
-        .order("created_at", { ascending: true });
-      if (!cancelled) setRows(data || []);
-    })();
-    const ch = supabase.channel("admin-msgs")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" },
-        (payload) => setRows(prev => [...prev, payload.new]))
-      .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(ch); };
-  }, []);
-
-  const conversations = useMemo(() => {
-    const map = new Map();
-    for (const m of rows) {
-      const key = `${m.user_id}::${m.conversation_key}`;
-      const cur = map.get(key);
-      if (!cur || new Date(m.created_at) > new Date(cur.last_at)) {
-        map.set(key, { user_id: m.user_id, conversation_key: m.conversation_key, last_text: m.text, last_at: m.created_at, last_sender: m.sender });
-      }
-    }
-    return [...map.values()].sort((a, b) => new Date(b.last_at) - new Date(a.last_at));
-  }, [rows]);
-
-  useEffect(() => {
-    if (!active) { setThread([]); return; }
-    setThread(rows.filter(m => m.user_id === active.user_id && m.conversation_key === active.conversation_key));
-  }, [active, rows]);
-
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [thread]);
-
-  const send = async () => {
-    const text = reply.trim();
-    if (!text || !active || sending) return;
-    setSending(true); setReply("");
-    const sender = active.conversation_key.startsWith("artist:") ? "artist" : "curator";
-    const { error } = await supabase.from("chat_messages").insert({
-      user_id: active.user_id, conversation_key: active.conversation_key, sender, text,
-    });
-    setSending(false);
-    if (error) alert(error.message);
-  };
-
+  const [price, setPrice] = useState({});
+  const load = () => api.enquiries.all().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const reveal = async (e) => { await api.enquiries.revealPrice(e.id, Number(price[e.id] || 0)); load(); };
+  const approve = async (e) => { await api.enquiries.approve(e.id); load(); };
+  const reject = async (e) => { await api.enquiries.reject(e.id); load(); };
   return (
-    <Card title="Messages">
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 12, minHeight: 460 }}>
-        <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 8, overflowY: "auto" }}>
-          {conversations.length === 0 && <div style={{ padding: 16, ...muted }}>No conversations.</div>}
-          {conversations.map(c => {
-            const isActive = active && c.user_id === active.user_id && c.conversation_key === active.conversation_key;
-            return (
-              <button key={`${c.user_id}::${c.conversation_key}`} onClick={() => setActive(c)}
-                style={{
-                  display: "block", width: "100%", textAlign: "left", padding: "10px 14px",
-                  border: "none", borderBottom: "1px solid rgba(212,175,55,0.08)",
-                  background: isActive ? "rgba(212,175,55,0.10)" : "transparent",
-                  color: "#e8e0d0", cursor: "pointer",
-                }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37" }}>{c.conversation_key}</div>
-                <div style={{ fontSize: 12, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.last_text}</div>
-                <div style={{ fontSize: 10, color: "rgba(200,191,160,0.45)", marginTop: 2 }}>{new Date(c.last_at).toLocaleString()}</div>
-              </button>
-            );
-          })}
-        </div>
-        <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 8, display: "flex", flexDirection: "column" }}>
-          {!active ? (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", ...muted }}>Select a conversation.</div>
-          ) : (
-            <>
-              <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-                {thread.map(m => (
-                  <div key={m.id} style={{ alignSelf: m.sender === "me" ? "flex-start" : "flex-end", maxWidth: "70%" }}>
-                    <div style={{
-                      padding: "8px 12px", borderRadius: 12,
-                      background: m.sender === "me" ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                      color: m.sender === "me" ? "#e8e0d0" : "#111", fontSize: 13,
-                    }}>{m.text}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ padding: 10, borderTop: "1px solid rgba(212,175,55,0.15)", display: "flex", gap: 6 }}>
-                <input value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }}
-                  placeholder="Reply…" style={inputStyle} />
-                <button onClick={send} disabled={sending || !reply.trim()} style={goldBtnStyle}>SEND</button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </Card>
+    <Panel title="Enquiries">
+      {rows.length === 0 && <Empty>No enquiries yet.</Empty>}
+      {rows.map((e) => (
+        <Item key={e.id}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{e.artwork_id}</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: gold, marginTop: 3 }}>{e.status.toUpperCase()}{e.revealed_price ? ` · $${e.revealed_price}` : ""}</div>
+          </div>
+          <input placeholder="price" value={price[e.id] || ""} onChange={(ev) => setPrice({ ...price, [e.id]: ev.target.value })} style={miniInput} />
+          <Btn onClick={() => reveal(e)}>REVEAL</Btn>
+          <Btn onClick={() => approve(e)} primary>APPROVE</Btn>
+          <Btn onClick={() => reject(e)} ghost>REJECT</Btn>
+        </Item>
+      ))}
+    </Panel>
   );
 }
 
-/* ════════════════ ARTISTS ════════════════ */
-function ArtistsTab() {
-  const [applications, setApplications] = useState([]);
-  const [artists, setArtists] = useState([]);
-  const [promoteEmail, setPromoteEmail] = useState("");
-  const [busy, setBusy] = useState("");
-
-  const load = async () => {
-    const [appRes, artistRes] = await Promise.all([
-      supabase.from("artist_applications").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name, role").eq("role", "artist"),
-    ]);
-    setApplications(appRes.data || []);
-    setArtists(artistRes.data || []);
-  };
+function Orders() {
+  const [rows, setRows] = useState([]);
+  const [deliv, setDeliv] = useState({});  // orderId -> delivery
+  const [otp, setOtp] = useState({});
+  const load = () => api.orders.all().then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
-
-  const approve = async (app) => {
-    setBusy(app.id);
-    const { error: roleErr } = await supabase
-      .from("profiles")
-      .update({ role: "artist" })
-      .eq("id", app.user_id);
-    if (roleErr) { alert(roleErr.message); setBusy(""); return; }
-    await supabase.from("artist_applications").update({ status: "approved" }).eq("id", app.id);
-    setBusy("");
-    load();
+  const loadDelivery = async (orderId) => {
+    try { const dd = await api.deliveries.byOrder(orderId); setDeliv((d) => ({ ...d, [orderId]: dd })); } catch { /* none */ }
   };
-
-  const reject = async (app) => {
-    setBusy(app.id);
-    await supabase.from("artist_applications").update({ status: "rejected" }).eq("id", app.id);
-    setBusy("");
-    load();
+  const advance = async (orderId, d, stage) => {
+    const res = await api.deliveries.updateStage(d.id, { stage });
+    if (res.otp) setOtp((o) => ({ ...o, [orderId]: res.otp }));
+    loadDelivery(orderId);
   };
-
-  const revokeArtist = async (profileId) => {
-    if (!confirm("Remove artist role from this user?")) return;
-    const { error } = await supabase.from("profiles").update({ role: "user" }).eq("id", profileId);
-    if (error) alert(error.message); else load();
-  };
-
-  const promoteByEmail = async () => {
-    const email = promoteEmail.trim();
-    if (!email) return;
-    setBusy("promote");
-    const { data: users, error } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .ilike("id", "%");
-    // Find by checking auth — we look up via a direct update by matching email in auth.users
-    // Since we can't query auth.users from client, we use the user_id from artist_applications or ask for user id
-    const { data: appMatch } = await supabase
-      .from("artist_applications")
-      .select("user_id, full_name")
-      .eq("email", email)
-      .maybeSingle();
-    if (!appMatch) {
-      alert("No artist application found for that email. Ask the user to submit an application first, or use the SQL below.");
-      setBusy("");
-      return;
-    }
-    const { error: roleErr } = await supabase
-      .from("profiles")
-      .update({ role: "artist" })
-      .eq("id", appMatch.user_id);
-    if (roleErr) alert(roleErr.message);
-    else { setPromoteEmail(""); load(); }
-    setBusy("");
-  };
-
-  const pending = applications.filter(a => a.status === "pending");
-  const reviewed = applications.filter(a => a.status !== "pending");
-
   return (
-    <div style={{ display: "grid", gap: 20 }}>
-      {/* Quick promote by email */}
-      <Card title="Promote by Email">
-        <p style={{ ...muted, marginBottom: 12 }}>
-          Instantly grant artist role to any user who has submitted an application.
-        </p>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            value={promoteEmail}
-            onChange={e => setPromoteEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && promoteByEmail()}
-            placeholder="user@email.com"
-            style={{ ...inputStyle, flex: 1 }}
-          />
-          <button onClick={promoteByEmail} disabled={busy === "promote" || !promoteEmail.trim()} style={goldBtnStyle}>
-            {busy === "promote" ? "Promoting…" : "PROMOTE"}
-          </button>
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <div style={{ ...muted, marginBottom: 6 }}>Or run in Supabase SQL Editor to promote yourself directly:</div>
-          <pre style={preStyle}>{`update public.profiles set role = 'artist' where id = auth.uid();`}</pre>
-        </div>
-      </Card>
-
-      {/* Pending applications */}
-      <Card title={`Pending Applications (${pending.length})`}>
-        {pending.length === 0 && <div style={muted}>No pending applications.</div>}
-        {pending.map(app => (
-          <div key={app.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 8, marginBottom: 10 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{app.full_name}</div>
-                <div style={{ ...muted, marginTop: 2 }}>{app.email} {app.phone ? `· ${app.phone}` : ""}</div>
-                {app.bio && <div style={{ fontSize: 13, color: "#e8e0d0", marginTop: 8, lineHeight: 1.5 }}>{app.bio}</div>}
-                {app.portfolio_url && (
-                  <div style={{ marginTop: 6 }}>
-                    <a href={app.portfolio_url} target="_blank" rel="noreferrer" style={{ color: "#D4AF37", fontSize: 12 }}>View Portfolio ↗</a>
-                  </div>
-                )}
-                {app.sample_image_urls?.length > 0 && (
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    {app.sample_image_urls.map((url, i) => (
-                      <img key={i} src={url} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 4 }} />
-                    ))}
-                  </div>
-                )}
-                <div style={{ ...muted, marginTop: 6 }}>Applied {new Date(app.created_at).toLocaleString()}</div>
+    <Panel title="Orders">
+      {rows.length === 0 && <Empty>No orders yet.</Empty>}
+      {rows.map((o) => {
+        const d = deliv[o.id];
+        return (
+          <div key={o.id} style={{ padding: 16, border: "1px solid rgba(212,175,55,0.14)", borderRadius: 10, marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+              <div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold }}>#{o.id.slice(0, 8).toUpperCase()}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, color: "#fff" }}>{(o.items || []).map(i => i.title).join(", ") || "Order"} · ${o.total}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{o.full_name} · {o.status.toUpperCase()}</div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
-                <button onClick={() => approve(app)} disabled={busy === app.id} style={goldBtnStyle}>
-                  {busy === app.id ? "…" : "APPROVE"}
-                </button>
-                <button onClick={() => reject(app)} disabled={busy === app.id} style={ghostBtn}>
-                  REJECT
-                </button>
-              </div>
+              {!d && o.status !== "pending" && <Btn onClick={() => loadDelivery(o.id)}>MANAGE DELIVERY</Btn>}
             </div>
+            {d && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(212,175,55,0.1)" }}>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.65)", marginBottom: 8 }}>
+                  {d.tracking_id} · stage: <span style={{ color: gold }}>{d.stage}</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {STAGES.map((s) => (
+                    <button key={s} onClick={() => advance(o.id, d, s)} disabled={s === d.stage}
+                      style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${s === d.stage ? gold : "rgba(212,175,55,0.2)"}`, background: s === d.stage ? "rgba(212,175,55,0.12)" : "transparent", color: s === d.stage ? gold : "rgba(200,191,160,0.7)", fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.1em", cursor: "pointer" }}>
+                      {s.replace(/_/g, " ").toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                {otp[o.id] && <div style={{ marginTop: 8, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#4ade80" }}>OTP for customer: <strong>{otp[o.id]}</strong> (share so they confirm receipt)</div>}
+              </div>
+            )}
           </div>
+        );
+      })}
+    </Panel>
+  );
+}
+
+function Artworks() {
+  const [rows, setRows] = useState([]);
+  const load = () => api.catalog.artworks().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const del = async (id) => { if (confirm("Delete this artwork?")) { await api.request("DELETE", `/artworks/${id}`); load(); } };
+  const feature = async (a) => { await api.request("PATCH", `/artworks/${a.id}`, { body: { featured: !a.featured } }); load(); };
+  return (
+    <Panel title={`Artworks (${rows.length})`}>
+      {rows.map((a) => (
+        <Item key={a.id}>
+          <img src={a.images?.[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 4 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.title}</div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{a.artist_name} · ${a.price}</div>
+          </div>
+          <Btn onClick={() => feature(a)} primary={a.featured}>{a.featured ? "FEATURED" : "FEATURE"}</Btn>
+          <Btn onClick={() => del(a.id)} ghost>DELETE</Btn>
+        </Item>
+      ))}
+    </Panel>
+  );
+}
+
+function Events() {
+  const [rows, setRows] = useState([]);
+  const [f, setF] = useState({ title: "", description: "", status: "upcoming", location: "", curator: "" });
+  const load = () => api.events.list().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const create = async () => { if (!f.title) return; await api.events.create(f); setF({ title: "", description: "", status: "upcoming", location: "", curator: "" }); load(); };
+  const del = async (id) => { await api.events.remove(id); load(); };
+  return (
+    <Panel title="Events">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+        <input placeholder="Title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={miniInput} />
+        <input placeholder="Location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} style={miniInput} />
+        <input placeholder="Curator" value={f.curator} onChange={(e) => setF({ ...f, curator: e.target.value })} style={miniInput} />
+        <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} style={miniInput}>
+          <option value="upcoming">upcoming</option><option value="ongoing">ongoing</option><option value="past">past</option>
+        </select>
+        <input placeholder="Description" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+      </div>
+      <Btn onClick={create} primary>+ CREATE EVENT</Btn>
+      <div style={{ marginTop: 16 }}>
+        {rows.map((e) => (
+          <Item key={e.id}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{e.title}</div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{e.status} · {e.location}</div>
+            </div>
+            <Btn onClick={() => del(e.id)} ghost>DELETE</Btn>
+          </Item>
         ))}
-      </Card>
+      </div>
+    </Panel>
+  );
+}
 
-      {/* Current artists */}
-      <Card title={`Active Artists (${artists.length})`}>
-        {artists.length === 0 && <div style={muted}>No approved artists yet.</div>}
-        <table style={tableStyle}>
-          {artists.length > 0 && (
-            <thead><tr>{["Name", "User ID", ""].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-          )}
-          <tbody>
-            {artists.map(a => (
-              <tr key={a.id} style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
-                <td style={tdStyle}>{a.full_name || "(no name)"}</td>
-                <td style={{ ...tdStyle, ...muted, fontSize: 11 }}>{a.id}</td>
-                <td style={tdStyle}>
-                  <button style={{ ...linkBtn, color: "#ff8a8a" }} onClick={() => revokeArtist(a.id)}>REVOKE</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+function Artists() {
+  const [kyc, setKyc] = useState([]);
+  const [comps, setComps] = useState([]);
+  const [entries, setEntries] = useState({});
+  const [tick, setTick] = useState(0);
+  const load = () => { api.admin.artists().then(setKyc).catch(() => {}); api.competitions.list().then(setComps).catch(() => {}); };
+  useEffect(() => { load(); }, []);
+  const verify = async (uid) => { await api.admin.verifyArtist(uid); load(); };
+  const loadEntries = async (cid) => { const es = await api.competitions.entries(cid); setEntries((p) => ({ ...p, [cid]: es })); };
+  const verdict = async (eid, cid) => { const n = prompt("Juror notes / score (e.g. 90)"); if (n == null) return; await api.competitions.verdict(eid, { juror_name: "Jury", score: Number(n) || null, notes: n }); loadEntries(cid); };
+  const winner = async (eid, cid) => { await api.competitions.markWinner(eid); loadEntries(cid); load(); };
+  return (
+    <Panel title="Artists & Competition">
+      <AddArtist onCreated={() => { load(); setTick((t) => t + 1); }} />
+      <AddArtworkForArtist tick={tick} />
 
-      {/* Reviewed applications */}
-      {reviewed.length > 0 && (
-        <Card title="Previously Reviewed">
-          <table style={tableStyle}>
-            <thead><tr>{["Name", "Email", "Status", "Date"].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-            <tbody>
-              {reviewed.map(app => (
-                <tr key={app.id} style={{ borderBottom: "1px solid rgba(212,175,55,0.08)" }}>
-                  <td style={tdStyle}>{app.full_name}</td>
-                  <td style={tdStyle}>{app.email}</td>
-                  <td style={tdStyle}>
-                    <span style={chip(app.status === "approved")}>{app.status.toUpperCase()}</span>
-                  </td>
-                  <td style={tdStyle}>{new Date(app.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>ARTIST APPLICATIONS (KYC)</div>
+      {kyc.length === 0 && <Empty>No applications.</Empty>}
+      {kyc.map((a) => (
+        <Item key={a.user_id}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.name} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {a.art_type} · {a.location}</span></div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{a.email} · {a.status}</div>
+          </div>
+          {a.status !== "verified" && <Btn onClick={() => verify(a.user_id)} primary>VERIFY</Btn>}
+        </Item>
+      ))}
+
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>COMPETITIONS</div>
+      {comps.map((c) => (
+        <div key={c.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.14)", borderRadius: 10, marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, color: "#fff" }}>{c.title} <span style={{ fontSize: 11, color: gold }}>· {c.status}</span></div>
+            <Btn onClick={() => loadEntries(c.id)}>VIEW ENTRIES</Btn>
+          </div>
+          {(entries[c.id] || []).map((e) => (
+            <Item key={e.id}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "#fff" }}>{e.title}</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: e.status === "winner" ? "#4ade80" : gold, letterSpacing: "0.12em" }}>{e.status.toUpperCase()}</div>
+              </div>
+              <Btn onClick={() => verdict(e.id, c.id)}>RECORD VERDICT</Btn>
+              <Btn onClick={() => winner(e.id, c.id)} primary>MARK WINNER</Btn>
+            </Item>
+          ))}
+        </div>
+      ))}
+    </Panel>
+  );
+}
+
+function AddArtist({ onCreated }) {
+  const blank = { email: "", password: "", name: "", bio: "", location: "", art_type: "", age: "", image_url: "" };
+  const [f, setF] = useState(blank);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null);
+  const upload = async (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    try { const { url } = await api.uploads.file(file, "image"); setF((v) => ({ ...v, image_url: url })); }
+    catch (err) { alert(err.message); }
+  };
+  const submit = async () => {
+    if (!f.email || !f.password || !f.name) { alert("Email, password and name are required"); return; }
+    setBusy(true);
+    try {
+      const res = await api.admin.createArtist({ ...f, age: f.age ? Number(f.age) : null });
+      setDone(`Created ${res.name} (${res.email}). They can sign in with the password you set.`);
+      setF(blank);
+      onCreated && onCreated();
+    } catch (e) { alert(e.message); }
+    finally { setBusy(false); }
+  };
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+  return (
+    <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: 16, marginBottom: 18, background: "rgba(212,175,55,0.03)" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 12 }}>ADD AN ARTIST DIRECTLY</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <input placeholder="Full name" value={f.name} onChange={set("name")} style={miniInput} />
+        <input placeholder="Art type (e.g. Oil)" value={f.art_type} onChange={set("art_type")} style={miniInput} />
+        <input placeholder="Login email" value={f.email} onChange={set("email")} style={miniInput} />
+        <input placeholder="Login password" value={f.password} onChange={set("password")} style={miniInput} />
+        <input placeholder="Location" value={f.location} onChange={set("location")} style={miniInput} />
+        <input placeholder="Age" value={f.age} onChange={set("age")} style={miniInput} />
+        <input placeholder="Bio" value={f.bio} onChange={set("bio")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, gridColumn: "1 / -1" }}>
+          <label style={{ ...miniInput, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <input type="file" accept="image/*" onChange={upload} style={{ display: "none" }} />
+            UPLOAD PHOTO
+          </label>
+          {f.image_url && <img src={f.image_url} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />}
+        </div>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Btn onClick={submit} primary disabled={busy}>{busy ? "CREATING…" : "+ CREATE ARTIST"}</Btn>
+      </div>
+      {done && <div style={{ marginTop: 10, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#4ade80" }}>{done}</div>}
     </div>
   );
 }
 
-/* ════════════════ CONTACT ════════════════ */
-function ContactTab() {
-  const [rows, setRows] = useState([]);
+function AddArtworkForArtist({ tick }) {
+  const blank = { artist_id: "", title: "", price: "", medium: "", category_id: "", base_dimensions: "", image_url: "", customizable: false, featured: false, narrative: "" };
+  const [artists, setArtists] = useState([]);
+  const [cats, setCats] = useState([]);
+  const [f, setF] = useState(blank);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null);
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
-      setRows(data || []);
-    })();
-  }, []);
-  return (
-    <Card title="Contact Messages">
-      {rows.length === 0 && <div style={muted}>No messages.</div>}
-      {rows.map(m => (
-        <div key={m.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8, marginBottom: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <strong>{m.name} · {m.email}</strong>
-            <span style={muted}>{new Date(m.created_at).toLocaleString()}</span>
-          </div>
-          <div style={{ fontSize: 13, lineHeight: 1.5 }}>{m.message}</div>
-        </div>
-      ))}
-    </Card>
-  );
-}
-
-/* ════════════════ SUPPORT ════════════════ */
-function SupportTab() {
-  const [rows, setRows] = useState([]);
-  const load = async () => {
-    const { data } = await supabase.from("support_tickets").select("*").order("created_at", { ascending: false });
-    setRows(data || []);
+    api.catalog.artists().then(setArtists).catch(() => {});
+    api.catalog.categories().then((c) => setCats(c.filter((x) => x.kind === "main"))).catch(() => {});
+  }, [tick]);
+  const upload = async (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    try { const { url } = await api.uploads.file(file, "image"); setF((v) => ({ ...v, image_url: url })); }
+    catch (err) { alert(err.message); }
   };
-  useEffect(() => { load(); }, []);
-  const setStatus = async (id, status) => {
-    const { error } = await supabase.from("support_tickets").update({ status }).eq("id", id);
-    if (error) alert(error.message); else load();
+  const submit = async () => {
+    if (!f.artist_id || !f.title || !f.category_id) { alert("Artist, title and category are required"); return; }
+    if (!f.customizable && (!f.price || Number(f.price) <= 0)) { alert("Predefined (fixed-price) artworks need a price greater than 0"); return; }
+    setBusy(true);
+    try {
+      await api.admin.createArtwork({
+        title: f.title, narrative: f.narrative || null, medium: f.medium || null,
+        category_id: f.category_id, base_dimensions: f.base_dimensions || null,
+        customizable: f.customizable, price: f.price ? Number(f.price) : 0,
+        featured: f.featured, images: f.image_url ? [f.image_url] : [], artist_id: f.artist_id,
+      });
+      setDone(`Added "${f.title}".`);
+      setF({ ...blank, artist_id: f.artist_id });
+    } catch (e) { alert(e.message); }
+    finally { setBusy(false); }
   };
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
   return (
-    <Card title="Support Tickets">
-      {rows.length === 0 && <div style={muted}>No tickets.</div>}
-      {rows.map(t => (
-        <div key={t.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8, marginBottom: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <strong>{t.subject || "(no subject)"} — {t.email}</strong>
-            <select value={t.status} onChange={e => setStatus(t.id, e.target.value)} style={selectStyle}>
-              {["open","in_progress","resolved","closed"].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div style={{ fontSize: 13, lineHeight: 1.5 }}>{t.message}</div>
-          <div style={{ ...muted, marginTop: 6 }}>{new Date(t.created_at).toLocaleString()}</div>
+    <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: 16, marginBottom: 4, background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 12 }}>ADD ARTWORK FOR AN ARTIST</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <select value={f.artist_id} onChange={set("artist_id")} style={miniInput}>
+          <option value="">Select artist…</option>
+          {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+        <select value={f.category_id} onChange={set("category_id")} style={miniInput}>
+          <option value="">Select medium…</option>
+          {cats.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+        </select>
+        <input placeholder="Title" value={f.title} onChange={set("title")} style={miniInput} />
+        <input placeholder="Medium (e.g. Oil on canvas)" value={f.medium} onChange={set("medium")} style={miniInput} />
+        <input placeholder="Dimensions (e.g. 80 × 60 cm)" value={f.base_dimensions} onChange={set("base_dimensions")} style={miniInput} />
+        <input placeholder="Price (USD)" value={f.price} onChange={set("price")} style={miniInput} disabled={f.customizable} />
+        <input placeholder="Narrative / description" value={f.narrative} onChange={set("narrative")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 16, gridColumn: "1 / -1", flexWrap: "wrap" }}>
+          <label style={{ ...miniInput, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <input type="file" accept="image/*" onChange={upload} style={{ display: "none" }} />
+            UPLOAD IMAGE
+          </label>
+          {f.image_url && <img src={f.image_url} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover" }} />}
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
+            <input type="checkbox" checked={f.customizable} onChange={(e) => setF((v) => ({ ...v, customizable: e.target.checked }))} style={{ accentColor: gold }} />
+            Customizable (price set via enquiry)
+          </label>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
+            <input type="checkbox" checked={f.featured} onChange={(e) => setF((v) => ({ ...v, featured: e.target.checked }))} style={{ accentColor: gold }} />
+            Featured on home
+          </label>
         </div>
-      ))}
-    </Card>
-  );
-}
-
-/* ════════════════ Shared UI bits ════════════════ */
-const cardOuter = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, padding: 24 };
-const tableStyle = { width: "100%", borderCollapse: "collapse", fontFamily: "'Raleway',sans-serif", fontSize: 13 };
-const thStyle = { textAlign: "left", padding: "8px 10px", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: "#D4AF37", borderBottom: "1px solid rgba(212,175,55,0.2)" };
-const tdStyle = { padding: "10px", verticalAlign: "top" };
-const linkBtn = { background: "transparent", border: "none", color: "#D4AF37", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em" };
-const goldBtnStyle = { background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, padding: "8px 18px", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", cursor: "pointer" };
-const ghostBtn = { background: "transparent", color: "#e8e0d0", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 999, padding: "8px 18px", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", cursor: "pointer" };
-const inputStyle = { flex: 1, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 999, padding: "8px 14px", color: "#e8e0d0", fontSize: 13, outline: "none" };
-const selectStyle = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, padding: "5px 8px", color: "#e8e0d0", fontSize: 12 };
-const muted = { color: "rgba(200,191,160,0.55)", fontSize: 12 };
-const preStyle = { background: "rgba(255,255,255,0.04)", padding: 10, borderRadius: 6, color: "#D4AF37", overflow: "auto" };
-const chip = (on) => ({ padding: "3px 10px", borderRadius: 999, fontSize: 10, fontFamily: "'Cinzel',serif", letterSpacing: "0.12em", border: `1px solid ${on ? "#D4AF37" : "rgba(212,175,55,0.25)"}`, background: on ? "rgba(212,175,55,0.15)" : "transparent", color: on ? "#D4AF37" : "rgba(200,191,160,0.6)", cursor: "pointer" });
-
-function Card({ title, right, children }) {
-  return (
-    <div style={cardOuter}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: "#fff" }}>{title}</h2>
-        {right}
       </div>
+      <div style={{ marginTop: 12 }}>
+        <Btn onClick={submit} primary disabled={busy}>{busy ? "ADDING…" : "+ ADD ARTWORK"}</Btn>
+      </div>
+      {done && <div style={{ marginTop: 10, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#4ade80" }}>{done}</div>}
+    </div>
+  );
+}
+
+function ContactList() {
+  const [rows, setRows] = useState([]);
+  useEffect(() => { api.support.listContact().then(setRows).catch(() => setRows([])); }, []);
+  return (
+    <Panel title="Contact Messages">
+      {rows.length === 0 && <Empty>No messages.</Empty>}
+      {rows.map((m) => (
+        <div key={m.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8, marginBottom: 8 }}>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{m.name} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {m.email}</span></div>
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", marginTop: 4 }}>{m.subject ? <strong>{m.subject}: </strong> : null}{m.message}</div>
+        </div>
+      ))}
+    </Panel>
+  );
+}
+
+function Support() {
+  const [rows, setRows] = useState([]);
+  const load = () => api.support.listTickets().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const setStatus = async (id, status) => { await api.support.setTicketStatus(id, status); load(); };
+  return (
+    <Panel title="Support Tickets">
+      {rows.length === 0 && <Empty>No tickets.</Empty>}
+      {rows.map((t) => (
+        <Item key={t.id}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{t.subject || "Ticket"} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {t.email}</span></div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.65)", marginTop: 3 }}>{t.message}</div>
+          </div>
+          <select value={t.status} onChange={(e) => setStatus(t.id, e.target.value)} style={miniInput}>
+            <option value="open">open</option><option value="in_progress">in_progress</option><option value="resolved">resolved</option><option value="closed">closed</option>
+          </select>
+        </Item>
+      ))}
+    </Panel>
+  );
+}
+
+/* ── shared bits ── */
+function Panel({ title, children }) {
+  return (
+    <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, background: "rgba(255,255,255,0.02)", padding: 24 }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.18em", color: gold, marginBottom: 18 }}>{(title || "").toUpperCase()}</div>
       {children}
     </div>
   );
 }
-function Center({ children }) {
-  return <section style={{ padding: "120px 24px", textAlign: "center", color: "#e8e0d0" }}>{children}</section>;
+function Item({ children }) {
+  return <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "12px 0", borderBottom: "1px solid rgba(212,175,55,0.1)" }}>{children}</div>;
 }
-function GoldButton({ children, ...p }) { return <button {...p} style={goldBtnStyle}>{children}</button>; }
-function Label({ children }) { return <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: "#D4AF37", marginBottom: 5 }}>{children}</div>; }
-function Field({ label, value, onChange, type = "text", multiline }) {
-  const common = { width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, padding: "8px 12px", color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" };
+function Btn({ children, onClick, primary, ghost, disabled }) {
   return (
-    <div>
-      <Label>{label}</Label>
-      {multiline
-        ? <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} style={{ ...common, resize: "vertical" }} />
-        : <input type={type} value={value ?? ""} onChange={e => onChange(e.target.value)} style={common} />}
-    </div>
+    <button onClick={onClick} disabled={disabled} style={{
+      padding: "8px 14px", borderRadius: 999, cursor: disabled ? "default" : "pointer", whiteSpace: "nowrap",
+      fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em",
+      background: primary ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "transparent",
+      color: primary ? "#111" : ghost ? "rgba(200,191,160,0.7)" : gold,
+      border: primary ? "none" : `1px solid rgba(212,175,55,${ghost ? 0.2 : 0.4})`, opacity: disabled ? 0.4 : 1,
+    }}>{children}</button>
   );
 }
-function Modal({ title, onClose, children }) {
-  return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#0e0c0a", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 12, width: "100%", maxWidth: 720, maxHeight: "90vh", overflowY: "auto", padding: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, color: "#fff" }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 20, cursor: "pointer" }}>×</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
+function Empty({ children }) { return <div style={{ padding: 24, textAlign: "center", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.5)" }}>{children}</div>; }
+function Center({ children }) { return <section style={{ padding: "140px 24px", textAlign: "center" }}>{children}</section>; }
+const preStyle = { display: "inline-block", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", padding: 14, borderRadius: 8, color: gold, marginTop: 10, fontFamily: "monospace", fontSize: 12 };
+const miniInput = { padding: "9px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" };

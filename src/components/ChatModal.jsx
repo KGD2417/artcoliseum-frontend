@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "../utils/supabase";
+import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
 
 /**
@@ -41,55 +41,38 @@ export default function ChatModal({
     let cancelled = false;
 
     (async () => {
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .select("id, sender, text, created_at")
-        .eq("user_id", user.id)
-        .eq("conversation_key", conversationKey)
-        .order("created_at", { ascending: true });
+      let data = [];
+      try {
+        data = await api.chat.conversation(conversationKey);
+      } catch (e) { console.error(e); return; }
       if (cancelled) return;
-      if (error) { console.error(error); return; }
 
       if (data.length === 0) {
-        // Seed intro into DB so first-time chat shows greeting.
-        if (intro.length) {
-          const rows = intro.map(t => ({
-            user_id: user.id,
-            conversation_key: conversationKey,
-            sender: "bot",
-            text: t,
-          }));
-          await supabase.from("chat_messages").insert(rows);
+        // Seed intro greeting on first open; appears locally + echoes via WS.
+        for (const t of intro) {
+          try {
+            const m = await api.chat.send({ conversation_key: conversationKey, sender: "bot", text: t });
+            if (!cancelled) setMessages(prev => prev.find(x => x.id === m.id) ? prev : [...prev, { id: m.id, from: "bot", text: m.text }]);
+          } catch { /* ignore */ }
         }
       } else {
         setMessages(data.map(m => ({ id: m.id, from: m.sender === "me" ? "me" : "bot", text: m.text })));
       }
     })();
 
-    const channel = supabase
-      .channel(`chat:${user.id}:${conversationKey}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-          filter: `conversation_key=eq.${conversationKey}`,
-        },
-        (payload) => {
-          const m = payload.new;
-          if (m.user_id !== user.id) return;
-          setMessages(prev => {
-            if (prev.find(x => x.id === m.id)) return prev;
-            return [...prev, { id: m.id, from: m.sender === "me" ? "me" : "bot", text: m.text }];
-          });
-        }
-      )
+    const sub = realtime
+      .channel(conversationKey)
+      .on("message", (m) => {
+        if (m.user_id !== user.id) return;
+        setMessages(prev => prev.find(x => x.id === m.id)
+          ? prev
+          : [...prev, { id: m.id, from: m.sender === "me" ? "me" : "bot", text: m.text }]);
+      })
       .subscribe();
 
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
+      sub.unsubscribe();
     };
   }, [open, user, conversationKey]);
 
@@ -113,14 +96,14 @@ export default function ChatModal({
     if (!text || sending || !user || !conversationKey) return;
     setSending(true);
     setInput("");
-    const { error } = await supabase.from("chat_messages").insert({
-      user_id: user.id,
-      conversation_key: conversationKey,
-      sender: "me",
-      text,
-    });
-    setSending(false);
-    if (error) alert(error.message);
+    try {
+      const m = await api.chat.send({ conversation_key: conversationKey, sender: "me", text });
+      setMessages(prev => prev.find(x => x.id === m.id) ? prev : [...prev, { id: m.id, from: "me", text: m.text }]);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
