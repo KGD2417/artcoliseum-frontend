@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Skeleton, SkeletonText } from "../components/ui/Skeleton";
 import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
 
@@ -752,6 +753,7 @@ function DirectChat({ user, onClose }) {
 export default function Community() {
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [chatUser, setChatUser] = useState(null);
@@ -762,9 +764,11 @@ export default function Community() {
   // Load the real feed for the active community.
   useEffect(() => {
     let cancelled = false;
+    setFeedLoading(true);
     api.community.posts(activeCommunity)
       .then((rows) => { if (!cancelled) setPosts((rows || []).map(mapPost)); })
-      .catch(() => { if (!cancelled) setPosts([]); });
+      .catch(() => { if (!cancelled) setPosts([]); })
+      .finally(() => { if (!cancelled) setFeedLoading(false); });
     return () => { cancelled = true; };
   }, [activeCommunity]);
 
@@ -899,6 +903,23 @@ export default function Community() {
             </motion.button>
           </div>
 
+          {feedLoading ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{ border: "1px solid rgba(212,175,55,0.12)", borderRadius: 14, padding: 18 }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 14 }}>
+                    <Skeleton width={42} height={42} radius={999} />
+                    <div style={{ flex: 1, maxWidth: 200 }}>
+                      <Skeleton width="60%" height={12} />
+                      <Skeleton width="35%" height={10} style={{ marginTop: 8 }} />
+                    </div>
+                  </div>
+                  <SkeletonText lines={2} />
+                  <Skeleton height={240} radius={10} style={{ marginTop: 14 }} />
+                </div>
+              ))}
+            </div>
+          ) : (
           <AnimatePresence mode="popLayout">
             {filteredPosts.length > 0 ? filteredPosts.map(post => (
               <PostCard
@@ -917,6 +938,7 @@ export default function Community() {
               </motion.div>
             )}
           </AnimatePresence>
+          )}
         </main>
       </div>
 

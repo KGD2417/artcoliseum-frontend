@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
+import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 
 export default function AdminInbox() {
   const { user, role, loading: authLoading } = useAuth();
@@ -88,7 +89,15 @@ export default function AdminInbox() {
   };
 
   if (authLoading || isAdmin === null) {
-    return <section style={{ padding: 100, textAlign: "center", color: "#D4AF37" }}>Loading…</section>;
+    return (
+      <section style={{ padding: "100px 24px 60px", maxWidth: 1200, margin: "0 auto" }}>
+        <Skeleton width={200} height={32} radius={8} style={{ marginBottom: 24 }} />
+        <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20 }}>
+          <SkeletonRows count={6} height={64} gap={12} />
+          <Skeleton height={460} radius={12} />
+        </div>
+      </section>
+    );
   }
   if (!isAdmin) {
     return (
@@ -114,7 +123,7 @@ export default function AdminInbox() {
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, minHeight: 540 }}>
+      <div className="inbox-grid" style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, minHeight: 540 }}>
         <aside style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, background: "rgba(255,255,255,0.02)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(212,175,55,0.15)", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37" }}>
             CONVERSATIONS · {conversations.length}

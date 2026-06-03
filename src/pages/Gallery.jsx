@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import ArtworkHoverCard from "../components/ArtworkHoverCard";
 import { SearchIcon } from "../components/Icons";
+import { SkeletonGrid } from "../components/ui/Skeleton";
 import { api, adaptArtwork } from "../utils/api";
 import { useLocale } from "../context/Locale";
 
@@ -41,13 +42,16 @@ export default function Gallery() {
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     api.catalog
       .artworks(medium ? { category: medium } : {})
       .then((rows) => { if (!cancelled) setItems(rows.map(adaptArtwork)); })
-      .catch(() => { if (!cancelled) setItems([]); });
+      .catch(() => { if (!cancelled) setItems([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [medium]);
 
@@ -171,9 +175,21 @@ export default function Gallery() {
 
         {/* grid */}
         <div>
+          {loading ? (
+            <SkeletonGrid count={9} minColWidth={240} maxColWidth={300} imageHeight={280} gap={22} />
+          ) : filtered.length === 0 ? (
+            <div style={{
+              padding: "80px 24px", textAlign: "center",
+              fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontStyle: "italic",
+              color: "rgba(200,191,160,0.5)",
+            }}>
+              No works found{medium ? ` in ${medium}` : ""}{search ? ` for "${search}"` : ""}.
+            </div>
+          ) : (
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 300px))",
+            justifyContent: "center",
             gap: 22,
           }}>
             {filtered.map((item, i) => (
@@ -238,8 +254,10 @@ export default function Gallery() {
               </motion.div>
             ))}
           </div>
+          )}
 
           {/* footer */}
+          {!loading && filtered.length > 0 && (
           <div style={{
             margin: "60px auto 0", maxWidth: 360, textAlign: "center",
             paddingTop: 30, borderTop: "1px solid rgba(212,175,55,0.18)",
@@ -254,6 +272,7 @@ export default function Gallery() {
               borderRadius: 999, cursor: "pointer",
             }}>LOAD MORE ARTWORKS ⌄</button>
           </div>
+          )}
         </div>
       </div>
 

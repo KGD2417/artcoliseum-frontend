@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { useLocale } from "../context/Locale";
 import { useAuth } from "../context/Auth";
 import { api } from "../utils/api";
@@ -24,8 +25,12 @@ export default function Cart() {
   const { user, loading } = useAuth();
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [cartLoading, setCartLoading] = useState(true);
 
-  const refresh = () => api.cart.breakdown().then(setData).catch(() => setData(null));
+  const refresh = () => {
+    setCartLoading(true);
+    return api.cart.breakdown().then(setData).catch(() => setData(null)).finally(() => setCartLoading(false));
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -58,7 +63,12 @@ export default function Cart() {
         </p>
       </motion.div>
 
-      {items.length === 0 ? (
+      {cartLoading ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 36 }} className="cart-grid">
+          <SkeletonRows count={3} height={172} gap={14} />
+          <Skeleton height={360} radius={10} />
+        </div>
+      ) : items.length === 0 ? (
         <div style={{ padding: "80px 30px", textAlign: "center", border: "1px solid rgba(212,175,55,0.15)", borderRadius: 12 }}>
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 14 }}>Your cart is empty</div>
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 26 }}>

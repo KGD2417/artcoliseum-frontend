@@ -266,7 +266,7 @@ export default function Estimate() {
                   Flat Artwork <em style={{ fontWeight: 300 }}>Calculator</em>
                 </h2>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                <div className="estimate-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
                   <div>
                     <InputLabel>WIDTH (inches)</InputLabel>
                     <input
@@ -353,7 +353,7 @@ export default function Estimate() {
                   Sculpture <em style={{ fontWeight: 300 }}>Calculator</em>
                 </h2>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                <div className="estimate-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
                   <div>
                     <InputLabel>MATERIAL</InputLabel>
                     <div style={{ position: "relative" }}>
@@ -438,7 +438,7 @@ export default function Estimate() {
                   Framed <em style={{ fontWeight: 300 }}>Piece Calculator</em>
                 </h2>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                <div className="estimate-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
                   <div>
                     <InputLabel>WIDTH (inches)</InputLabel>
                     <input

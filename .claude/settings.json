@@ -50,7 +50,13 @@
       "Bash(ls public/ar-launcher.html)",
       "Bash(curl -s \"http://localhost:8000/artworks/digital-3d-2\")",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(grep -c '\\\\.__TRACKED_VAR__' src/index.css)",
+      "Bash(awk 'NR>=4900 && NR<=4990 && /@media/{print NR\": \"$0}' src/index.css)",
+      "Bash(perl -0pi -e 's/<div style=\\\\{\\\\{ display: \"grid\", gridTemplateColumns: \"1fr 1fr\", gap: 24 \\\\}\\\\}>/<div className=\"estimate-grid\" style={{ display: \"grid\", gridTemplateColumns: \"1fr 1fr\", gap: 24 }}>/g' src/pages/Estimate.jsx)",
+      "Bash(perl -pi -e 's/minmax\\\\\\(280px,\\\\s*1fr\\\\\\)/minmax\\(min\\(280px, 100%\\), 1fr\\)/g' src/pages/Gallery.jsx src/pages/Categories.jsx src/pages/SubTypeDetail.jsx src/pages/ComingSoon.jsx)",
+      "Bash(perl -pi -e 's/minmax\\\\\\(300px,\\\\s*1fr\\\\\\)/minmax\\(min\\(300px, 100%\\), 1fr\\)/g' src/pages/Artists.jsx)",
+      "Bash(perl -pi -e 's/minmax\\\\\\(260px,\\\\s*1fr\\\\\\)/minmax\\(min\\(260px, 100%\\), 1fr\\)/g' src/pages/ArtistProfile.jsx)"
     ]
   },
   "hooks": {

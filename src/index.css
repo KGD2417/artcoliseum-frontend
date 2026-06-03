@@ -34,11 +34,15 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: "Cormorant Garamond", Georgia, serif;
   -webkit-font-smoothing: antialiased;
+  /* Guard against stray fixed-width children causing a horizontal scrollbar on mobile */
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 a {
@@ -48,6 +52,47 @@ a {
 
 ::selection {
   background: rgba(212, 175, 55, 0.3);
+}
+
+/* ═══════════════════════════════════════════════
+   SKELETON LOADERS — gold-tinted shimmer
+═══════════════════════════════════════════════ */
+.coli-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(212, 175, 55, 0.07);
+  background-image: linear-gradient(
+    100deg,
+    rgba(212, 175, 55, 0.06) 0%,
+    rgba(212, 175, 55, 0.06) 30%,
+    rgba(212, 175, 55, 0.16) 50%,
+    rgba(212, 175, 55, 0.06) 70%,
+    rgba(212, 175, 55, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: coli-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes coli-shimmer {
+  0% {
+    background-position: 180% 0;
+  }
+  100% {
+    background-position: -80% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coli-skeleton {
+    animation-duration: 3s;
+  }
+}
+
+@media (max-width: 768px) {
+  .coli-skeleton-detail {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -4946,6 +4991,26 @@ input[type="email"] {
   .pd-wall-row input, .pd-wall-row select { flex: 1 1 40% !important; }
   .pd-wall-row button { flex: 1 1 100% !important; }
   .pd-btn-row { grid-template-columns: 1fr !important; }
+
+  /* ── Two-column page layouts → single column ── */
+  .cart-grid,
+  .ck-grid,
+  .profile-grid,
+  .help-grid,
+  .estimate-grid,
+  .ar-grid,
+  .ap-hero,
+  .chat-grid,
+  .admin-grid,
+  .admin-work-grid,
+  .inbox-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+
+  /* Admin/inbox sidebars become horizontal scrollers, not fixed columns */
+  .admin-grid > aside { height: auto !important; }
+
+  /* Artist profile hero stacks + centers */
+  .ap-hero { gap: 24px !important; text-align: center; }
+  .ap-hero > * { justify-self: center; }
 
   /* ── Home page — uniform section padding ── */
   .home-sec,

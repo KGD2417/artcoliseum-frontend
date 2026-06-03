@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import { SkeletonGrid } from "../components/ui/Skeleton";
 import { api } from "../utils/api";
 import { useLocale } from "../context/Locale";
 
@@ -382,11 +383,13 @@ export default function SubTypeDetail() {
   const [hoveredId, setHoveredId] = useState(null);
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null); // { label, mediumLabel }
+  const [loading, setLoading] = useState(true);
 
   const fallback = SUBTYPE_DATA[medium]?.[sub];
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     (async () => {
       // Real subtype + medium labels from the categories table.
       try {
@@ -427,6 +430,8 @@ export default function SubTypeDetail() {
         }
       } catch {
         if (!cancelled) setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
@@ -507,7 +512,10 @@ export default function SubTypeDetail() {
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 22 }}>
+          {loading ? (
+            <SkeletonGrid count={6} minColWidth={240} maxColWidth={300} imageHeight={280} gap={22} />
+          ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 300px))", justifyContent: "center", gap: 22 }}>
             {galleryItems.map((item, i) => (
               <motion.div
                 key={item.id}
@@ -592,8 +600,9 @@ export default function SubTypeDetail() {
               </motion.div>
             ))}
           </div>
+          )}
 
-          {galleryItems.length === 0 && (
+          {!loading && galleryItems.length === 0 && (
             <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "'Cormorant Garamond',serif", fontSize: 19, color: "rgba(200,191,160,0.4)" }}>
               No {collectionTab === "predefined" ? "ready-to-buy" : "made-to-order"} works in this collection yet.
             </div>

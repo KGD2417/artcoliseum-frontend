@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { SearchIcon } from "../components/Icons";
+import { SkeletonGrid } from "../components/ui/Skeleton";
 import { api } from "../utils/api";
 
 const DEMO_ARTISTS = [
@@ -259,7 +260,9 @@ export default function Artists() {
         </motion.button>
       </motion.div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <SkeletonGrid count={6} minColWidth={260} maxColWidth={320} imageHeight={300} gap={30} />
+      ) : filtered.length === 0 ? (
         <div
           style={{
             padding: "60px 30px",
@@ -289,7 +292,8 @@ export default function Artists() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 320px))",
+            justifyContent: "center",
             gap: 30,
           }}>
           {filtered.map((artist, i) => (

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import { SkeletonGrid } from "../components/ui/Skeleton";
 import { api } from "../utils/api";
 import m1 from "../assets/mediums/m1.png";
 import m2 from "../assets/mediums/m2.png";
@@ -162,10 +163,14 @@ export default function Categories() {
         </div>
       </div>
 
+      {loading ? (
+        <SkeletonGrid count={4} minColWidth={240} maxColWidth={300} imageHeight={300} gap={22} />
+      ) : (
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 300px))",
+          justifyContent: "center",
           gap: 22,
         }}>
         {visible.map((cat, i) => (
@@ -265,8 +270,9 @@ export default function Categories() {
           </motion.div>
         ))}
       </div>
+      )}
 
-      {categories.length > 4 && (
+      {!loading && categories.length > 4 && (
         <div style={{ textAlign: "center", marginTop: 40 }}>
           <motion.button
             whileHover={{ scale: 1.03 }}

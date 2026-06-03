@@ -431,7 +431,7 @@ function RoomVisualizer({ initialArtworkUrl, initialArtType }) {
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
       {/* Two-column layout: left = controls, right = canvas */}
-      <div style={{ display: "grid", gridTemplateColumns: step === "result" ? "320px 1fr" : "360px 1fr", gap: 28, alignItems: "start" }}>
+      <div className="ar-grid" style={{ display: "grid", gridTemplateColumns: step === "result" ? "320px 1fr" : "360px 1fr", gap: 28, alignItems: "start" }}>
 
         {/* ── Left panel ── */}
         <div>

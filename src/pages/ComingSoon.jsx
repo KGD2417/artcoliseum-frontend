@@ -253,7 +253,8 @@ export default function ComingSoon({ page }) {
           <motion.div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 320px))",
+              justifyContent: "center",
               gap: 20,
               marginBottom: 72,
             }}

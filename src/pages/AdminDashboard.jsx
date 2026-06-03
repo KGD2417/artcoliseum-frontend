@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/Auth";
+import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { api, realtime } from "../utils/api";
 
 const gold = "#D4AF37";
@@ -24,7 +25,16 @@ export default function AdminDashboard() {
     if (role === "admin") api.admin.stats().then(setStats).catch(() => {});
   }, [user, role, loading]);
 
-  if (loading) return <Center>Loading…</Center>;
+  if (loading) return (
+    <section style={{ padding: "100px 24px 60px", maxWidth: 1400, margin: "0 auto" }}>
+      <Skeleton width={90} height={12} />
+      <Skeleton width={280} height={38} radius={8} style={{ marginTop: 8, marginBottom: 24 }} />
+      <div style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 20 }}>
+        <Skeleton height={420} radius={12} />
+        <SkeletonRows count={5} height={72} gap={14} />
+      </div>
+    </section>
+  );
   if (role !== "admin") {
     return (
       <Center>
@@ -41,7 +51,7 @@ export default function AdminDashboard() {
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: gold }}>ADMIN</div>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#fff", marginTop: 4 }}>Control Panel</h1>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 20 }}>
+      <div className="admin-grid" style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 20 }}>
         <aside style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, background: "rgba(255,255,255,0.02)", padding: 12, height: "fit-content" }}>
           {TABS.map(([id, lbl]) => {
             const badge = { orders: stats.pending_orders, support: stats.open_tickets, contact: stats.contact_messages, artists: stats.pending_artists }[id] || 0;
@@ -144,7 +154,7 @@ function Enquiries() {
 
   return (
     <Panel title="Enquiries">
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 16, minHeight: 420 }}>
+      <div className="admin-work-grid" style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 16, minHeight: 420 }}>
         {/* List */}
         <div style={{ borderRight: "1px solid rgba(212,175,55,0.12)", paddingRight: 12, maxHeight: 560, overflowY: "auto" }}>
           {rows.length === 0 && <Empty>No enquiries yet.</Empty>}

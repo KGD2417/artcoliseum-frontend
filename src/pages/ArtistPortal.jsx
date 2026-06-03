@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/Auth";
+import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { api } from "../utils/api";
 
 const gold = "#D4AF37";
@@ -53,7 +54,14 @@ export default function ArtistPortal() {
     api.competitions.list().then(setCompetitions).catch(() => setCompetitions([]));
   }, [user, loading]);
 
-  if (loading || !status) return <section style={{ padding: 120, textAlign: "center", color: gold }}>Loading…</section>;
+  if (loading || !status) return (
+    <section style={{ padding: "110px 24px 60px", maxWidth: 980, margin: "0 auto" }}>
+      <Skeleton width={120} height={12} />
+      <Skeleton width={320} height={36} radius={8} style={{ marginTop: 10, marginBottom: 28 }} />
+      <Skeleton height={90} radius={14} style={{ marginBottom: 22 }} />
+      <SkeletonRows count={3} height={120} gap={20} />
+    </section>
+  );
 
   const st = status.artist_status;
   return (

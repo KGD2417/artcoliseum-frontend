@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { CopyIcon, CheckIcon } from "../components/Icons";
 import { useLocale } from "../context/Locale";
 import { useAuth } from "../context/Auth";
@@ -46,11 +47,13 @@ export default function Checkout() {
   const [review, setReview] = useState({ rating: 5, text: "" });
   const [reviewDone, setReviewDone] = useState(false);
   const [est, setEst] = useState(null);   // pincode delivery estimate
+  const [ckLoading, setCkLoading] = useState(true);
 
   useEffect(() => {
     if (loading) return;
     if (!user) { navigate("/signin"); return; }
-    api.cart.breakdown().then(setData).catch(() => setData(null));
+    setCkLoading(true);
+    api.cart.breakdown().then(setData).catch(() => setData(null)).finally(() => setCkLoading(false));
   }, [user, loading]);
 
   // Fetch the shipping zone / ETA / fee whenever a 6-digit pincode is entered.
@@ -270,7 +273,12 @@ export default function Checkout() {
         </p>
       </motion.div>
 
-      {items.length === 0 ? (
+      {ckLoading ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 36 }} className="ck-grid">
+          <SkeletonRows count={3} height={120} gap={14} />
+          <Skeleton height={420} radius={10} />
+        </div>
+      ) : items.length === 0 ? (
         <div style={{ padding: 80, textAlign: "center", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12 }}>
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: "#fff", marginBottom: 12 }}>Your cart is empty</div>
           <button onClick={() => navigate("/gallery")} style={{ marginTop: 14, padding: "13px 28px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em" }}>BROWSE COLLECTION</button>

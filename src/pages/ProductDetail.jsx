@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import ChatModal from "../components/ChatModal";
+import { SkeletonDetail } from "../components/ui/Skeleton";
 import { HeartIcon, ZoomIcon, SparkIcon } from "../components/Icons";
 import { api } from "../utils/api";
 import { useAuth } from "../context/Auth";
@@ -71,6 +72,7 @@ export default function ProductDetail() {
   const [artistInfo, setArtistInfo] = useState(null);
   const [sizes, setSizes] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { formatPrice } = useLocale();
   const [gate, setGate] = useState({ state: "enquire" });
@@ -131,7 +133,8 @@ export default function ProductDetail() {
   // Fetch the artwork from the catalog API.
   useEffect(() => {
     let cancelled = false;
-    if (!id) { setMatched(null); return; }
+    if (!id) { setMatched(null); setLoading(false); return; }
+    setLoading(true);
     api.catalog
       .artwork(id)
       .then((a) => {
@@ -163,7 +166,8 @@ export default function ProductDetail() {
             .catch(() => {});
         }
       })
-      .catch(() => { if (!cancelled) setMatched(null); });
+      .catch(() => { if (!cancelled) setMatched(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [id]);
 
@@ -250,6 +254,14 @@ export default function ProductDetail() {
   })();
 
   useEffect(() => { setActiveImg(0); window.scrollTo(0, 0); }, [id]);
+
+  if (loading) {
+    return (
+      <section style={{ padding: "100px 24px 80px", maxWidth: 1280, margin: "0 auto" }}>
+        <SkeletonDetail />
+      </section>
+    );
+  }
 
   return (
     <section

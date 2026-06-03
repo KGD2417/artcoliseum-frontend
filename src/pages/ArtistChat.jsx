@@ -99,7 +99,7 @@ export default function ArtistChat() {
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, minHeight: 520 }}>
+      <div className="chat-grid" style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, minHeight: 520 }}>
         <aside style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, background: "rgba(255,255,255,0.02)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(212,175,55,0.15)", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37" }}>
             ARTISTS · {artists.length}

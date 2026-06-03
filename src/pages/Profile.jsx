@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { useLocale, LANGS } from "../context/Locale";
 import { CheckIcon } from "../components/Icons";
 import { api, realtime } from "../utils/api";
@@ -47,6 +48,7 @@ export default function Profile() {
   const [activeConv, setActiveConv] = useState(null);
   const [convThread, setConvThread] = useState([]);
   const [convReply, setConvReply] = useState("");
+  const [profLoading, setProfLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !authUser) {
@@ -101,6 +103,7 @@ export default function Profile() {
       setConversations(
         [...grouped.values()].sort((a, b) => new Date(b.last_at) - new Date(a.last_at))
       );
+      setProfLoading(false);
     })();
   }, [authUser]);
 
@@ -165,6 +168,25 @@ export default function Profile() {
 
   const CART = [];
   const NOTIFS = [];
+
+  if (authLoading || profLoading) {
+    return (
+      <section style={{ padding: "100px 24px 80px", maxWidth: 1200, margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 22, marginBottom: 40 }}>
+          <Skeleton width={78} height={78} radius={999} />
+          <div style={{ flex: 1, maxWidth: 320 }}>
+            <Skeleton width="40%" height={12} />
+            <Skeleton width="70%" height={32} radius={8} style={{ marginTop: 10 }} />
+            <Skeleton width="55%" height={14} style={{ marginTop: 10 }} />
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 32 }} className="profile-grid">
+          <Skeleton height={260} radius={12} />
+          <SkeletonRows count={4} height={72} gap={14} />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section style={{ padding: "100px 24px 80px", maxWidth: 1200, margin: "0 auto" }}>
