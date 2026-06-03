@@ -114,7 +114,7 @@
 <div id="app">
 <nav>
   <div class="nav-logo">ARView <span>Gallery</span></div>
-  <button class="back-btn" onclick="history.back()">← Back to Art Coliseum</button>
+  <button class="back-btn" onclick="goBackToColiseum()">← Back to Art Coliseum</button>
 </nav>
 
 <section id="studio">
@@ -243,6 +243,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
+
+// This page is launched in a NEW TAB (window.open from the product page), so
+// history.back() has nowhere to go. Return to the gallery instead: close the tab
+// if we can, otherwise navigate the app to the collection.
+function goBackToColiseum() {
+  // If an AR session is running, end it first. (state is initialised below; this
+  // function only runs on click, long after, so the reference is safe.)
+  try { if (state.xrSession) { state.xrSession.end(); } } catch (e) {}
+  const opener = window.opener;
+  if (opener && !opener.closed) {
+    try { opener.focus(); } catch (e) {}
+    window.close();
+    // Some browsers refuse window.close() for tabs; fall back after a tick.
+    setTimeout(function () { window.location.href = '/gallery'; }, 150);
+  } else {
+    window.location.href = '/gallery';
+  }
+}
 
 const state = {
   artworkImage: null, artworkTexture: null, artworkAspect: 1,
@@ -438,9 +456,10 @@ async function updateARButton() {
   const btn = document.getElementById('ar-btn');
   const sub = document.getElementById('ar-status-text');
   if (!state.artworkTexture) { btn.disabled = true; sub.textContent = 'Upload an artwork to begin'; return; }
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  if (isIOS) { btn.disabled = false; sub.textContent = 'Tap to launch Quick Look AR on iOS'; return; }
-  if (!navigator.xr) { btn.disabled = false; sub.textContent = '3D preview mode — WebXR not available'; return; }
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) { btn.disabled = false; sub.textContent = 'Tap to place in a photo of your room (AI)'; return; }
+  if (!navigator.xr) { btn.disabled = false; sub.textContent = '3D preview — or tap for the AI Room Visualizer'; return; }
   try {
     const supported = await navigator.xr.isSessionSupported('immersive-ar');
     btn.disabled = false;
@@ -450,9 +469,12 @@ async function updateARButton() {
 
 document.getElementById('ar-btn').addEventListener('click', async () => {
   if (!state.artworkTexture) { toast('Upload an artwork first', 'error'); return; }
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  if (isIOS) { toast('Launching Quick Look…'); return; }
-  if (!navigator.xr) { showNotSupported('WebXR is not available. Use Chrome on Android for full AR.'); return; }
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // iOS Safari has no WebXR. Send the user to the photo-based AI Room Visualizer,
+  // which lets them place the artwork in a picture of their actual room.
+  if (isIOS) { toast('Opening Room Visualizer…'); openRoomVisualizer(); return; }
+  if (!navigator.xr) { showNotSupported('WebXR is not available. Use Chrome on Android for full AR, or try the AI Room Visualizer.'); return; }
   try {
     const supported = await navigator.xr.isSessionSupported('immersive-ar');
     if (!supported) { showNotSupported('AR is not supported on this device/browser. Try Chrome on an Android phone with ARCore.'); return; }
@@ -467,7 +489,9 @@ function showNotSupported(msg) {
 document.getElementById('not-supported-close').addEventListener('click', () => {
   document.getElementById('ar-not-supported').classList.remove('active');
 });
-document.getElementById('not-supported-visualizer').addEventListener('click', () => {
+// Open the React app's AI Room Visualizer (/ar), carrying the current artwork.
+// This works on EVERY device (incl. iOS Safari) since it's photo-based, not WebXR.
+function openRoomVisualizer() {
   const p = new URLSearchParams(window.location.search);
   const imgParam  = p.get('image');
   const typeParam = p.get('type');
@@ -477,7 +501,8 @@ document.getElementById('not-supported-visualizer').addEventListener('click', ()
   if (typeParam) params.push('type='   + encodeURIComponent(typeParam));
   if (params.length) target += '?' + params.join('&');
   window.location.href = target;
-});
+}
+document.getElementById('not-supported-visualizer').addEventListener('click', openRoomVisualizer);
 
 // ── WEBXR AR SESSION ──────────────────────────────────────────────
 async function startARSession() {
@@ -492,6 +517,12 @@ async function startARSession() {
 
     const renderer = state.renderer;
     renderer.xr.enabled = true;
+    // CRITICAL: clear the opaque scene background so the device's camera
+    // passthrough (the real world) shows through behind the artwork. Without
+    // this the AR view is just a black screen with the painting floating on top.
+    state.scene.background = null;
+    renderer.setClearColor(0x000000, 0);
+    renderer.setClearAlpha(0);
     await renderer.xr.setSession(session);
 
     const refSpace = await session.requestReferenceSpace('local');
@@ -649,6 +680,9 @@ function exitAR() {
   state.placedMeshes.forEach(m => state.scene.remove(m));
   state.placedMeshes = [];
   state.renderer.xr.enabled = false;
+  // Restore the studio's dark background for the 3D preview.
+  state.scene.background = new THREE.Color(0x0d0d0d);
+  state.renderer.setClearAlpha(1);
   rebuildPreview();
   toast('Exited AR');
 }

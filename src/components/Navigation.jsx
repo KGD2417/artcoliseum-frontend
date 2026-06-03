@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import logo from "../assets/logo.png";
 import { useLocale, LANGS } from "../context/Locale";
 import { useAuth } from "../context/Auth";
+import { api } from "../utils/api";
 import { CheckIcon, SearchIcon, MessageIcon } from "./Icons";
 import i1 from "../assets/i1.png";
 import i3 from "../assets/i3.png";
@@ -187,19 +188,67 @@ const SEARCH_INDEX = [
   },
 ];
 
+/**
+ * Live site search: real artworks + artists from the catalog API, merged with the
+ * static page/medium shortcuts. Debounced; falls back to static-only if offline.
+ */
+function useSiteSearch(q, limit = 8) {
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    const term = q.trim();
+    if (!term) { setResults([]); return; }
+    const lc = term.toLowerCase();
+
+    // Static page/medium shortcuts (Cart, Profile, Become an Artist, mediums…).
+    const staticHits = SEARCH_INDEX.filter(
+      (r) => (r.type === "PAGE" || r.type === "MEDIUM") &&
+        `${r.title} ${r.sub}`.toLowerCase().includes(lc),
+    );
+
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      let live = [];
+      try {
+        const [arts, artists] = await Promise.all([
+          api.catalog.artworks({ q: term }),
+          api.catalog.artists(),
+        ]);
+        const artHits = (arts || []).slice(0, 5).map((a) => ({
+          type: "ARTWORK",
+          title: a.title,
+          sub: (a.artist_name || "").toUpperCase(),
+          to: `/product/${a.id}`,
+          img: a.images?.[0] || null,
+        }));
+        const artistHits = (artists || [])
+          .filter((ar) => `${ar.name} ${ar.location || ""} ${ar.art_type || ""}`.toLowerCase().includes(lc))
+          .slice(0, 4)
+          .map((ar) => ({
+            type: "ARTIST",
+            title: ar.name,
+            sub: ar.location || "Art Coliseum Artist",
+            to: `/artists/${ar.id}`,
+            img: ar.image_url || null,
+          }));
+        live = [...artHits, ...artistHits];
+      } catch { /* API down → show static shortcuts only */ }
+      if (!cancelled) setResults([...live, ...staticHits].slice(0, limit));
+    }, 220);
+
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [q, limit]);
+
+  return results;
+}
+
 function NavSearch() {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  const results = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return [];
-    return SEARCH_INDEX.filter((r) =>
-      `${r.title} ${r.sub} ${r.type}`.toLowerCase().includes(term),
-    ).slice(0, 8);
-  }, [q]);
+  const results = useSiteSearch(q, 8);
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -438,13 +487,7 @@ function LangButton({ compact }) {
 function MobileSearch({ onSelect }) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const results = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    if (!t) return [];
-    return SEARCH_INDEX.filter((r) =>
-      `${r.title} ${r.sub}`.toLowerCase().includes(t),
-    ).slice(0, 6);
-  }, [q]);
+  const results = useSiteSearch(q, 6);
 
   return (
     <div style={{ marginTop: 18, marginBottom: 8 }}>
