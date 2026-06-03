@@ -505,9 +505,15 @@ function openSocket() {
     (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)
   )
     return;
-  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+
+  const WS_BASE = API_BASE.replace("https://", "wss://").replace(
+    "http://",
+    "ws://",
+  );
+
   ws = new WebSocket(
-    `${proto}://${location.host}/ws/chat?token=${encodeURIComponent(accessToken || "")}`,
+    `${WS_BASE}/ws/chat?token=${encodeURIComponent(accessToken || "")}`,
   );
   ws.onmessage = (e) => {
     let msg;
