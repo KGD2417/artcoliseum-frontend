@@ -8,7 +8,7 @@
  * (see vite.config.js), so there are no CORS issues and prod stays relative.
  */
 
-const BASE = import.meta.env.VITE_API_BASE;
+const BASE = "/api";
 const REFRESH_KEY = "coli_refresh";
 
 let accessToken = null;
