@@ -48,7 +48,9 @@
       "Bash(grep -iv \"px\\\\|rgba\\\\|\\\\${\")",
       "Bash(ls vercel.json)",
       "Bash(ls public/ar-launcher.html)",
-      "Bash(curl -s \"http://localhost:8000/artworks/digital-3d-2\")"
+      "Bash(curl -s \"http://localhost:8000/artworks/digital-3d-2\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   },
   "hooks": {

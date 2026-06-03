@@ -8,7 +8,7 @@
  * (see vite.config.js), so there are no CORS issues and prod stays relative.
  */
 
-const BASE = "/api";
+const BASE = import.meta.env.VITE_API_BASE;
 const REFRESH_KEY = "coli_refresh";
 
 let accessToken = null;
@@ -25,9 +25,14 @@ function getRefresh() {
   return localStorage.getItem(REFRESH_KEY);
 }
 
-async function rawRequest(method, path, { body, auth = true, isForm = false } = {}) {
+async function rawRequest(
+  method,
+  path,
+  { body, auth = true, isForm = false } = {},
+) {
   const headers = {};
-  if (!isForm && body !== undefined) headers["Content-Type"] = "application/json";
+  if (!isForm && body !== undefined)
+    headers["Content-Type"] = "application/json";
   if (auth && accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
   return fetch(BASE + path, {
     method,
@@ -42,7 +47,10 @@ async function tryRefresh() {
   const refresh = getRefresh();
   if (!refresh) return false;
   refreshing = (async () => {
-    const res = await rawRequest("POST", "/auth/refresh", { body: { refresh }, auth: false });
+    const res = await rawRequest("POST", "/auth/refresh", {
+      body: { refresh },
+      auth: false,
+    });
     if (!res.ok) {
       clearTokens();
       return false;
@@ -62,8 +70,14 @@ async function request(method, path, opts = {}) {
   }
   if (!res.ok) {
     let detail;
-    try { detail = (await res.json()).detail; } catch { detail = res.statusText; }
-    const err = new Error(typeof detail === "string" ? detail : `HTTP ${res.status}`);
+    try {
+      detail = (await res.json()).detail;
+    } catch {
+      detail = res.statusText;
+    }
+    const err = new Error(
+      typeof detail === "string" ? detail : `HTTP ${res.status}`,
+    );
     err.status = res.status;
     throw err;
   }
@@ -80,12 +94,18 @@ export const api = {
 
   auth: {
     async register(payload) {
-      const data = await request("POST", "/auth/register", { body: payload, auth: false });
+      const data = await request("POST", "/auth/register", {
+        body: payload,
+        auth: false,
+      });
       setTokens(data);
       return data;
     },
     async login(payload) {
-      const data = await request("POST", "/auth/login", { body: payload, auth: false });
+      const data = await request("POST", "/auth/login", {
+        body: payload,
+        auth: false,
+      });
       setTokens(data);
       return data;
     },
@@ -96,7 +116,11 @@ export const api = {
       return request("PATCH", "/auth/me", { body: patch });
     },
     async logout() {
-      try { await request("POST", "/auth/logout"); } catch { /* ignore */ }
+      try {
+        await request("POST", "/auth/logout");
+      } catch {
+        /* ignore */
+      }
       clearTokens();
     },
   },
@@ -104,7 +128,10 @@ export const api = {
   chat: {
     conversation(key, userId) {
       const qs = userId ? `?user_id=${encodeURIComponent(userId)}` : "";
-      return request("GET", `/chat/conversation/${encodeURIComponent(key)}${qs}`);
+      return request(
+        "GET",
+        `/chat/conversation/${encodeURIComponent(key)}${qs}`,
+      );
     },
     mine() {
       return request("GET", "/chat/mine");
@@ -141,135 +168,316 @@ export const api = {
 
   enquiries: {
     create(payload) {
-      const body = typeof payload === "string" ? { artwork_id: payload } : payload;
+      const body =
+        typeof payload === "string" ? { artwork_id: payload } : payload;
       return request("POST", "/enquiries", { body });
     },
-    mine() { return request("GET", "/enquiries/mine"); },
-    all() { return request("GET", "/enquiries"); },
-    gate(artworkId) { return request("GET", `/enquiries/gate/${encodeURIComponent(artworkId)}`); },
-    revealPrice(id, price, size_id) { return request("POST", `/enquiries/${id}/reveal-price`, { body: { price, size_id } }); },
-    approve(id) { return request("POST", `/enquiries/${id}/approve`); },
-    reject(id) { return request("POST", `/enquiries/${id}/reject`); },
+    mine() {
+      return request("GET", "/enquiries/mine");
+    },
+    all() {
+      return request("GET", "/enquiries");
+    },
+    gate(artworkId) {
+      return request("GET", `/enquiries/gate/${encodeURIComponent(artworkId)}`);
+    },
+    revealPrice(id, price, size_id) {
+      return request("POST", `/enquiries/${id}/reveal-price`, {
+        body: { price, size_id },
+      });
+    },
+    approve(id) {
+      return request("POST", `/enquiries/${id}/approve`);
+    },
+    reject(id) {
+      return request("POST", `/enquiries/${id}/reject`);
+    },
   },
 
   cart: {
-    breakdown() { return request("GET", "/cart/breakdown"); },
-    addItem(body) { return request("POST", "/cart/items", { body }); },
-    updateItem(id, fulfillment) { return request("PATCH", `/cart/items/${id}`, { body: { fulfillment } }); },
-    removeItem(id) { return request("DELETE", `/cart/items/${id}`); },
+    breakdown() {
+      return request("GET", "/cart/breakdown");
+    },
+    addItem(body) {
+      return request("POST", "/cart/items", { body });
+    },
+    updateItem(id, fulfillment) {
+      return request("PATCH", `/cart/items/${id}`, { body: { fulfillment } });
+    },
+    removeItem(id) {
+      return request("DELETE", `/cart/items/${id}`);
+    },
   },
 
   orders: {
-    create(body) { return request("POST", "/orders", { body }); },
-    pay(id) { return request("POST", `/orders/${id}/pay`); },
-    mine() { return request("GET", "/orders/mine"); },
-    all() { return request("GET", "/orders"); },
-    setStatus(id, status) { return request("PATCH", `/orders/${id}/status`, { body: { status } }); },
+    create(body) {
+      return request("POST", "/orders", { body });
+    },
+    pay(id) {
+      return request("POST", `/orders/${id}/pay`);
+    },
+    mine() {
+      return request("GET", "/orders/mine");
+    },
+    all() {
+      return request("GET", "/orders");
+    },
+    setStatus(id, status) {
+      return request("PATCH", `/orders/${id}/status`, { body: { status } });
+    },
   },
 
   deliveries: {
-    estimate(pincode) { return request("GET", `/deliveries/estimate${pincode ? `?pincode=${encodeURIComponent(pincode)}` : ""}`, { auth: false }); },
-    byOrder(orderId) { return request("GET", `/deliveries/by-order/${orderId}`); },
-    updateStage(id, body) { return request("PATCH", `/deliveries/${id}/stage`, { body }); },
-    genOtp(id) { return request("POST", `/deliveries/${id}/otp`); },
-    confirm(id, code) { return request("POST", `/deliveries/${id}/confirm`, { body: { code } }); },
+    estimate(pincode) {
+      return request(
+        "GET",
+        `/deliveries/estimate${pincode ? `?pincode=${encodeURIComponent(pincode)}` : ""}`,
+        { auth: false },
+      );
+    },
+    byOrder(orderId) {
+      return request("GET", `/deliveries/by-order/${orderId}`);
+    },
+    updateStage(id, body) {
+      return request("PATCH", `/deliveries/${id}/stage`, { body });
+    },
+    genOtp(id) {
+      return request("POST", `/deliveries/${id}/otp`);
+    },
+    confirm(id, code) {
+      return request("POST", `/deliveries/${id}/confirm`, { body: { code } });
+    },
   },
 
   reviews: {
-    create(body) { return request("POST", "/reviews", { body }); },
-    list() { return request("GET", "/reviews", { auth: false }); },
-    forArtwork(id) { return request("GET", `/reviews/artwork/${encodeURIComponent(id)}`, { auth: false }); },
+    create(body) {
+      return request("POST", "/reviews", { body });
+    },
+    list() {
+      return request("GET", "/reviews", { auth: false });
+    },
+    forArtwork(id) {
+      return request("GET", `/reviews/artwork/${encodeURIComponent(id)}`, {
+        auth: false,
+      });
+    },
   },
 
-  owned() { return request("GET", "/owned"); },
+  owned() {
+    return request("GET", "/owned");
+  },
 
   artist: {
-    apply(body) { return request("POST", "/artists/apply", { body }); },
-    status() { return request("GET", "/artists/me/status"); },
-    createArtwork(body) { return request("POST", "/artworks", { body }); },
-    myArtworks() { return request("GET", "/artworks/mine"); },
-    updateArtwork(id, patch) { return request("PATCH", `/artworks/${encodeURIComponent(id)}`, { body: patch }); },
-    deleteArtwork(id) { return request("DELETE", `/artworks/${encodeURIComponent(id)}`); },
-    addSubtype(label, parent_id) { return request("POST", "/categories/subtype", { body: { label, parent_id } }); },
+    apply(body) {
+      return request("POST", "/artists/apply", { body });
+    },
+    status() {
+      return request("GET", "/artists/me/status");
+    },
+    createArtwork(body) {
+      return request("POST", "/artworks", { body });
+    },
+    myArtworks() {
+      return request("GET", "/artworks/mine");
+    },
+    updateArtwork(id, patch) {
+      return request("PATCH", `/artworks/${encodeURIComponent(id)}`, {
+        body: patch,
+      });
+    },
+    deleteArtwork(id) {
+      return request("DELETE", `/artworks/${encodeURIComponent(id)}`);
+    },
+    addSubtype(label, parent_id) {
+      return request("POST", "/categories/subtype", {
+        body: { label, parent_id },
+      });
+    },
   },
 
   competitions: {
-    list() { return request("GET", "/competitions", { auth: false }); },
-    create(body) { return request("POST", "/competitions", { body }); },
-    submitEntry(id, body) { return request("POST", `/competitions/${id}/entries`, { body }); },
-    entries(id) { return request("GET", `/competitions/${id}/entries`); },
-    myEntries() { return request("GET", "/competitions/entries/mine"); },
-    verdict(entryId, body) { return request("POST", `/competitions/entries/${entryId}/verdict`, { body }); },
-    markWinner(entryId) { return request("POST", `/competitions/entries/${entryId}/winner`); },
+    list() {
+      return request("GET", "/competitions", { auth: false });
+    },
+    create(body) {
+      return request("POST", "/competitions", { body });
+    },
+    submitEntry(id, body) {
+      return request("POST", `/competitions/${id}/entries`, { body });
+    },
+    entries(id) {
+      return request("GET", `/competitions/${id}/entries`);
+    },
+    myEntries() {
+      return request("GET", "/competitions/entries/mine");
+    },
+    verdict(entryId, body) {
+      return request("POST", `/competitions/entries/${entryId}/verdict`, {
+        body,
+      });
+    },
+    markWinner(entryId) {
+      return request("POST", `/competitions/entries/${entryId}/winner`);
+    },
   },
 
   community: {
-    posts(community) { return request("GET", `/community/posts${community && community !== "all" ? `?community=${encodeURIComponent(community)}` : ""}`, { auth: false }); },
-    createPost(body) { return request("POST", "/community/posts", { body }); },
-    comment(id, text) { return request("POST", `/community/posts/${id}/comments`, { body: { text } }); },
-    like(id) { return request("POST", `/community/posts/${id}/like`); },
-    updatePost(id, body) { return request("PATCH", `/community/posts/${id}`, { body }); },
-    deletePost(id) { return request("DELETE", `/community/posts/${id}`); },
-    rooms() { return request("GET", "/community/rooms", { auth: false }); },
-    roomMessages(slug) { return request("GET", `/community/rooms/${slug}/messages`, { auth: false }); },
-    postRoomMessage(slug, text) { return request("POST", `/community/rooms/${slug}/messages`, { body: { text } }); },
+    posts(community) {
+      return request(
+        "GET",
+        `/community/posts${community && community !== "all" ? `?community=${encodeURIComponent(community)}` : ""}`,
+        { auth: false },
+      );
+    },
+    createPost(body) {
+      return request("POST", "/community/posts", { body });
+    },
+    comment(id, text) {
+      return request("POST", `/community/posts/${id}/comments`, {
+        body: { text },
+      });
+    },
+    like(id) {
+      return request("POST", `/community/posts/${id}/like`);
+    },
+    updatePost(id, body) {
+      return request("PATCH", `/community/posts/${id}`, { body });
+    },
+    deletePost(id) {
+      return request("DELETE", `/community/posts/${id}`);
+    },
+    rooms() {
+      return request("GET", "/community/rooms", { auth: false });
+    },
+    roomMessages(slug) {
+      return request("GET", `/community/rooms/${slug}/messages`, {
+        auth: false,
+      });
+    },
+    postRoomMessage(slug, text) {
+      return request("POST", `/community/rooms/${slug}/messages`, {
+        body: { text },
+      });
+    },
   },
 
   events: {
-    list() { return request("GET", "/events", { auth: false }); },
-    create(body) { return request("POST", "/events", { body }); },
-    update(id, body) { return request("PATCH", `/events/${id}`, { body }); },
-    remove(id) { return request("DELETE", `/events/${id}`); },
-    register(id, body) { return request("POST", `/events/${id}/register`, { body }); },
-    registrations(id) { return request("GET", `/events/${id}/registrations`); },
+    list() {
+      return request("GET", "/events", { auth: false });
+    },
+    create(body) {
+      return request("POST", "/events", { body });
+    },
+    update(id, body) {
+      return request("PATCH", `/events/${id}`, { body });
+    },
+    remove(id) {
+      return request("DELETE", `/events/${id}`);
+    },
+    register(id, body) {
+      return request("POST", `/events/${id}/register`, { body });
+    },
+    registrations(id) {
+      return request("GET", `/events/${id}/registrations`);
+    },
   },
 
   support: {
-    contact(body) { return request("POST", "/contact", { body, auth: false }); },
-    listContact() { return request("GET", "/contact"); },
-    createTicket(body) { return request("POST", "/support/tickets", { body }); },
-    listTickets() { return request("GET", "/support/tickets"); },
-    setTicketStatus(id, status) { return request("PATCH", `/support/tickets/${id}`, { body: { status } }); },
+    contact(body) {
+      return request("POST", "/contact", { body, auth: false });
+    },
+    listContact() {
+      return request("GET", "/contact");
+    },
+    createTicket(body) {
+      return request("POST", "/support/tickets", { body });
+    },
+    listTickets() {
+      return request("GET", "/support/tickets");
+    },
+    setTicketStatus(id, status) {
+      return request("PATCH", `/support/tickets/${id}`, { body: { status } });
+    },
   },
 
   admin: {
-    stats() { return request("GET", "/admin/stats"); },
-    revenue() { return request("GET", "/admin/revenue"); },
-    updateArtwork(id, patch) { return request("PATCH", `/artworks/${encodeURIComponent(id)}`, { body: patch }); },
-    deleteArtwork(id) { return request("DELETE", `/artworks/${encodeURIComponent(id)}`); },
-    artists() { return request("GET", "/admin/artists"); },
-    createArtist(body) { return request("POST", "/admin/artists/create", { body }); },
-    verifyArtist(userId) { return request("POST", `/admin/artists/${userId}/verify`); },
-    setRole(userId, role) { return request("PATCH", `/admin/profiles/${userId}/role`, { body: { role } }); },
+    stats() {
+      return request("GET", "/admin/stats");
+    },
+    revenue() {
+      return request("GET", "/admin/revenue");
+    },
+    updateArtwork(id, patch) {
+      return request("PATCH", `/artworks/${encodeURIComponent(id)}`, {
+        body: patch,
+      });
+    },
+    deleteArtwork(id) {
+      return request("DELETE", `/artworks/${encodeURIComponent(id)}`);
+    },
+    artists() {
+      return request("GET", "/admin/artists");
+    },
+    createArtist(body) {
+      return request("POST", "/admin/artists/create", { body });
+    },
+    verifyArtist(userId) {
+      return request("POST", `/admin/artists/${userId}/verify`);
+    },
+    setRole(userId, role) {
+      return request("PATCH", `/admin/profiles/${userId}/role`, {
+        body: { role },
+      });
+    },
     // Create an artwork on behalf of a specific artist (admin only).
-    createArtwork(body) { return request("POST", "/artworks", { body }); },
+    createArtwork(body) {
+      return request("POST", "/artworks", { body });
+    },
   },
 
   categories: {
-    list() { return request("GET", "/categories", { auth: false }); },
-    createMain(label) { return request("POST", "/categories", { body: { label } }); },
-    createSubtype(label, parent_id) { return request("POST", "/categories/subtype", { body: { label, parent_id } }); },
-    delete(id) { return request("DELETE", `/categories/${encodeURIComponent(id)}`); },
+    list() {
+      return request("GET", "/categories", { auth: false });
+    },
+    createMain(label) {
+      return request("POST", "/categories", { body: { label } });
+    },
+    createSubtype(label, parent_id) {
+      return request("POST", "/categories/subtype", {
+        body: { label, parent_id },
+      });
+    },
+    delete(id) {
+      return request("DELETE", `/categories/${encodeURIComponent(id)}`);
+    },
   },
 
   catalog: {
     artworks(params = {}) {
       const qs = new URLSearchParams(
-        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "")
+        Object.entries(params).filter(
+          ([, v]) => v !== undefined && v !== null && v !== "",
+        ),
       ).toString();
       return request("GET", `/artworks${qs ? `?${qs}` : ""}`, { auth: false });
     },
     artwork(id) {
-      return request("GET", `/artworks/${encodeURIComponent(id)}`, { auth: false });
+      return request("GET", `/artworks/${encodeURIComponent(id)}`, {
+        auth: false,
+      });
     },
     artists() {
       return request("GET", "/artists", { auth: false });
     },
     artist(id) {
-      return request("GET", `/artists/${encodeURIComponent(id)}`, { auth: false });
+      return request("GET", `/artists/${encodeURIComponent(id)}`, {
+        auth: false,
+      });
     },
     artistArtworks(id) {
-      return request("GET", `/artists/${encodeURIComponent(id)}/artworks`, { auth: false });
+      return request("GET", `/artists/${encodeURIComponent(id)}/artworks`, {
+        auth: false,
+      });
     },
     categories() {
       return request("GET", "/categories", { auth: false });
@@ -292,15 +500,29 @@ let reconnectTimer = null;
 const wsListeners = new Set();
 
 function openSocket() {
-  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+  if (
+    ws &&
+    (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)
+  )
+    return;
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${proto}://${location.host}/ws/chat?token=${encodeURIComponent(accessToken || "")}`);
+  ws = new WebSocket(
+    `${proto}://${location.host}/ws/chat?token=${encodeURIComponent(accessToken || "")}`,
+  );
   ws.onmessage = (e) => {
     let msg;
-    try { msg = JSON.parse(e.data); } catch { return; }
+    try {
+      msg = JSON.parse(e.data);
+    } catch {
+      return;
+    }
     for (const l of wsListeners) {
       if (l.key === "*" || l.key === msg.conversation_key) {
-        try { l.cb(msg); } catch { /* listener error */ }
+        try {
+          l.cb(msg);
+        } catch {
+          /* listener error */
+        }
       }
     }
   };
@@ -311,14 +533,23 @@ function openSocket() {
       reconnectTimer = setTimeout(openSocket, 2000);
     }
   };
-  ws.onerror = () => { try { ws.close(); } catch { /* noop */ } };
+  ws.onerror = () => {
+    try {
+      ws.close();
+    } catch {
+      /* noop */
+    }
+  };
 }
 
 export const realtime = {
   channel(key) {
     const entry = { key, cb: () => {} };
     return {
-      on(_event, cb) { entry.cb = cb; return this; },
+      on(_event, cb) {
+        entry.cb = cb;
+        return this;
+      },
       subscribe() {
         wsListeners.add(entry);
         openSocket();
@@ -326,7 +557,11 @@ export const realtime = {
           unsubscribe() {
             wsListeners.delete(entry);
             if (wsListeners.size === 0 && ws) {
-              try { ws.close(); } catch { /* noop */ }
+              try {
+                ws.close();
+              } catch {
+                /* noop */
+              }
               ws = null;
             }
           },
