@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/Auth";
-import { api } from "../utils/api";
+import { api, realtime } from "../utils/api";
 
 const gold = "#D4AF37";
 const TABS = [
-  ["overview", "Overview"], ["enquiries", "Enquiries"], ["orders", "Orders"],
-  ["artworks", "Artworks"], ["events", "Events"], ["artists", "Artists & Competition"],
+  ["overview", "Overview"], ["tally", "Price & Tally"], ["enquiries", "Enquiries"], ["orders", "Orders"],
+  ["artworks", "Artworks"], ["categories", "Categories"], ["events", "Events"], ["artists", "Artists & Competition"],
   ["contact", "Contact"], ["support", "Support"], ["messages", "Messages"],
 ];
 
@@ -55,9 +55,11 @@ export default function AdminDashboard() {
         </aside>
         <div style={{ minHeight: 400 }}>
           {tab === "overview" && <Overview stats={stats} />}
+          {tab === "tally" && <Tally />}
           {tab === "enquiries" && <Enquiries />}
           {tab === "orders" && <Orders />}
           {tab === "artworks" && <Artworks />}
+          {tab === "categories" && <Categories />}
           {tab === "events" && <Events />}
           {tab === "artists" && <Artists />}
           {tab === "contact" && <ContactList />}
@@ -90,29 +92,136 @@ function Overview({ stats }) {
   );
 }
 
+const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
+
+// Unified enquiry workspace: pick an enquiry → see the customer's chat, the
+// auto-computed price + their selections, and reply / approve / reject in one place.
 function Enquiries() {
   const [rows, setRows] = useState([]);
-  const [price, setPrice] = useState({});
-  const load = () => api.enquiries.all().then(setRows).catch(() => setRows([]));
+  const [active, setActive] = useState(null);   // selected enquiry
+  const [msgs, setMsgs] = useState([]);
+  const [reply, setReply] = useState("");
+  const [override, setOverride] = useState("");
+  const endRef = useRef(null);
+
+  const load = () => api.enquiries.all().then((r) => {
+    setRows(r);
+    setActive((a) => (a ? r.find((x) => x.id === a.id) || a : a));
+  }).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
-  const reveal = async (e) => { await api.enquiries.revealPrice(e.id, Number(price[e.id] || 0)); load(); };
-  const approve = async (e) => { await api.enquiries.approve(e.id); load(); };
-  const reject = async (e) => { await api.enquiries.reject(e.id); load(); };
+
+  // Load + live-subscribe to the selected enquiry's thread, scoped to its customer.
+  useEffect(() => {
+    if (!active) { setMsgs([]); return; }
+    let cancelled = false;
+    api.chat.conversation(active.conversation_key, active.user_id)
+      .then((m) => { if (!cancelled) setMsgs(m); }).catch(() => setMsgs([]));
+    const sub = realtime.channel(active.conversation_key).on("message", (m) => {
+      if (m.conversation_key === active.conversation_key && m.user_id === active.user_id) {
+        setMsgs((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m]);
+      }
+    }).subscribe();
+    return () => { cancelled = true; sub.unsubscribe(); };
+  }, [active?.id]);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
+
+  const send = async () => {
+    const text = reply.trim();
+    if (!text || !active) return;
+    setReply("");
+    await api.chat.send({ conversation_key: active.conversation_key, sender: "curator", target_user_id: active.user_id, text });
+    setMsgs((prev) => [...prev, { id: `tmp-${Date.now()}`, sender: "curator", text, user_id: active.user_id, conversation_key: active.conversation_key }]);
+  };
+  const approve = async () => { await api.enquiries.approve(active.id); load(); };
+  const reject = async () => { await api.enquiries.reject(active.id); setActive(null); load(); };
+  const revealOverride = async () => {
+    if (override === "") return;
+    await api.enquiries.revealPrice(active.id, Number(override)); setOverride(""); load();
+  };
+
+  const sel = active?.selection?.options || {};
+
   return (
     <Panel title="Enquiries">
-      {rows.length === 0 && <Empty>No enquiries yet.</Empty>}
-      {rows.map((e) => (
-        <Item key={e.id}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{e.artwork_id}</div>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: gold, marginTop: 3 }}>{e.status.toUpperCase()}{e.revealed_price ? ` · $${e.revealed_price}` : ""}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 16, minHeight: 420 }}>
+        {/* List */}
+        <div style={{ borderRight: "1px solid rgba(212,175,55,0.12)", paddingRight: 12, maxHeight: 560, overflowY: "auto" }}>
+          {rows.length === 0 && <Empty>No enquiries yet.</Empty>}
+          {rows.map((e) => (
+            <button key={e.id} onClick={() => setActive(e)} style={{
+              display: "block", width: "100%", textAlign: "left", padding: "10px 12px", marginBottom: 6,
+              borderRadius: 8, cursor: "pointer", border: `1px solid ${active?.id === e.id ? gold : "rgba(212,175,55,0.15)"}`,
+              background: active?.id === e.id ? "rgba(212,175,55,0.10)" : "rgba(255,255,255,0.02)",
+            }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{e.artwork_title || e.artwork_id}</div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.7)", marginTop: 2 }}>{e.customer_name || "Customer"}</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: gold, marginTop: 4 }}>
+                {e.status.toUpperCase()}{e.revealed_price ? ` · ${inr(e.revealed_price)}` : ""}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Detail: chat + price + actions */}
+        {!active ? (
+          <Empty>Select an enquiry to view the conversation.</Empty>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid rgba(212,175,55,0.12)", paddingBottom: 10 }}>
+              <div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#fff" }}>{active.artwork_title || active.artwork_id}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)" }}>{active.customer_name || "Customer"}</div>
+                {Object.keys(sel).length > 0 && (
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>
+                    {Object.entries(sel).map(([k, v]) => `${k}: ${v}`).join(" · ")}
+                    {active.selection?.wall_upcharge ? ` · wall +${active.selection.wall_upcharge}%` : ""}
+                  </div>
+                )}
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(200,191,160,0.5)" }}>AUTO-COMPUTED</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: gold }}>{inr(active.revealed_price)}</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: gold, marginTop: 2 }}>{active.status.toUpperCase()}</div>
+              </div>
+            </div>
+
+            {/* Chat thread */}
+            <div style={{ flex: 1, minHeight: 220, maxHeight: 320, overflowY: "auto", padding: "8px 4px", display: "flex", flexDirection: "column", gap: 8 }}>
+              {msgs.length === 0 && <Empty>No messages yet — the customer hasn't written.</Empty>}
+              {msgs.map((m) => {
+                const fromCustomer = m.sender === "me";
+                return (
+                  <div key={m.id} style={{ alignSelf: fromCustomer ? "flex-start" : "flex-end", maxWidth: "75%", padding: "8px 12px", borderRadius: 10,
+                    background: fromCustomer ? "rgba(255,255,255,0.05)" : "rgba(212,175,55,0.14)",
+                    border: `1px solid ${fromCustomer ? "rgba(255,255,255,0.08)" : "rgba(212,175,55,0.3)"}` }}>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 7, letterSpacing: "0.14em", color: "rgba(200,191,160,0.5)", marginBottom: 3 }}>{fromCustomer ? "CUSTOMER" : (m.sender || "CURATOR").toUpperCase()}</div>
+                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>{m.text}</div>
+                  </div>
+                );
+              })}
+              <div ref={endRef} />
+            </div>
+
+            {/* Reply */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={reply} onChange={(e) => setReply(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+                placeholder="Reply to the customer…" style={{ ...miniInput, flex: 1 }} />
+              <Btn onClick={send} primary>SEND</Btn>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", borderTop: "1px solid rgba(212,175,55,0.12)", paddingTop: 12 }}>
+              <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>Override price:</span>
+              <input value={override} onChange={(e) => setOverride(e.target.value)} placeholder={String(active.revealed_price || "")} style={{ ...miniInput, width: 110 }} />
+              <Btn onClick={revealOverride}>SET PRICE</Btn>
+              <div style={{ flex: 1 }} />
+              <Btn onClick={approve} primary>APPROVE SALE</Btn>
+              <Btn onClick={reject} ghost>REJECT</Btn>
+            </div>
           </div>
-          <input placeholder="price" value={price[e.id] || ""} onChange={(ev) => setPrice({ ...price, [e.id]: ev.target.value })} style={miniInput} />
-          <Btn onClick={() => reveal(e)}>REVEAL</Btn>
-          <Btn onClick={() => approve(e)} primary>APPROVE</Btn>
-          <Btn onClick={() => reject(e)} ghost>REJECT</Btn>
-        </Item>
-      ))}
+        )}
+      </div>
     </Panel>
   );
 }
@@ -171,22 +280,121 @@ function Orders() {
 
 function Artworks() {
   const [rows, setRows] = useState([]);
+  const [q, setQ] = useState("");
+  const [editing, setEditing] = useState(null);
   const load = () => api.catalog.artworks().then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
-  const del = async (id) => { if (confirm("Delete this artwork?")) { await api.request("DELETE", `/artworks/${id}`); load(); } };
-  const feature = async (a) => { await api.request("PATCH", `/artworks/${a.id}`, { body: { featured: !a.featured } }); load(); };
+  const del = async (id) => { if (confirm("Delete this artwork?")) { await api.admin.deleteArtwork(id); load(); } };
+  const feature = async (a) => { await api.admin.updateArtwork(a.id, { featured: !a.featured }); load(); };
+  const filtered = rows.filter((a) => !q.trim() || `${a.title} ${a.artist_name} ${a.category_id}`.toLowerCase().includes(q.toLowerCase()));
   return (
     <Panel title={`Artworks (${rows.length})`}>
-      {rows.map((a) => (
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title / artist / medium…" style={{ ...miniInput, width: "100%", marginBottom: 14 }} />
+      {filtered.map((a) => (
         <Item key={a.id}>
           <img src={a.images?.[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 4 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.title}</div>
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{a.artist_name} · ${a.price}</div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
+              {a.artist_name} · {a.customizable ? "customizable" : inr(a.price)} · {a.category_id || "—"} · {a.status}
+            </div>
           </div>
+          <Btn onClick={() => setEditing(a)}>EDIT</Btn>
           <Btn onClick={() => feature(a)} primary={a.featured}>{a.featured ? "FEATURED" : "FEATURE"}</Btn>
           <Btn onClick={() => del(a.id)} ghost>DELETE</Btn>
         </Item>
+      ))}
+      {editing && <EditArtworkModal artwork={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
+    </Panel>
+  );
+}
+
+function EditArtworkModal({ artwork, onClose, onSaved }) {
+  const [f, setF] = useState({
+    title: artwork.title || "", price: artwork.price ?? "", medium: artwork.medium || "",
+    base_dimensions: artwork.base_dimensions || "", price_per_unit: artwork.price_per_unit ?? "",
+    customizable: artwork.customizable !== false, in_stock: artwork.in_stock !== false,
+    status: artwork.status || "active", featured: !!artwork.featured,
+  });
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api.admin.updateArtwork(artwork.id, {
+        title: f.title, medium: f.medium, base_dimensions: f.base_dimensions,
+        customizable: f.customizable, in_stock: f.in_stock, status: f.status, featured: f.featured,
+        price: f.price !== "" ? Number(f.price) : null,
+        price_per_unit: f.customizable && f.price_per_unit !== "" ? Number(f.price_per_unit) : null,
+      });
+      onSaved();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 7000, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "#15120c", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 14, padding: 24, width: "100%", maxWidth: 460, maxHeight: "85vh", overflowY: "auto" }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, marginBottom: 16 }}>EDIT · {artwork.title}</div>
+        <L>Title</L><input style={miniInput} value={f.title} onChange={set("title")} />
+        <L>Medium</L><input style={miniInput} value={f.medium} onChange={set("medium")} />
+        <L>Base dimensions</L><input style={miniInput} value={f.base_dimensions} onChange={set("base_dimensions")} />
+        <label style={ckLabel}><input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} /> Customizable</label>
+        {f.customizable
+          ? (<><L>Price per unit (₹)</L><input style={miniInput} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></>)
+          : (<><L>Price (₹)</L><input style={miniInput} type="number" value={f.price} onChange={set("price")} /></>)}
+        <L>Status</L>
+        <select style={miniInput} value={f.status} onChange={set("status")}>
+          <option value="active">active</option><option value="draft">draft</option><option value="sold">sold</option>
+        </select>
+        <label style={ckLabel}><input type="checkbox" checked={f.in_stock} onChange={(e) => setF({ ...f, in_stock: e.target.checked })} style={{ accentColor: gold }} /> In stock</label>
+        <label style={ckLabel}><input type="checkbox" checked={f.featured} onChange={(e) => setF({ ...f, featured: e.target.checked })} style={{ accentColor: gold }} /> Featured on home</label>
+        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <Btn onClick={save} primary disabled={busy}>{busy ? "SAVING…" : "SAVE"}</Btn>
+          <Btn onClick={onClose} ghost>CANCEL</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function L({ children }) {
+  return <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(212,175,55,0.6)", margin: "2px 0 5px" }}>{children}</div>;
+}
+const ckLabel = { display: "flex", alignItems: "center", gap: 8, margin: "6px 0 12px", cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#e8e0d0" };
+
+function Tally() {
+  const [data, setData] = useState(null);
+  useEffect(() => { api.admin.revenue().then(setData).catch(() => setData(null)); }, []);
+  if (!data) return <Panel title="Price & Tally"><Empty>Loading P&L…</Empty></Panel>;
+  const t = data.totals;
+  const cards = [
+    ["Gross revenue", inr(t.revenue)], ["Artwork sales", inr(t.art_sales)],
+    ["Artist payouts", inr(t.payout)], ["Net profit", inr(t.profit)],
+    ["GST collected", inr(t.gst)], ["Logistics + delivery", inr(t.logistics + t.delivery)],
+    ["Paid orders", t.orders], ["Pending orders", data.pending_orders],
+  ];
+  return (
+    <Panel title="Price & Tally — Profit / Loss">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", marginBottom: 16 }}>
+        Net profit = artwork sales − artist payouts (payout rate {Math.round(data.payout_rate * 100)}%). GST & delivery are pass-through.
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 12, marginBottom: 22 }}>
+        {cards.map(([l, v]) => (
+          <div key={l} style={{ padding: 16, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: l === "Net profit" ? "#4ade80" : gold }}>{v}</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: "rgba(200,191,160,0.6)", marginTop: 4 }}>{l.toUpperCase()}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 10 }}>BY MONTH</div>
+      {data.by_month.length === 0 && <Empty>No paid orders yet.</Empty>}
+      {data.by_month.map((m) => (
+        <div key={m.month} style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", borderBottom: "1px solid rgba(212,175,55,0.1)" }}>
+          <div style={{ width: 80, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#e8e0d0" }}>{m.month}</div>
+          <div style={{ flex: 1, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)" }}>
+            {m.orders} order{m.orders === 1 ? "" : "s"} · revenue {inr(m.revenue)} · payouts {inr(m.payout)}
+          </div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, fontWeight: 700, color: "#4ade80" }}>{inr(m.profit)}</div>
+        </div>
       ))}
     </Panel>
   );
@@ -327,7 +535,7 @@ function AddArtist({ onCreated }) {
 }
 
 function AddArtworkForArtist({ tick }) {
-  const blank = { artist_id: "", title: "", price: "", medium: "", category_id: "", base_dimensions: "", image_url: "", customizable: false, featured: false, narrative: "" };
+  const blank = { artist_id: "", title: "", price: "", medium: "", category_id: "", base_dimensions: "", image_url: "", customizable: false, featured: false, narrative: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "" };
   const [artists, setArtists] = useState([]);
   const [cats, setCats] = useState([]);
   const [f, setF] = useState(blank);
@@ -351,6 +559,13 @@ function AddArtworkForArtist({ tick }) {
         title: f.title, narrative: f.narrative || null, medium: f.medium || null,
         category_id: f.category_id, base_dimensions: f.base_dimensions || null,
         customizable: f.customizable, price: f.price ? Number(f.price) : 0,
+        unit: f.customizable ? f.unit : null,
+        min_width: f.customizable && f.min_width !== "" ? Number(f.min_width) : null,
+        max_width: f.customizable && f.max_width !== "" ? Number(f.max_width) : null,
+        min_height: f.customizable && f.min_height !== "" ? Number(f.min_height) : null,
+        max_height: f.customizable && f.max_height !== "" ? Number(f.max_height) : null,
+        min_depth: f.customizable && f.category_id === "sculpture" && f.min_depth !== "" ? Number(f.min_depth) : null,
+        max_depth: f.customizable && f.category_id === "sculpture" && f.max_depth !== "" ? Number(f.max_depth) : null,
         featured: f.featured, images: f.image_url ? [f.image_url] : [], artist_id: f.artist_id,
       });
       setDone(`Added "${f.title}".`);
@@ -376,6 +591,28 @@ function AddArtworkForArtist({ tick }) {
         <input placeholder="Dimensions (e.g. 80 × 60 cm)" value={f.base_dimensions} onChange={set("base_dimensions")} style={miniInput} />
         <input placeholder="Price (USD)" value={f.price} onChange={set("price")} style={miniInput} disabled={f.customizable} />
         <input placeholder="Narrative / description" value={f.narrative} onChange={set("narrative")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+        {f.customizable && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.6)", marginBottom: 6 }}>
+              CUSTOMIZATION SIZE RANGE — leave blank for no limit
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+              <input placeholder="Min W" value={f.min_width} onChange={set("min_width")} style={miniInput} />
+              <input placeholder="Max W" value={f.max_width} onChange={set("max_width")} style={miniInput} />
+              <input placeholder="Min H" value={f.min_height} onChange={set("min_height")} style={miniInput} />
+              <input placeholder="Max H" value={f.max_height} onChange={set("max_height")} style={miniInput} />
+              <select value={f.unit} onChange={set("unit")} style={miniInput}>
+                <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+              </select>
+              {f.category_id === "sculpture" && (
+                <>
+                  <input placeholder="Min Depth" value={f.min_depth} onChange={set("min_depth")} style={miniInput} />
+                  <input placeholder="Max Depth" value={f.max_depth} onChange={set("max_depth")} style={miniInput} />
+                </>
+              )}
+            </div>
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 16, gridColumn: "1 / -1", flexWrap: "wrap" }}>
           <label style={{ ...miniInput, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
             <input type="file" accept="image/*" onChange={upload} style={{ display: "none" }} />
@@ -451,6 +688,120 @@ function Panel({ title, children }) {
 function Item({ children }) {
   return <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "12px 0", borderBottom: "1px solid rgba(212,175,55,0.1)" }}>{children}</div>;
 }
+/* ═══════════════ CATEGORIES ══════════════════════════════════════ */
+function Categories() {
+  const [cats, setCats] = useState([]);
+  const [newMain, setNewMain] = useState("");
+  const [newSubLabel, setNewSubLabel] = useState("");
+  const [newSubParent, setNewSubParent] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const load = () => api.categories.list().then(setCats).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const mains = cats.filter((c) => c.kind === "main").sort((a, b) => a.label.localeCompare(b.label));
+  const subtypesOf = (id) => cats.filter((c) => c.kind === "subtype" && c.parent_id === id);
+
+  const addMain = async () => {
+    if (!newMain.trim()) return;
+    setBusy(true); setErr("");
+    try { await api.categories.createMain(newMain.trim()); setNewMain(""); await load(); }
+    catch (e) { setErr(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const addSub = async () => {
+    if (!newSubLabel.trim() || !newSubParent) return;
+    setBusy(true); setErr("");
+    try { await api.categories.createSubtype(newSubLabel.trim(), newSubParent); setNewSubLabel(""); await load(); }
+    catch (e) { setErr(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const del = async (id, label) => {
+    if (!window.confirm(`Delete "${label}"?`)) return;
+    setBusy(true); setErr("");
+    try { await api.categories.delete(id); await load(); }
+    catch (e) { setErr(e.message); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Panel title="Categories & Subtypes">
+      {err && <div style={{ color: "#e05", marginBottom: 12, fontFamily: "'Raleway',sans-serif", fontSize: 13 }}>{err}</div>}
+
+      {/* Add main category */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold, marginBottom: 10 }}>ADD MAIN CATEGORY</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={newMain}
+            onChange={(e) => setNewMain(e.target.value)}
+            placeholder="e.g. Ceramics"
+            style={{ ...miniInput, flex: 1 }}
+            onKeyDown={(e) => e.key === "Enter" && addMain()}
+          />
+          <Btn primary onClick={addMain} disabled={busy || !newMain.trim()}>ADD</Btn>
+        </div>
+      </div>
+
+      {/* Add subtype */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold, marginBottom: 10 }}>ADD SUBTYPE / STYLE</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <select
+            value={newSubParent}
+            onChange={(e) => setNewSubParent(e.target.value)}
+            style={{ ...miniInput, minWidth: 160 }}>
+            <option value="">— select medium —</option>
+            {mains.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+          </select>
+          <input
+            value={newSubLabel}
+            onChange={(e) => setNewSubLabel(e.target.value)}
+            placeholder="e.g. Impressionism"
+            style={{ ...miniInput, flex: 1, minWidth: 160 }}
+            onKeyDown={(e) => e.key === "Enter" && addSub()}
+          />
+          <Btn primary onClick={addSub} disabled={busy || !newSubLabel.trim() || !newSubParent}>ADD</Btn>
+        </div>
+      </div>
+
+      {/* Category tree */}
+      <div style={{ display: "grid", gap: 16 }}>
+        {mains.map((m) => (
+          <div key={m.id} style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div>
+                <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{m.label}</span>
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(200,191,160,0.4)", marginLeft: 10 }}>ID: {m.id}</span>
+              </div>
+              <Btn ghost onClick={() => del(m.id, m.label)} disabled={busy || subtypesOf(m.id).length > 0}>DELETE</Btn>
+            </div>
+            {subtypesOf(m.id).length === 0 ? (
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.4)" }}>No subtypes yet</div>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {subtypesOf(m.id).map((s) => (
+                  <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(212,175,55,0.07)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 999, padding: "4px 12px" }}>
+                    <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#e8e0d0" }}>{s.label}</span>
+                    <button
+                      onClick={() => del(s.id, s.label)}
+                      disabled={busy}
+                      style={{ background: "none", border: "none", color: "rgba(200,191,160,0.4)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {mains.length === 0 && <Empty>No categories yet</Empty>}
+      </div>
+    </Panel>
+  );
+}
+
 function Btn({ children, onClick, primary, ghost, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{

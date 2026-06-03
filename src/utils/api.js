@@ -140,7 +140,10 @@ export const api = {
   },
 
   enquiries: {
-    create(artwork_id) { return request("POST", "/enquiries", { body: { artwork_id } }); },
+    create(payload) {
+      const body = typeof payload === "string" ? { artwork_id: payload } : payload;
+      return request("POST", "/enquiries", { body });
+    },
     mine() { return request("GET", "/enquiries/mine"); },
     all() { return request("GET", "/enquiries"); },
     gate(artworkId) { return request("GET", `/enquiries/gate/${encodeURIComponent(artworkId)}`); },
@@ -165,6 +168,7 @@ export const api = {
   },
 
   deliveries: {
+    estimate(pincode) { return request("GET", `/deliveries/estimate${pincode ? `?pincode=${encodeURIComponent(pincode)}` : ""}`, { auth: false }); },
     byOrder(orderId) { return request("GET", `/deliveries/by-order/${orderId}`); },
     updateStage(id, body) { return request("PATCH", `/deliveries/${id}/stage`, { body }); },
     genOtp(id) { return request("POST", `/deliveries/${id}/otp`); },
@@ -183,6 +187,9 @@ export const api = {
     apply(body) { return request("POST", "/artists/apply", { body }); },
     status() { return request("GET", "/artists/me/status"); },
     createArtwork(body) { return request("POST", "/artworks", { body }); },
+    myArtworks() { return request("GET", "/artworks/mine"); },
+    updateArtwork(id, patch) { return request("PATCH", `/artworks/${encodeURIComponent(id)}`, { body: patch }); },
+    deleteArtwork(id) { return request("DELETE", `/artworks/${encodeURIComponent(id)}`); },
     addSubtype(label, parent_id) { return request("POST", "/categories/subtype", { body: { label, parent_id } }); },
   },
 
@@ -227,12 +234,22 @@ export const api = {
 
   admin: {
     stats() { return request("GET", "/admin/stats"); },
+    revenue() { return request("GET", "/admin/revenue"); },
+    updateArtwork(id, patch) { return request("PATCH", `/artworks/${encodeURIComponent(id)}`, { body: patch }); },
+    deleteArtwork(id) { return request("DELETE", `/artworks/${encodeURIComponent(id)}`); },
     artists() { return request("GET", "/admin/artists"); },
     createArtist(body) { return request("POST", "/admin/artists/create", { body }); },
     verifyArtist(userId) { return request("POST", `/admin/artists/${userId}/verify`); },
     setRole(userId, role) { return request("PATCH", `/admin/profiles/${userId}/role`, { body: { role } }); },
     // Create an artwork on behalf of a specific artist (admin only).
     createArtwork(body) { return request("POST", "/artworks", { body }); },
+  },
+
+  categories: {
+    list() { return request("GET", "/categories", { auth: false }); },
+    createMain(label) { return request("POST", "/categories", { body: { label } }); },
+    createSubtype(label, parent_id) { return request("POST", "/categories/subtype", { body: { label, parent_id } }); },
+    delete(id) { return request("DELETE", `/categories/${encodeURIComponent(id)}`); },
   },
 
   catalog: {

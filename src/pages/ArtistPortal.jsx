@@ -55,31 +55,83 @@ export default function ArtistPortal() {
 
   if (loading || !status) return <section style={{ padding: 120, textAlign: "center", color: gold }}>Loading…</section>;
 
+  const st = status.artist_status;
   return (
-    <section style={{ padding: "110px 24px 80px", maxWidth: 820, margin: "0 auto" }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 30 }}>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: gold }}>ARTIST PORTAL</div>
+    <section style={{ padding: "110px 24px 80px", maxWidth: 880, margin: "0 auto" }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 24 }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: gold }}>ARTIST DASHBOARD</div>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 44, fontWeight: 700, color: "#fff", marginTop: 6 }}>
-          {status.artist_status === "verified" ? "Submit Your Artwork" : status.artist_status === "unverified" ? "The Competition" : "Become an Artist"}
+          {st === "verified" ? "Your Studio" : st === "unverified" ? "Earn Your Place" : "Become an Artist"}
         </h1>
-        <StatusPill status={status.artist_status} />
       </motion.div>
 
-      {status.artist_status === "none" && <KycForm onApplied={(s) => setStatus(s)} />}
-      {status.artist_status === "unverified" && <CompetitionPanel competitions={competitions} />}
-      {status.artist_status === "verified" && <ArtworkForm />}
+      <Stepper status={st} />
+
+      <div style={{ marginTop: 26 }}>
+        {st === "none" && <KycForm onApplied={(s) => setStatus(s)} />}
+        {st === "unverified" && (
+          <>
+            <CompetitionPanel competitions={competitions} />
+            <LockedNote>Win a competition (or get verified by our team) to unlock artwork submission and your studio.</LockedNote>
+          </>
+        )}
+        {st === "verified" && (
+          <>
+            <SectionHead>Submit New Artwork</SectionHead>
+            <ArtworkForm />
+            <SectionHead>My Artworks</SectionHead>
+            <MyArtworks />
+          </>
+        )}
+      </div>
     </section>
   );
 }
 
-function StatusPill({ status }) {
-  const map = {
-    none: ["NOT YET APPLIED", "rgba(200,191,160,0.5)"],
-    unverified: ["UNVERIFIED ARTIST", gold],
-    verified: ["VERIFIED ARTIST ✦", "#4ade80"],
-  };
-  const [txt, color] = map[status] || map.none;
-  return <div style={{ marginTop: 10, fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color }}>{txt}</div>;
+const STEPS = [
+  { key: "apply", label: "Apply", sub: "Tell us about your practice" },
+  { key: "compete", label: "Compete", sub: "Enter a curated competition" },
+  { key: "studio", label: "Studio", sub: "Publish & manage your work" },
+];
+
+function Stepper({ status }) {
+  // none → step 0 active; unverified → step 1 active; verified → step 2 active (all unlocked)
+  const activeIdx = status === "verified" ? 2 : status === "unverified" ? 1 : 0;
+  return (
+    <div style={{ display: "flex", gap: 12 }}>
+      {STEPS.map((s, i) => {
+        const state = i < activeIdx ? "done" : i === activeIdx ? "active" : "locked";
+        const color = state === "done" ? "#4ade80" : state === "active" ? gold : "rgba(200,191,160,0.35)";
+        return (
+          <div key={s.key} style={{ flex: 1, padding: "14px 16px", borderRadius: 12,
+            border: `1px solid ${state === "active" ? gold : "rgba(212,175,55,0.18)"}`,
+            background: state === "active" ? "rgba(212,175,55,0.07)" : "rgba(255,255,255,0.02)", opacity: state === "locked" ? 0.6 : 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                background: state === "locked" ? "rgba(212,175,55,0.12)" : color, color: state === "locked" ? "rgba(200,191,160,0.5)" : "#111",
+                fontSize: 11, fontWeight: 700 }}>
+                {state === "done" ? "✓" : state === "locked" ? "🔒" : i + 1}
+              </div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.12em", color }}>{s.label.toUpperCase()}</div>
+            </div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 6 }}>{s.sub}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SectionHead({ children }) {
+  return <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, margin: "32px 0 14px" }}>{children}</div>;
+}
+function LockedNote({ children }) {
+  return (
+    <div style={{ marginTop: 16, padding: "14px 18px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(212,175,55,0.3)",
+      fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", display: "flex", alignItems: "center", gap: 10 }}>
+      <span>🔒</span>{children}
+    </div>
+  );
 }
 
 function KycForm({ onApplied }) {
@@ -171,7 +223,7 @@ function CompetitionPanel({ competitions }) {
 
 function ArtworkForm() {
   const [cats, setCats] = useState([]);
-  const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", price: "" });
+  const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
   const [images, setImages] = useState([]);
   const [videos, setVideos] = useState([]);
   const [model3d, setModel3d] = useState(null);
@@ -202,11 +254,17 @@ function ArtworkForm() {
         customizable: f.customizable,
         price_per_unit: f.customizable && f.price_per_unit ? Number(f.price_per_unit) : null,
         unit: f.customizable ? f.unit : null,
+        min_width: f.customizable && f.min_width !== "" ? Number(f.min_width) : null,
+        max_width: f.customizable && f.max_width !== "" ? Number(f.max_width) : null,
+        min_height: f.customizable && f.min_height !== "" ? Number(f.min_height) : null,
+        max_height: f.customizable && f.max_height !== "" ? Number(f.max_height) : null,
+        min_depth: f.customizable && f.category_id === "sculpture" && f.min_depth !== "" ? Number(f.min_depth) : null,
+        max_depth: f.customizable && f.category_id === "sculpture" && f.max_depth !== "" ? Number(f.max_depth) : null,
         predefined_sizes: f.customizable ? [] : predefined,
         images, videos, model_3d_url: model3d, price: f.price ? Number(f.price) : 0,
       });
       alert(`"${f.title}" has been added to the collection!`);
-      setF({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", price: "" });
+      setF({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
       setImages([]); setVideos([]); setModel3d(null); setPredefined([]);
     } catch (e) { alert(e.message); } finally { setBusy(false); }
   };
@@ -242,14 +300,29 @@ function ArtworkForm() {
       </label>
 
       {f.customizable ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field l="PRICE PER UNIT"><input style={inputStyle} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></Field>
-          <Field l="UNIT">
-            <select style={inputStyle} value={f.unit} onChange={set("unit")}>
-              <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
-            </select>
-          </Field>
-        </div>
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field l="PRICE PER UNIT"><input style={inputStyle} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></Field>
+            <Field l="UNIT">
+              <select style={inputStyle} value={f.unit} onChange={set("unit")}>
+                <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+              </select>
+            </Field>
+          </div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 8 }}>
+            AVAILABLE SIZE RANGE ({f.unit}) — leave blank for no limit
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field l="MIN WIDTH"><input style={inputStyle} type="number" value={f.min_width} onChange={set("min_width")} /></Field>
+            <Field l="MAX WIDTH"><input style={inputStyle} type="number" value={f.max_width} onChange={set("max_width")} /></Field>
+            <Field l="MIN HEIGHT"><input style={inputStyle} type="number" value={f.min_height} onChange={set("min_height")} /></Field>
+            <Field l="MAX HEIGHT"><input style={inputStyle} type="number" value={f.max_height} onChange={set("max_height")} /></Field>
+            {f.category_id === "sculpture" && <>
+              <Field l="MIN DEPTH"><input style={inputStyle} type="number" value={f.min_depth} onChange={set("min_depth")} /></Field>
+              <Field l="MAX DEPTH"><input style={inputStyle} type="number" value={f.max_depth} onChange={set("max_depth")} /></Field>
+            </>}
+          </div>
+        </>
       ) : (
         <PredefinedSizes sizes={predefined} setSizes={setPredefined} />
       )}
@@ -279,6 +352,82 @@ function PredefinedSizes({ sizes, setSizes }) {
         </div>
       ))}
       <button onClick={add} style={{ ...btn, padding: "8px 16px", background: "transparent", color: gold, border: `1px solid ${gold}` }}>+ ADD SIZE</button>
+    </div>
+  );
+}
+
+const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
+
+// Verified artist's own works — list, quick-edit and delete (own works only).
+function MyArtworks() {
+  const [rows, setRows] = useState([]);
+  const [editing, setEditing] = useState(null);
+  const load = () => api.artist.myArtworks().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const del = async (id) => { if (confirm("Delete this artwork permanently?")) { await api.artist.deleteArtwork(id); load(); } };
+
+  if (rows.length === 0) return <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)" }}>You haven't published any artworks yet.</div>;
+  return (
+    <div>
+      {rows.map((a) => (
+        <div key={a.id} style={{ display: "flex", gap: 16, alignItems: "center", padding: "12px 14px", marginBottom: 10, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.15)" }}>
+          <img src={(a.images && a.images[0]) || ""} alt="" style={{ width: 54, height: 54, borderRadius: 6, objectFit: "cover", background: "rgba(212,175,55,0.1)", flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{a.title}</div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)" }}>
+              {a.customizable ? "Customizable" : inr(a.price)} · {a.category_id || "—"}{a.subtype_id ? ` / ${a.subtype_id}` : ""} · {a.status}
+            </div>
+          </div>
+          <button onClick={() => setEditing(a)} style={{ ...btn, padding: "8px 16px", background: "transparent", color: gold, border: `1px solid ${gold}` }}>EDIT</button>
+          <button onClick={() => del(a.id)} style={{ ...btn, padding: "8px 16px", background: "transparent", color: "rgba(255,140,140,0.9)", border: "1px solid rgba(255,140,140,0.4)" }}>DELETE</button>
+        </div>
+      ))}
+      {editing && <EditArtwork artwork={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
+    </div>
+  );
+}
+
+function EditArtwork({ artwork, onClose, onSaved }) {
+  const [f, setF] = useState({
+    title: artwork.title || "", price: artwork.price || "", medium: artwork.medium || "",
+    base_dimensions: artwork.base_dimensions || "", price_per_unit: artwork.price_per_unit || "",
+    customizable: artwork.customizable !== false, in_stock: artwork.in_stock !== false,
+  });
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api.artist.updateArtwork(artwork.id, {
+        title: f.title, medium: f.medium, base_dimensions: f.base_dimensions,
+        customizable: f.customizable, in_stock: f.in_stock,
+        price: f.price !== "" ? Number(f.price) : null,
+        price_per_unit: f.customizable && f.price_per_unit !== "" ? Number(f.price_per_unit) : null,
+      });
+      onSaved();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 7000, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...card, width: "100%", maxWidth: 460, marginBottom: 0, maxHeight: "85vh", overflowY: "auto" }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, marginBottom: 16 }}>EDIT ARTWORK</div>
+        <Field l="TITLE"><input style={inputStyle} value={f.title} onChange={set("title")} /></Field>
+        <Field l="MEDIUM"><input style={inputStyle} value={f.medium} onChange={set("medium")} /></Field>
+        <Field l="BASE DIMENSIONS"><input style={inputStyle} value={f.base_dimensions} onChange={set("base_dimensions")} /></Field>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
+          <input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} /> Customizable (priced per unit)
+        </label>
+        {f.customizable
+          ? <Field l="PRICE PER UNIT"><input style={inputStyle} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></Field>
+          : <Field l="PRICE"><input style={inputStyle} type="number" value={f.price} onChange={set("price")} /></Field>}
+        <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
+          <input type="checkbox" checked={f.in_stock} onChange={(e) => setF({ ...f, in_stock: e.target.checked })} style={{ accentColor: gold }} /> In stock / available
+        </label>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button style={{ ...btn, opacity: busy ? 0.7 : 1 }} disabled={busy} onClick={save}>{busy ? "SAVING…" : "SAVE CHANGES"}</button>
+          <button style={{ ...btn, background: "transparent", color: "rgba(200,191,160,0.7)", border: "1px solid rgba(212,175,55,0.25)" }} onClick={onClose}>CANCEL</button>
+        </div>
+      </div>
     </div>
   );
 }

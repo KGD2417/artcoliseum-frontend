@@ -126,7 +126,7 @@ export default function MessagesWidget() {
   const ownSide = (m) => (isAdmin ? m.sender !== "me" : m.sender === "me");
 
   return (
-    <div style={{ position: "fixed", bottom: 28, left: 28, zIndex: 9998, fontFamily: "'Raleway',sans-serif" }}>
+    <div style={{ position: "fixed", bottom: 28, right: 100, zIndex: 9998, fontFamily: "'Raleway',sans-serif" }}>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -136,7 +136,7 @@ export default function MessagesWidget() {
             exit={{ opacity: 0, y: 24, scale: 0.95 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             style={{
-              position: "absolute", bottom: 72, left: 0,
+              position: "absolute", bottom: 72, right: 0,
               width: 380, height: 520, background: "#111",
               border: "1px solid rgba(212,175,55,0.25)", borderRadius: 16,
               display: "flex", flexDirection: "column", overflow: "hidden",
@@ -236,8 +236,11 @@ export default function MessagesWidget() {
         {open ? (
           <span style={{ fontSize: 24, color: "#080808", lineHeight: 1, fontWeight: 300 }}>×</span>
         ) : (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M4 4h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H7l-4 4V5a1 1 0 0 1 1-1z" fill="#080808" />
+          /* Chat-with-lines icon — clearly "messages inbox", distinct from the bot sparkle */
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#080808" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <line x1="9" y1="9" x2="15" y2="9"/>
+            <line x1="9" y1="13" x2="13" y2="13"/>
           </svg>
         )}
         {!open && unread > 0 && (

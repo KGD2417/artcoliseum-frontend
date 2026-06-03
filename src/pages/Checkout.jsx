@@ -22,6 +22,12 @@ const PAY_METHODS = [
   { id: "cod", label: "Cash on Delivery", desc: "Pay our courier on arrival" },
 ];
 
+const VAULT = {
+  name: "Art Coliseum Vault",
+  address: "Kala Ghoda Arts Precinct, Fort, Mumbai, Maharashtra 400001",
+  hours: "Mon–Sat · 11:00–19:00",
+};
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { formatPrice } = useLocale();
@@ -39,12 +45,22 @@ export default function Checkout() {
   const [copied, setCopied] = useState(false);
   const [review, setReview] = useState({ rating: 5, text: "" });
   const [reviewDone, setReviewDone] = useState(false);
+  const [est, setEst] = useState(null);   // pincode delivery estimate
 
   useEffect(() => {
     if (loading) return;
     if (!user) { navigate("/signin"); return; }
     api.cart.breakdown().then(setData).catch(() => setData(null));
   }, [user, loading]);
+
+  // Fetch the shipping zone / ETA / fee whenever a 6-digit pincode is entered.
+  useEffect(() => {
+    const pin = address.zip.trim();
+    if (pin.length < 6) { setEst(null); return; }
+    let cancelled = false;
+    api.deliveries.estimate(pin).then((e) => { if (!cancelled) setEst(e); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [address.zip]);
 
   // Live delivery updates after the order is placed.
   useEffect(() => {
@@ -59,6 +75,10 @@ export default function Checkout() {
 
   const items = data?.items || [];
   const addressValid = address.name.trim() && address.phone.trim() && address.line1.trim() && address.city.trim() && address.zip.trim();
+  // Zone delivery fee applies only when something is shipped (not pure self-pickup).
+  const needsTransport = items.some((it) => it.fulfillment !== "self_pickup");
+  const zoneFee = needsTransport && est ? est.delivery_fee : 0;
+  const grandTotal = (data?.total || 0) + zoneFee;   // data.total already includes GST
 
   const placeOrder = async () => {
     if (!items.length || !addressValid || submitting) return;
@@ -66,6 +86,7 @@ export default function Checkout() {
     try {
       const created = await api.orders.create({
         full_name: address.name, phone: address.phone, shipping_address: address, payment_provider: pay,
+        pincode: address.zip,
       });
       setOrder(created);
       if (pay === "cod") {
@@ -167,6 +188,11 @@ export default function Checkout() {
                 <CopyIcon size={14} />{copied && <span>COPIED</span>}
               </button>
             </div>
+            {delivery?.eta && (
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 8 }}>
+                Estimated arrival · <span style={{ color: "#D4AF37" }}>{delivery.eta}</span>
+              </div>
+            )}
 
             {/* OTP confirm */}
             {delivery && !delivered && (
@@ -215,6 +241,8 @@ export default function Checkout() {
             {(order.items || []).map((it) => (
               <Row key={it.id} label={it.title || "Artwork"} value={formatPrice((it.price || 0) + (it.transport_cost || 0) + (it.setup_cost || 0))} />
             ))}
+            {order.tax > 0 && <Row label="GST (12%)" value={formatPrice(order.tax)} />}
+            {order.delivery_fee > 0 && <Row label="Delivery" value={formatPrice(order.delivery_fee)} />}
             <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "16px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 22 }}>
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#fff" }}>TOTAL PAID</span>
@@ -281,7 +309,21 @@ export default function Checkout() {
                 <Input label="ZIP / Postal Code *" value={address.zip} onChange={(v) => setAddress({ ...address, zip: v })} />
                 <Input label="Country" value={address.country} onChange={(v) => setAddress({ ...address, country: v })} />
               </div>
+              {needsTransport && est && (
+                <div style={{ marginTop: 4, padding: "10px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.22)", fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.8)" }}>
+                  <strong style={{ color: "#D4AF37" }}>{est.courier}</strong> · {est.zone} · ETA {est.eta} · delivery {zoneFee ? formatPrice(zoneFee) : "free"}
+                </div>
+              )}
             </div>
+
+            {items.some((it) => it.fulfillment === "self_pickup") && (
+              <div style={{ marginBottom: 30, padding: "16px 18px", borderRadius: 10, background: "rgba(212,175,55,0.05)", border: "1px dashed rgba(212,175,55,0.3)" }}>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 8 }}>SELF-PICKUP</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{VAULT.name}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 3, lineHeight: 1.6 }}>{VAULT.address}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 6 }}>Hours: {VAULT.hours} · bring a photo ID and your pickup OTP.</div>
+              </div>
+            )}
 
             <SectionLabel>PAYMENT METHOD</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
@@ -301,12 +343,22 @@ export default function Checkout() {
           <div style={{ padding: "30px 28px", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 12, background: "rgba(255,255,255,0.02)", height: "fit-content", position: "sticky", top: 100 }}>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 18 }}>ORDER SUMMARY</div>
             <Row label="Artwork subtotal" value={formatPrice(data.artwork_subtotal)} />
-            <Row label="Transportation" value={data.transport_subtotal ? formatPrice(data.transport_subtotal) : "—"} />
+            <Row label="Handling & insurance" value={data.transport_subtotal ? formatPrice(data.transport_subtotal) : "—"} />
             <Row label="Installation / setup" value={data.setup_subtotal ? formatPrice(data.setup_subtotal) : "—"} />
+            <Row label="GST (12%)" value={data.gst ? formatPrice(data.gst) : "—"} />
+            <Row
+              label={needsTransport ? (est ? `Delivery · ${est.zone}` : "Delivery (enter pincode)") : "Delivery · self-pickup"}
+              value={needsTransport ? (est ? (zoneFee ? formatPrice(zoneFee) : "Free") : "—") : "Free"}
+            />
+            {needsTransport && est && (
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginBottom: 10 }}>
+                {est.courier} · ETA {est.eta}{!est.serviceable ? " (estimate)" : ""}
+              </div>
+            )}
             <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "16px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 24 }}>
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#fff" }}>TOTAL</span>
-              <span className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(data.total)}</span>
+              <span className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(grandTotal)}</span>
             </div>
             <motion.button onClick={placeOrder} disabled={!addressValid || submitting}
               whileHover={addressValid ? { scale: 1.02 } : {}} whileTap={addressValid ? { scale: 0.98 } : {}}

@@ -70,65 +70,96 @@ function nextId() {
   return `msg-${msgIdCounter++}`;
 }
 
+// Browser speech synthesis — speak bot replies aloud.
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 1.0; utt.pitch = 1.0; utt.volume = 1.0;
+  window.speechSynthesis.speak(utt);
+}
+
 export default function ChatbotWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const [listening, setListening] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  // Scroll to bottom whenever messages change
+  const hasVoice = typeof window !== "undefined" && (
+    "SpeechRecognition" in window || "webkitSpeechRecognition" in window
+  );
+
   useEffect(() => {
-    if (open) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
+    if (open) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open, typing]);
 
-  // Focus input when opened
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 300);
-    }
+    if (open) setTimeout(() => inputRef.current?.focus(), 300);
   }, [open]);
 
-  // Escape key to close
   useEffect(() => {
-    function onKeyDown(e) {
-      if (e.key === "Escape" && open) setOpen(false);
-    }
+    function onKeyDown(e) { if (e.key === "Escape" && open) setOpen(false); }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  // Open via custom event fired from other pages (e.g. product enquiry)
   useEffect(() => {
     function onOpenChat() { setOpen(true); }
     window.addEventListener("open-artcoliseum-chat", onOpenChat);
     return () => window.removeEventListener("open-artcoliseum-chat", onOpenChat);
   }, []);
 
-  function handleSend() {
-    const trimmed = input.trim();
-    if (!trimmed) return;
+  // Stop synthesis when chat closes.
+  useEffect(() => {
+    if (!open && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  }, [open]);
 
-    const userMsg = { id: nextId(), from: "user", text: trimmed };
-    setMessages((prev) => [...prev, userMsg]);
+  function sendText(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setMessages((prev) => [...prev, { id: nextId(), from: "user", text: trimmed }]);
     setInput("");
     setTyping(true);
-
     setTimeout(() => {
       const botText = getBotReply(trimmed);
       setTyping(false);
       setMessages((prev) => [...prev, { id: nextId(), from: "bot", text: botText }]);
+      if (voiceOn) speak(botText);
     }, 900 + Math.random() * 400);
   }
 
+  function handleSend() { sendText(input); }
+
   function handleKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  }
+
+  function toggleMic() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
     }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+      const spoken = e.results[0][0].transcript;
+      setInput(spoken);
+      setListening(false);
+      sendText(spoken);
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    rec.start();
+    setListening(true);
   }
 
   return (
@@ -218,24 +249,39 @@ export default function ChatbotWidget() {
                 </div>
               </div>
 
-              {/* Close button */}
-              <button
-                onClick={() => setOpen(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "rgba(200,191,160,0.5)",
-                  fontSize: 22,
-                  lineHeight: 1,
-                  cursor: "pointer",
-                  padding: "4px 6px",
-                  borderRadius: 6,
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#D4AF37")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,191,160,0.5)")}>
-                ×
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {/* Voice on/off toggle */}
+                {("speechSynthesis" in window) && (
+                  <button
+                    onClick={() => setVoiceOn((v) => !v)}
+                    title={voiceOn ? "Voice replies on — click to mute" : "Voice replies off — click to enable"}
+                    style={{
+                      background: voiceOn ? "rgba(212,175,55,0.15)" : "transparent",
+                      border: `1px solid ${voiceOn ? "rgba(212,175,55,0.5)" : "rgba(212,175,55,0.2)"}`,
+                      borderRadius: 6, cursor: "pointer", padding: "4px 7px",
+                      display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s",
+                    }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={voiceOn ? "#D4AF37" : "rgba(200,191,160,0.45)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                      {voiceOn
+                        ? <><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></>
+                        : <line x1="23" y1="9" x2="17" y2="15"/>}
+                    </svg>
+                  </button>
+                )}
+                {/* Close button */}
+                <button
+                  onClick={() => setOpen(false)}
+                  style={{
+                    background: "transparent", border: "none",
+                    color: "rgba(200,191,160,0.5)", fontSize: 22, lineHeight: 1,
+                    cursor: "pointer", padding: "4px 6px", borderRadius: 6, transition: "color 0.2s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#D4AF37")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,191,160,0.5)")}>
+                  ×
+                </button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -295,20 +341,33 @@ export default function ChatbotWidget() {
                 onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)")}
                 onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(212,175,55,0.2)")}
               />
+              {/* Mic button */}
+              {hasVoice && (
+                <button
+                  onClick={toggleMic}
+                  title={listening ? "Stop listening" : "Speak your question"}
+                  style={{
+                    width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: "none",
+                    background: listening ? "#e2483d" : "rgba(212,175,55,0.15)",
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "background 0.2s",
+                  }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={listening ? "#fff" : "rgba(212,175,55,0.8)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="2" width="6" height="11" rx="3"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                </button>
+              )}
+              {/* Send button */}
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
+                  width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
                   background: input.trim() ? "#D4AF37" : "rgba(212,175,55,0.2)",
-                  border: "none",
-                  cursor: input.trim() ? "pointer" : "default",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
+                  border: "none", cursor: input.trim() ? "pointer" : "default",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "background 0.2s",
                 }}>
                 <SendIcon active={!!input.trim()} />
@@ -348,13 +407,18 @@ export default function ChatbotWidget() {
               ×
             </motion.span>
           ) : (
+            /* Sparkle/AI icon — clearly different from the Messages chat-lines icon */
             <motion.span
-              key="chat"
+              key="bot"
               initial={{ opacity: 0, rotate: 90, scale: 0.7 }}
               animate={{ opacity: 1, rotate: 0, scale: 1 }}
               exit={{ opacity: 0, rotate: -90, scale: 0.7 }}
               transition={{ duration: 0.18 }}>
-              <ChatBubbleIcon />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#080808">
+                <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/>
+                <path d="M19 14l.75 2.25L22 17l-2.25.75L19 20l-.75-2.25L16 17l2.25-.75L19 14z" opacity="0.6"/>
+                <path d="M5 18l.5 1.5L7 20l-1.5.5L5 22l-.5-1.5L3 20l1.5-.5L5 18z" opacity="0.4"/>
+              </svg>
             </motion.span>
           )}
         </AnimatePresence>

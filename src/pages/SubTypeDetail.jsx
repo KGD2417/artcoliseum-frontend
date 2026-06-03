@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { api } from "../utils/api";
+import { useLocale } from "../context/Locale";
 
 const SUBTYPE_DATA = {
   paintings: {
@@ -376,6 +377,7 @@ const titleCase = (s) => (s || "").replace(/-/g, " ").replace(/\b\w/g, (m) => m.
 export default function SubTypeDetail() {
   const { medium, sub } = useParams();
   const navigate = useNavigate();
+  const { formatPrice } = useLocale();
   const [collectionTab, setCollectionTab] = useState("predefined");
   const [hoveredId, setHoveredId] = useState(null);
   const [items, setItems] = useState([]);
@@ -577,7 +579,7 @@ export default function SubTypeDetail() {
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.45)", marginTop: 4 }}>{item.artist}</div>
                     {!item.customizable && item.price > 0 && (
                       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
-                        ${Number(item.price).toLocaleString("en-US")}
+                        {formatPrice(item.price)}
                       </div>
                     )}
                   </div>

@@ -301,7 +301,7 @@ function CylinderCarousel({ items, navigate }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.06 }}
-              onClick={() => navigate("/gallery")}
+              onClick={() => navigate(item.id ? `/product/${item.id}` : "/gallery")}
               style={{
                 flex: "0 0 200px", height: 270,
                 borderRadius: 14, overflow: "hidden",
@@ -356,12 +356,18 @@ function CylinderCarousel({ items, navigate }) {
             style={{
               width: dims.w, height: dims.h,
               transform: `rotateY(${(360 / items.length) * i}deg) translateZ(${dims.r}px)`,
-            }}>
+              cursor: item.id ? "pointer" : "grab",
+            }}
+            onClick={() => { if (!isDragging && item.id) navigate(`/product/${item.id}`); }}>
             <img src={item.img} alt={item.title} className="carousel-card-img" />
             <div className="carousel-glass">
               <div className="carousel-glass-title">{item.title}</div>
               <div className="carousel-glass-medium">{item.medium}</div>
-              <button className="carousel-glass-btn" onClick={() => navigate("/gallery")}>View Artwork ›</button>
+              <button
+                className="carousel-glass-btn"
+                onClick={(e) => { e.stopPropagation(); navigate(item.id ? `/product/${item.id}` : "/gallery"); }}>
+                View Artwork ›
+              </button>
             </div>
           </div>
         ))}
@@ -557,7 +563,7 @@ export default function Home() {
         const withImg = arts.filter((a) => a.images && a.images.length);
         const src = (withImg.length ? withImg : arts).slice(0, 12);
         setHeroGallery(src.map((a) => ({ image: a.images?.[0], text: a.title, id: a.id })));
-        setCarouselItems(src.map((a) => ({ img: a.images?.[0], title: a.title, medium: a.medium || "" })));
+        setCarouselItems(src.map((a) => ({ img: a.images?.[0], title: a.title, medium: a.medium || "", id: a.id })));
       } catch { /* keep fallback assets */ }
     })();
     return () => { cancelled = true; };

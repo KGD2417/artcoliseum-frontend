@@ -1,52 +1,48 @@
 import { createContext, useContext, useState, useMemo, useCallback } from "react";
 
-/* Internal price unit is USD. Conversion factors are applied on display. */
-const RATES_FROM_USD = {
-  USD: 1,
-  INR: 83,
-  EUR: 0.92,
-  GBP: 0.79,
-  JPY: 155,
-  CNY: 7.2,
+/* Prices are stored and displayed in Indian Rupees (₹), as-is — no FX conversion.
+   The language switch only changes UI labels; money always renders in ₹/en-IN. */
+export const LANGS = {
+  EN: { label: "English",   locale: "en-IN" },
+  HI: { label: "हिन्दी",   locale: "hi-IN" },
+  FR: { label: "Français",  locale: "fr-FR" },
+  ES: { label: "Español",   locale: "es-ES" },
+  DE: { label: "Deutsch",   locale: "de-DE" },
+  IT: { label: "Italiano",  locale: "it-IT" },
+  JP: { label: "日本語",    locale: "ja-JP" },
+  ZH: { label: "中文",      locale: "zh-CN" },
 };
 
-export const LANGS = {
-  EN: { label: "English",   locale: "en-IN", currency: "INR" },
-  HI: { label: "हिन्दी",   locale: "hi-IN", currency: "INR" },
-  FR: { label: "Français",  locale: "fr-FR", currency: "EUR" },
-  ES: { label: "Español",   locale: "es-ES", currency: "EUR" },
-  DE: { label: "Deutsch",   locale: "de-DE", currency: "EUR" },
-  IT: { label: "Italiano",  locale: "it-IT", currency: "EUR" },
-  JP: { label: "日本語",    locale: "ja-JP", currency: "JPY" },
-  ZH: { label: "中文",      locale: "zh-CN", currency: "CNY" },
-};
+const MONEY_LOCALE = "en-IN";
+const MONEY_CURRENCY = "INR";
 
 const LocaleContext = createContext(null);
 
 export function LocaleProvider({ children }) {
   const [lang, setLang] = useState("EN");
-  const { locale, currency } = LANGS[lang];
+  const { locale } = LANGS[lang];
 
-  const formatPrice = useCallback((usdAmount, opts = {}) => {
-    if (usdAmount == null || usdAmount === "") return "";
-    if (typeof usdAmount === "string" && isNaN(Number(usdAmount))) return usdAmount;
-    const value = Number(usdAmount) * RATES_FROM_USD[currency];
-    const decimals = opts.decimals ?? (currency === "JPY" || currency === "INR" ? 0 : 2);
+  // Format a raw rupee amount as ₹. The number is taken at face value.
+  const formatPrice = useCallback((amount, opts = {}) => {
+    if (amount == null || amount === "") return "";
+    if (typeof amount === "string" && isNaN(Number(amount))) return amount;
+    const value = Number(amount);
+    const decimals = opts.decimals ?? 0;
     try {
-      return new Intl.NumberFormat(locale, {
+      return new Intl.NumberFormat(MONEY_LOCALE, {
         style: "currency",
-        currency,
+        currency: MONEY_CURRENCY,
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
       }).format(value);
     } catch {
-      return `${currency} ${Math.round(value).toLocaleString()}`;
+      return `₹${Math.round(value).toLocaleString("en-IN")}`;
     }
-  }, [locale, currency]);
+  }, []);
 
   const value = useMemo(() => ({
-    lang, setLang, locale, currency, formatPrice, languages: LANGS,
-  }), [lang, locale, currency, formatPrice]);
+    lang, setLang, locale, currency: MONEY_CURRENCY, formatPrice, languages: LANGS,
+  }), [lang, locale, formatPrice]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

@@ -12,6 +12,12 @@ const FULFILLMENTS = [
   { id: "self_pickup", label: "Self-pickup", desc: "Collect from our vault — no transport fee" },
 ];
 
+const VAULT = {
+  name: "Art Coliseum Vault",
+  address: "Kala Ghoda Arts Precinct, Fort, Mumbai, Maharashtra 400001",
+  hours: "Mon–Sat · 11:00–19:00",
+};
+
 export default function Cart() {
   const navigate = useNavigate();
   const { formatPrice } = useLocale();
@@ -115,14 +121,30 @@ export default function Cart() {
                 </motion.div>
               ))}
             </AnimatePresence>
+
+            {items.some((it) => it.fulfillment === "self_pickup") && (
+              <div style={{ marginTop: 6, padding: "16px 18px", borderRadius: 10, background: "rgba(212,175,55,0.05)", border: "1px dashed rgba(212,175,55,0.3)" }}>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 8 }}>SELF-PICKUP DETAILS</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{VAULT.name}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 3, lineHeight: 1.6 }}>{VAULT.address}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 6 }}>Hours: {VAULT.hours}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", marginTop: 8, lineHeight: 1.6 }}>
+                  Bring a photo ID and the pickup OTP shared after payment. No transport or delivery fee applies.
+                </div>
+              </div>
+            )}
           </div>
 
           {/* summary */}
           <div style={{ height: "fit-content", padding: 28, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, position: "sticky", top: 100 }}>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 18 }}>PRICE BREAKDOWN</div>
             <SumRow label="Artwork subtotal" value={formatPrice(data.artwork_subtotal)} />
-            <SumRow label="Transportation" value={data.transport_subtotal ? formatPrice(data.transport_subtotal) : "—"} />
+            <SumRow label="Handling & insurance" value={data.transport_subtotal ? formatPrice(data.transport_subtotal) : "—"} />
             <SumRow label="Installation / setup" value={data.setup_subtotal ? formatPrice(data.setup_subtotal) : "—"} />
+            <SumRow label="GST (12%)" value={data.gst ? formatPrice(data.gst) : "—"} />
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.45)", marginBottom: 10 }}>
+              Delivery by location is calculated at checkout.
+            </div>
             <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "8px 0 18px" }} />
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 22, alignItems: "baseline" }}>
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#fff" }}>TOTAL</span>

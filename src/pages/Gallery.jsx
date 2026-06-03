@@ -5,6 +5,7 @@ import SafeImage from "../components/SafeImage";
 import ArtworkHoverCard from "../components/ArtworkHoverCard";
 import { SearchIcon } from "../components/Icons";
 import { api, adaptArtwork } from "../utils/api";
+import { useLocale } from "../context/Locale";
 
 const STYLES = [
   { label: "Minimalism",     count: "12" },
@@ -28,6 +29,7 @@ const SIZES = [
 
 export default function Gallery() {
   const navigate = useNavigate();
+  const { formatPrice } = useLocale();
   // `/gallery` carries the medium as a query param (?medium=sculpture), not a path param.
   const params = useParams();
   const [searchParams] = useSearchParams();
@@ -211,7 +213,7 @@ export default function Gallery() {
                     {/* Predefined works show their fixed price; customizable works are priced after enquiry */}
                     {item.customizable === false && item.price > 0 && (
                       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
-                        ${Number(item.price).toLocaleString("en-US")}
+                        {formatPrice(item.price)}
                       </div>
                     )}
                   </div>

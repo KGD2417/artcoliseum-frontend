@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../assets/logo.png";
 import { useLocale, LANGS } from "../context/Locale";
+import { useAuth } from "../context/Auth";
 import { CheckIcon, SearchIcon, MessageIcon } from "./Icons";
 import i1 from "../assets/i1.png";
 import i3 from "../assets/i3.png";
@@ -350,6 +351,25 @@ function ProfileIcon() {
   );
 }
 
+function ShieldIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  );
+}
+function PaletteIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+      <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+    </svg>
+  );
+}
+
 function LangButton({ compact }) {
   const { lang, setLang } = useLocale();
   const [open, setOpen] = useState(false);
@@ -506,6 +526,10 @@ export default function Navigation() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
+  const { user, role, artistStatus } = useAuth();
+  const profileTo = user ? "/profile" : "/signin";
+  const isAdmin = role === "admin";
+  const isArtist = role === "artist" || artistStatus === "verified";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -599,9 +623,31 @@ export default function Navigation() {
               <CartIcon />
             </motion.button>
 
+            {isAdmin && (
+              <motion.button
+                title="Admin Panel"
+                onClick={() => navigate("/admin")}
+                className="nav-icon-btn"
+                whileHover={{ scale: 1.15, color: "#D4AF37" }}
+                whileTap={{ scale: 0.92 }}>
+                <ShieldIcon />
+              </motion.button>
+            )}
+
+            {!isAdmin && isArtist && (
+              <motion.button
+                title="Artist Studio"
+                onClick={() => navigate("/become-artist")}
+                className="nav-icon-btn"
+                whileHover={{ scale: 1.15, color: "#D4AF37" }}
+                whileTap={{ scale: 0.92 }}>
+                <PaletteIcon />
+              </motion.button>
+            )}
+
             <motion.button
-              title="Profile"
-              onClick={() => navigate("/signin")}
+              title={user ? "Profile" : "Sign in"}
+              onClick={() => navigate(profileTo)}
               className="nav-icon-btn"
               whileHover={{ scale: 1.15, color: "#D4AF37" }}
               whileTap={{ scale: 0.92 }}>
@@ -661,11 +707,31 @@ export default function Navigation() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.38 }}>
+              {isAdmin && (
+                <motion.button
+                  title="Admin Panel"
+                  className="nav-icon-btn"
+                  onClick={() => { navigate("/admin"); setMenuOpen(false); }}
+                  whileHover={{ scale: 1.15, color: "#D4AF37" }}
+                  whileTap={{ scale: 0.92 }}>
+                  <ShieldIcon />
+                </motion.button>
+              )}
+              {!isAdmin && isArtist && (
+                <motion.button
+                  title="Artist Studio"
+                  className="nav-icon-btn"
+                  onClick={() => { navigate("/become-artist"); setMenuOpen(false); }}
+                  whileHover={{ scale: 1.15, color: "#D4AF37" }}
+                  whileTap={{ scale: 0.92 }}>
+                  <PaletteIcon />
+                </motion.button>
+              )}
               <motion.button
-                title="Profile"
+                title={user ? "Profile" : "Sign in"}
                 className="nav-icon-btn"
                 onClick={() => {
-                  navigate("/signin");
+                  navigate(profileTo);
                   setMenuOpen(false);
                 }}>
                 <ProfileIcon />

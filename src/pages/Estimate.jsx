@@ -32,7 +32,7 @@ const SIZE_KEYS = { S: "S", M: "M", L: "L" };
 
 function fmt(n) {
   if (n == null) return "—";
-  return "$" + n.toLocaleString("en-US");
+  return "₹" + Number(n).toLocaleString("en-IN");
 }
 
 function flatEstimate(w, h, frame) {

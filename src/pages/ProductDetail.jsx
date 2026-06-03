@@ -6,6 +6,7 @@ import ChatModal from "../components/ChatModal";
 import { HeartIcon, ZoomIcon, SparkIcon } from "../components/Icons";
 import { api } from "../utils/api";
 import { useAuth } from "../context/Auth";
+import { useLocale } from "../context/Locale";
 import i4 from "../assets/i4.png";
 
 const FALLBACK_PRODUCT = {
@@ -71,6 +72,7 @@ export default function ProductDetail() {
   const [sizes, setSizes] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
   const { user } = useAuth();
+  const { formatPrice } = useLocale();
   const [gate, setGate] = useState({ state: "enquire" });
   const [chatOpen, setChatOpen] = useState(false);
   const [ctaBusy, setCtaBusy] = useState(false);
@@ -108,7 +110,14 @@ export default function ProductDetail() {
     if (!customizable || gate.state === "bring_home") { bringHome(); return; }
     setCtaBusy(true);
     try {
-      await api.enquiries.create(id);
+      // Send the buyer's customization so the backend auto-computes & reveals a price.
+      await api.enquiries.create({
+        artwork_id: id,
+        options: customForm,
+        wall_upcharge: wallUpcharge,
+      });
+      // Refresh the gate so the freshly-quoted price shows on the page.
+      api.enquiries.gate(id).then(setGate).catch(() => {});
       setChatOpen(true);
     } catch (e) {
       alert(e.message);
@@ -140,6 +149,12 @@ export default function ProductDetail() {
           medium: a.medium,
           dimensions: a.base_dimensions,
           description: a.description || a.narrative,
+          unit: a.unit || "cm",
+          pricePerUnit: a.price_per_unit,
+          minWidth: a.min_width, maxWidth: a.max_width,
+          minHeight: a.min_height, maxHeight: a.max_height,
+          minDepth: a.min_depth, maxDepth: a.max_depth,
+          categoryId: a.category_id,
         });
         // Pull the real artist profile (bio, photo) so the artist block isn't dummy.
         if (a.artist_id) {
@@ -157,7 +172,9 @@ export default function ProductDetail() {
     if (!w || !h) return;
     const toIn = wall.unit === "Feet" ? 12 : wall.unit === "cm" ? 0.3937 : 1;
     const wallW = w * toIn, wallH = h * toIn;
-    const [artW, artH] = (productData?.dimensions || "80 × 60 cm").replace("cm","").split("×").map(s => parseFloat(s.trim()) * 0.3937);
+    // base_dimensions are stored in cm (e.g. "80 × 60 cm"); accept either the
+    // unicode "×" or an ASCII "x" separator, then convert cm → inches.
+    const [artW, artH] = (productData?.dimensions || "80 × 60 cm").split(/[×x]/i).map(s => parseFloat(s.trim()) * 0.3937);
     const fits = artW <= wallW && artH <= wallH;
     const scaleW = Math.floor((wallW / artW) * 10) / 10;
     const scaleH = Math.floor((wallH / artH) * 10) / 10;
@@ -196,10 +213,41 @@ export default function ProductDetail() {
   })();
   const arUrl = (imgUrl) => `/ar-launcher.html?image=${encodeURIComponent(imgUrl)}&type=${arType}`;
 
-  const basePrice = productData?.price || 12000;
+  // Base for the live estimate: the display price if set, else price_per_unit × face area
+  // (mirrors the backend compute_custom_price so the customer's estimate matches the quote).
+  const dimArea = (() => {
+    const nums = (productData?.dimensions || "").match(/[\d.]+/g);
+    return nums && nums.length >= 2 ? parseFloat(nums[0]) * parseFloat(nums[1]) : 0;
+  })();
+  const basePrice = (productData?.price && productData.price > 0)
+    ? Number(productData.price)
+    : (productData?.pricePerUnit ? Number(productData.pricePerUnit) * dimArea : 0);
   const upchargePct = Object.entries(UPCHARGES).reduce((sum, [key, map]) => sum + (map[customForm[key]] ?? 0), 0) + wallUpcharge;
   const customPrice = Math.round(basePrice * (1 + upchargePct / 100));
-  const fmtPrice = (n) => "$" + n.toLocaleString("en-US");
+  const fmtPrice = (n) => formatPrice(n);
+
+  // Once the buyer adjusts any customization option (or enters wall dimensions),
+  // the enquiry CTA becomes a direct "talk to our team" prompt.
+  const hasCustomized =
+    customForm.size !== "Standard" || customForm.frame !== "No frame" ||
+    customForm.finish !== "Satin varnish" || customForm.palette !== "As created" ||
+    !!wall.w || !!wall.h;
+  const enquireLabel = hasCustomized ? "TALK TO ART COLISEUM TEAM" : "ENQUIRE NOW";
+
+  // Build a human-readable available size range from the artwork's min/max.
+  // Sculptures (category "sculpture") also carry a depth range.
+  const isSculpture = productData?.categoryId === "sculpture";
+  const sizeRange = (() => {
+    if (!productData) return null;
+    const { minWidth, maxWidth, minHeight, maxHeight, minDepth, maxDepth, unit } = productData;
+    const hasWH = minWidth != null || maxWidth != null || minHeight != null || maxHeight != null;
+    const hasD = minDepth != null || maxDepth != null;
+    if (!hasWH && !hasD) return null;
+    const span = (lo, hi) => lo != null && hi != null ? `${lo}–${hi}` : lo != null ? `from ${lo}` : hi != null ? `up to ${hi}` : "any";
+    const parts = [`Width ${span(minWidth, maxWidth)}`, `Height ${span(minHeight, maxHeight)}`];
+    if (isSculpture && hasD) parts.push(`Depth ${span(minDepth, maxDepth)}`);
+    return `${parts.join(" · ")} ${unit || "cm"}`;
+  })();
 
   useEffect(() => { setActiveImg(0); window.scrollTo(0, 0); }, [id]);
 
@@ -426,40 +474,8 @@ export default function ProductDetail() {
             <Meta label="CERTIFICATE" value={productData.certificate} />
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handlePrimaryCta}
-            disabled={ctaBusy}
-            style={{
-              width: "100%",
-              padding: "16px",
-              background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-              color: "#111",
-              fontFamily: "'Cinzel',serif",
-              fontSize: 12,
-              letterSpacing: "0.2em",
-              border: "none",
-              borderRadius: 999,
-              cursor: ctaBusy ? "wait" : "pointer",
-              boxShadow: "0 8px 24px rgba(212,175,55,0.25)",
-              marginBottom: 12,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-            }}>
-            {isApproved ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            )}
-            {isApproved ? "BRING IT HOME" : "ENQUIRE NOW"}
-          </motion.button>
+          {/* The single primary CTA lives inside the panel below (customise → act,
+              or pick a size → buy). VIEW IN AR stays here as a secondary action. */}
 
           {/* VIEW IN AR */}
           <button
@@ -475,7 +491,12 @@ export default function ProductDetail() {
               border: "1px solid rgba(212,175,55,0.18)",
               borderRadius: 12, padding: "20px 22px", marginBottom: 16,
             }}>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>CUSTOMISE YOUR PIECE</div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: sizeRange ? 8 : 16 }}>CUSTOMISE YOUR PIECE</div>
+              {sizeRange && (
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)", marginBottom: 16 }}>
+                  Available size range — {sizeRange}
+                </div>
+              )}
 
               <div className="pd-custom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                 {[
@@ -534,12 +555,33 @@ export default function ProductDetail() {
                 )}
               </div>
 
-              {/* Pricing note — customizable works are priced by the curator after you enquire */}
+              {/* Live price: estimate before enquiry, quoted after, confirmed on approval */}
               <div style={{ borderTop: "1px solid rgba(212,175,55,0.15)", paddingTop: 14, marginBottom: 16 }}>
-                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", lineHeight: 1.6 }}>
-                  Your selections and wall dimensions are shared with our curator. The final price for
-                  this customised piece is revealed in your enquiry chat.
-                </div>
+                {gate.state === "bring_home" ? (
+                  <>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>YOUR CONFIRMED PRICE</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>
+                      {formatPrice(gate.final_price)}
+                    </div>
+                  </>
+                ) : gate.quoted_price != null ? (
+                  <>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>YOUR PRICE · PENDING TEAM CONFIRMATION</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>
+                      {formatPrice(gate.quoted_price)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>ESTIMATED PRICE</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>
+                      {customPrice > 0 ? formatPrice(customPrice) : "Enquire for price"}
+                    </div>
+                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 6, lineHeight: 1.6 }}>
+                      Confirmed by our team after you enquire.
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Gate-driven CTA */}
@@ -558,7 +600,7 @@ export default function ProductDetail() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                {isApproved ? "BRING IT HOME" : "ENQUIRE NOW"}
+                {isApproved ? "BRING IT HOME" : enquireLabel}
               </motion.button>
             </div>
           )}
