@@ -187,7 +187,16 @@ export default function ColiseumCarousel({ items = [] }) {
       drag.current.on = false;
       stage.releasePointerCapture?.(e.pointerId);
       stage.style.cursor = "grab";
-      // autoModeRef stays false — settle/snap logic runs in tick, then flips back
+
+      // Treat as a tap/click if the pointer barely moved
+      if (!drag.current.moved) {
+        const nearestI = nearestSlot(activeRef.current, n) % n;
+        const item = gallery[nearestI];
+        if (item) {
+          if (item.id) navigate(`/product/${item.id}`);
+          else navigate("/categories");
+        }
+      }
     };
 
     const onMouse = (e) => {
@@ -221,19 +230,6 @@ export default function ColiseumCarousel({ items = [] }) {
     };
   }, [gallery]);
 
-  /* ── click handler ────────────────────────────────────────── */
-  const handleCardClick = (item) => {
-    if (drag.current.moved) {
-      drag.current.moved = false;
-      return;
-    }
-    if (item.id) {
-      navigate(`/product/${item.id}`);
-    } else {
-      navigate("/categories");
-    }
-  };
-
   return (
     <div
       ref={stageRef}
@@ -252,12 +248,11 @@ export default function ColiseumCarousel({ items = [] }) {
           ref={(el) => { cardRefs.current[i] = el; }}
           type="button"
           className="coliseum-carousel-card"
-          aria-label={`View ${item.text}`}
-          onClick={() => handleCardClick(item)}>
+          aria-label={`View ${item.text}`}>
           <span className="coliseum-carousel-card-face">
             <img src={item.image} alt={item.text} draggable="false" />
             <span className="coliseum-carousel-card-shade" />
-            <span className="coliseum-carousel-card-hover-cta">Explore Gallery →</span>
+            <span className="coliseum-carousel-card-hover-cta">{item.id ? "View Artwork →" : "Explore Gallery →"}</span>
             <span className="coliseum-carousel-card-copy" />
           </span>
           <span className="coliseum-carousel-reflection" aria-hidden="true">

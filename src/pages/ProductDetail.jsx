@@ -573,12 +573,11 @@ export default function ProductDetail() {
                   </>
                 ) : (
                   <>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>ESTIMATED PRICE</div>
-                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>
-                      {customPrice > 0 ? formatPrice(customPrice) : "Enquire for price"}
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontStyle: "italic", color: "rgba(200,191,160,0.55)", lineHeight: 1.4 }}>
+                      Price revealed after enquiry
                     </div>
-                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 6, lineHeight: 1.6 }}>
-                      Confirmed by our team after you enquire.
+                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.4)", marginTop: 6, lineHeight: 1.6 }}>
+                      Our team will confirm your custom price.
                     </div>
                   </>
                 )}

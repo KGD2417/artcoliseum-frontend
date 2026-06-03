@@ -40,11 +40,11 @@ import e3 from "../assets/events/e3.png";
 
 /* ── Hero gallery ────────────────────────────────────────────────── */
 const HERO_GALLERY = [
-  { image: i1, text: "Ethereal Horizon", id: "p1" },
+  { image: i1, text: "Ethereal Horizon", id: null },
   { image: i2, text: "Eternal Grace", id: null },
-  { image: i6, text: "Cosmic Flow", id: "p5" },
-  { image: i4, text: "The Golden Tree", id: "p6" },
-  { image: i5, text: "Whispers of Silence", id: "p7" },
+  { image: i6, text: "Cosmic Flow", id: null },
+  { image: i4, text: "The Golden Tree", id: null },
+  { image: i5, text: "Whispers of Silence", id: null },
   {
     image:
       "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop",
@@ -57,21 +57,21 @@ const HERO_GALLERY = [
     text: "Velvet Mirage",
     id: null,
   },
-  { image: i8, text: "Renaissance Study", id: "p8" },
+  { image: i8, text: "Renaissance Study", id: null },
   {
     image:
       "https://images.unsplash.com/photo-1549887534-1541e9326642?w=900&q=80&auto=format&fit=crop",
     text: "Crimson Tides",
     id: null,
   },
-  { image: i3, text: "The Infinite Stair", id: "p4" },
+  { image: i3, text: "The Infinite Stair", id: null },
   {
     image:
       "https://images.unsplash.com/photo-1551913902-c92207136625?w=900&q=80&auto=format&fit=crop",
     text: "Solstice",
     id: null,
   },
-  { image: i7, text: "Ocean Depths", id: "p9" },
+  { image: i7, text: "Ocean Depths", id: null },
 ];
 
 const FALLBACK_HERO_GALLERY = HERO_GALLERY;
