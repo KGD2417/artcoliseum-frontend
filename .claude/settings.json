@@ -86,7 +86,11 @@
       "Bash(python3 -m py_compile app/models/community.py app/schemas/extra.py app/routers/community.py)",
       "Bash(grep -n \"function Categories\\(\\)\\\\|return \\(\\\\s*$\\\\|<Panel title=\\\\\"Categories\" src/pages/AdminDashboard.jsx)",
       "Bash(awk 'NR>=923 && /<\\\\/Panel>/{print NR\": \"$0; exit}' src/pages/AdminDashboard.jsx)",
-      "Bash(npx --no-install eslint src/pages/ProductDetail.jsx src/pages/ARView.jsx src/pages/SubTypeDetail.jsx src/pages/Community.jsx src/pages/AdminDashboard.jsx src/components/CompareTray.jsx src/pages/ComingSoon.jsx src/App.jsx)"
+      "Bash(npx --no-install eslint src/pages/ProductDetail.jsx src/pages/ARView.jsx src/pages/SubTypeDetail.jsx src/pages/Community.jsx src/pages/AdminDashboard.jsx src/components/CompareTray.jsx src/pages/ComingSoon.jsx src/App.jsx)",
+      "Bash(awk 'NR>=5020 && NR<=5044 && /@media/{print NR\": \"$0}' src/index.css)",
+      "Bash(awk 'NR<=5044 && /@media/{last=NR\": \"$0} END{}' src/index.css)",
+      "Bash(awk -F: '$1<=5044')",
+      "Bash(npx --no-install eslint src/components/Layout.jsx src/pages/AdminDashboard.jsx src/pages/ChatRooms.jsx)"
     ]
   },
   "hooks": {

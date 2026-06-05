@@ -91,7 +91,7 @@ const inputStyle = {
   padding: "13px 16px",
   color: "#e8e0d0",
   fontFamily: "'Raleway',sans-serif",
-  fontSize: 14,
+  fontSize: 16,
   outline: "none",
   transition: "border-color 0.2s",
 };

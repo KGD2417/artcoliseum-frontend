@@ -8,8 +8,8 @@ import { email as emailRule, minLen, intRange } from "../utils/validation";
 const gold = "#D4AF37";
 const TABS = [
   ["overview", "Overview"], ["tally", "Price & Tally"], ["enquiries", "Enquiries"], ["orders", "Orders"],
-  ["artworks", "Artworks"], ["categories", "Categories"], ["events", "Events"], ["artists", "Artists & Competition"],
-  ["contact", "Contact"], ["support", "Support"], ["messages", "Messages"],
+  ["artworks", "Artworks"], ["categories", "Categories"], ["communities", "Communities"], ["events", "Events"],
+  ["artists", "Artists & Competition"], ["contact", "Contact"], ["support", "Support"], ["messages", "Messages"],
 ];
 
 const STAGES = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
@@ -71,6 +71,7 @@ export default function AdminDashboard() {
           {tab === "orders" && <Orders />}
           {tab === "artworks" && <Artworks />}
           {tab === "categories" && <Categories />}
+          {tab === "communities" && <CommunityAdmin />}
           {tab === "events" && <Events />}
           {tab === "artists" && <Artists />}
           {tab === "contact" && <ContactList />}
@@ -990,14 +991,22 @@ function Categories() {
         ))}
         {mains.length === 0 && <Empty>No categories yet</Empty>}
       </div>
-
-      <div style={{ height: 1, background: "rgba(212,175,55,0.14)", margin: "28px 0 22px" }} />
-      <CommunitiesManager />
     </Panel>
   );
 }
 
 // Admin-managed discussion communities (shown in the Community feed for everyone).
+function CommunityAdmin() {
+  return (
+    <Panel title="Communities">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.65)", marginBottom: 18, lineHeight: 1.6 }}>
+        Create the discussion communities collectors and artists can post in. They appear in the Community feed for everyone.
+      </div>
+      <CommunitiesManager />
+    </Panel>
+  );
+}
+
 function CommunitiesManager() {
   const [rows, setRows] = useState([]);
   const [f, setF] = useState({ name: "", description: "", color: "#D4AF37" });
@@ -1048,4 +1057,4 @@ function Btn({ children, onClick, primary, ghost, disabled }) {
 function Empty({ children }) { return <div style={{ padding: 24, textAlign: "center", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.5)" }}>{children}</div>; }
 function Center({ children }) { return <section style={{ padding: "140px 24px", textAlign: "center" }}>{children}</section>; }
 const preStyle = { display: "inline-block", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", padding: 14, borderRadius: 8, color: gold, marginTop: 10, fontFamily: "monospace", fontSize: 12 };
-const miniInput = { padding: "9px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" };
+const miniInput = { padding: "10px 13px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 14.5, outline: "none" };

@@ -810,11 +810,11 @@ export default function ProductDetail() {
 }
 
 const pillBtn = {
-  padding: "13px",
+  padding: "14px",
   background: "transparent",
   color: "#e8e0d0",
   fontFamily: "'Cinzel',serif",
-  fontSize: 11,
+  fontSize: 13,
   letterSpacing: "0.18em",
   border: "1px solid rgba(212,175,55,0.4)",
   borderRadius: 999,
@@ -822,24 +822,24 @@ const pillBtn = {
 };
 
 const dimInput = {
-  flex: 1, padding: "8px 10px", background: "#111",
+  flex: 1, padding: "10px 12px", background: "#111",
   border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0",
-  fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center",
+  fontFamily: "'Raleway',sans-serif", fontSize: 14, outline: "none", textAlign: "center",
 };
 
 const goldCta = {
-  width: "100%", padding: "14px",
+  width: "100%", padding: "15px",
   background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
   color: "#0e0c0a", border: "none", borderRadius: 999,
-  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
+  fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: "0.2em", fontWeight: 700,
   display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
 };
 
 function Row({ label, value, muted }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
-      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: muted ? "rgba(200,191,160,0.5)" : "rgba(200,191,160,0.75)" }}>{label}</span>
-      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: muted ? "rgba(200,191,160,0.6)" : "#e8e0d0" }}>{value}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: muted ? "rgba(200,191,160,0.5)" : "rgba(200,191,160,0.75)" }}>{label}</span>
+      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: muted ? "rgba(200,191,160,0.6)" : "#e8e0d0" }}>{value}</span>
     </div>
   );
 }

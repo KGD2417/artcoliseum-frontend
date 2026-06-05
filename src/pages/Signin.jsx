@@ -46,7 +46,7 @@ export default function SignIn() {
     padding: '12px 14px',
     color: '#e8e0d0',
     fontFamily: "'Raleway', sans-serif",
-    fontSize: 14,
+    fontSize: 16,
     outline: 'none',
     borderRadius: 6,
   };

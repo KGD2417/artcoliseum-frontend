@@ -8,9 +8,9 @@ import { api } from "../utils/api";
 
 const gold = "#D4AF37";
 const card = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 14, padding: 28, marginBottom: 22 };
-const label = { fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "rgba(212,175,55,0.7)", marginBottom: 6, display: "block" };
-const inputStyle = { width: "100%", boxSizing: "border-box", padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 14, outline: "none", marginBottom: 14 };
-const btn = { padding: "14px 26px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", fontWeight: 700, cursor: "pointer" };
+const label = { fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "rgba(212,175,55,0.7)", marginBottom: 6, display: "block" };
+const inputStyle = { width: "100%", boxSizing: "border-box", padding: "12px 15px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 16, outline: "none", marginBottom: 14 };
+const btn = { padding: "15px 28px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: "0.18em", fontWeight: 700, cursor: "pointer" };
 
 function Field({ l, children }) {
   return <div><span style={label}>{l}</span>{children}</div>;

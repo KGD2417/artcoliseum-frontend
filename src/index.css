@@ -39,13 +39,53 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   /* Guard against stray fixed-width children causing a horizontal scrollbar on mobile */
   overflow-x: hidden;
   max-width: 100%;
 }
+
+/* ── Global readability scale ──────────────────────────────────────────────
+   The whole app is inline-px styled; zooming the routed page content enlarges
+   every element uniformly (~25% with the per-component bumps) so text reads
+   comfortably from a distance. The fixed nav / footer / popups sit outside
+   <main> and keep their own (separately bumped) sizes. */
+main {
+  zoom: 1.12;
+}
+@media (max-width: 760px) {
+  main { zoom: 1.04; }   /* less aggressive on small screens to avoid overflow */
+}
+/* Full-viewport app pages (chat rooms, camera AR) must not be zoomed, or their
+   100vh layout overflows. Cancel the parent zoom on them. */
+.app-fullscreen { zoom: 0.893; }
+@media (max-width: 760px) { .app-fullscreen { zoom: 0.962; } }
+
+/* ── Global interaction polish (gold/black theme) ─────────────────────────── */
+a, button { transition: color .25s ease, background .25s ease, border-color .25s ease, box-shadow .3s ease, transform .25s ease; }
+button:not(:disabled) { cursor: pointer; }
+.btn-gold-main, .btn-gold, .btn-primary {
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .3s ease, filter .25s ease;
+}
+.btn-gold-main:hover, .btn-gold:hover, .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 34px rgba(212,175,55,0.38);
+  filter: brightness(1.05);
+}
+.btn-outline:hover { border-color: #D4AF37; color: #D4AF37; box-shadow: 0 8px 24px rgba(212,175,55,0.18); }
+input:focus, textarea:focus, select:focus { box-shadow: 0 0 0 2px rgba(212,175,55,0.25); border-color: rgba(212,175,55,0.55) !important; }
+
+/* Reusable scroll-reveal + page-transition helpers */
+@keyframes coli-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.coli-reveal { animation: coli-rise .7s cubic-bezier(.22,1,.36,1) both; }
+@keyframes coli-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+/* Finishing touches */
+html { scroll-behavior: smooth; }
+::selection { background: rgba(212,175,55,0.32); color: #fff; }
+img { transition: transform .55s cubic-bezier(.22,1,.36,1); }
 
 a {
   text-decoration: none;
@@ -202,7 +242,7 @@ a {
 
 .nav-link {
   font-family: "Cinzel", serif;
-  font-size: 13px;
+  font-size: 14.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(232, 224, 208, 0.85);
@@ -1334,7 +1374,7 @@ a {
 }
 .footer-col-title {
   font-family: "Cinzel", serif;
-  font-size: 12px;
+  font-size: 13.5px;
   letter-spacing: 0.22em;
   color: rgba(212, 175, 55, 0.8);
   text-transform: uppercase;

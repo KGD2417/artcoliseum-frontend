@@ -330,7 +330,7 @@ export default function ChatRooms() {
   };
 
   return (
-    <div style={{ background: "#080808", height: "100vh", display: "flex", flexDirection: "column" }}>
+    <div className="app-fullscreen" style={{ background: "#080808", height: "100vh", display: "flex", flexDirection: "column" }}>
       {/* Top bar */}
       <div style={{
         height: 72, flexShrink: 0,
