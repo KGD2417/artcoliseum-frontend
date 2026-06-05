@@ -8,7 +8,7 @@
  * (see vite.config.js), so there are no CORS issues and prod stays relative.
  */
 
-const BASE = "/api";
+const BASE = import.meta.env.VITE_API_BASE || "/api";
 const REFRESH_KEY = "coli_refresh";
 
 let accessToken = null;
@@ -181,9 +181,9 @@ export const api = {
     gate(artworkId) {
       return request("GET", `/enquiries/gate/${encodeURIComponent(artworkId)}`);
     },
-    revealPrice(id, price, size_id) {
+    revealPrice(id, price_per_unit, size_id) {
       return request("POST", `/enquiries/${id}/reveal-price`, {
-        body: { price, size_id },
+        body: { price_per_unit, size_id },
       });
     },
     approve(id) {
@@ -302,6 +302,16 @@ export const api = {
     create(body) {
       return request("POST", "/competitions", { body });
     },
+    live() {
+      // Public, but send the token when present so the jury is recognised.
+      return request("GET", "/competitions/live");
+    },
+    goLive(id) {
+      return request("POST", `/competitions/${id}/go-live`);
+    },
+    close(id) {
+      return request("POST", `/competitions/${id}/close`);
+    },
     submitEntry(id, body) {
       return request("POST", `/competitions/${id}/entries`, { body });
     },
@@ -310,6 +320,11 @@ export const api = {
     },
     myEntries() {
       return request("GET", "/competitions/entries/mine");
+    },
+    score(entryId, score) {
+      return request("POST", `/competitions/entries/${entryId}/score`, {
+        body: { score },
+      });
     },
     verdict(entryId, body) {
       return request("POST", `/competitions/entries/${entryId}/verdict`, {
@@ -322,6 +337,15 @@ export const api = {
   },
 
   community: {
+    communities() {
+      return request("GET", "/community/communities", { auth: false });
+    },
+    createCommunity(body) {
+      return request("POST", "/community/communities", { body });
+    },
+    deleteCommunity(slug) {
+      return request("DELETE", `/community/communities/${encodeURIComponent(slug)}`);
+    },
     posts(community) {
       return request(
         "GET",
@@ -380,6 +404,9 @@ export const api = {
     registrations(id) {
       return request("GET", `/events/${id}/registrations`);
     },
+    myRegistrations() {
+      return request("GET", "/events/registrations/mine");
+    },
   },
 
   support: {
@@ -404,6 +431,9 @@ export const api = {
     stats() {
       return request("GET", "/admin/stats");
     },
+    analytics() {
+      return request("GET", "/admin/analytics");
+    },
     revenue() {
       return request("GET", "/admin/revenue");
     },
@@ -420,6 +450,9 @@ export const api = {
     },
     createArtist(body) {
       return request("POST", "/admin/artists/create", { body });
+    },
+    createJury(body) {
+      return request("POST", "/admin/jury/create", { body });
     },
     verifyArtist(userId) {
       return request("POST", `/admin/artists/${userId}/verify`);

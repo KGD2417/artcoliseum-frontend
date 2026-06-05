@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import ArtistAvatar from "../components/ArtistAvatar";
 import ChatModal from "../components/ChatModal";
+import { toggleCompare, isCompared, onCompareChange } from "../utils/compareStore";
 import { SkeletonDetail } from "../components/ui/Skeleton";
-import { HeartIcon, ZoomIcon, SparkIcon } from "../components/Icons";
+import { ZoomIcon, SparkIcon } from "../components/Icons";
 import { api } from "../utils/api";
 import { useAuth } from "../context/Auth";
 import { useLocale } from "../context/Locale";
@@ -62,11 +64,11 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeImg, setActiveImg] = useState(0);
-  const [favorited, setFavorited] = useState(false);
-  const [customForm, setCustomForm] = useState({ size: "Standard", frame: "No frame", finish: "Satin varnish", palette: "As created" });
-  const [wall, setWall] = useState({ w: "", h: "", unit: "Feet" });
-  const [wallFit, setWallFit] = useState(null);
-  const [wallUpcharge, setWallUpcharge] = useState(0);
+  const [customForm, setCustomForm] = useState({ frame: "No frame", finish: "Satin varnish", palette: "As created" });
+  const [customDims, setCustomDims] = useState({ w: "", h: "", unit: "cm" });
+  const [enquiryMsg, setEnquiryMsg] = useState("");
+  const [compareOn, setCompareOn] = useState(false);
+  useEffect(() => { const f = () => setCompareOn(isCompared(id)); f(); return onCompareChange(f); }, [id]);
   const [matched, setMatched] = useState(null);
   const [customizable, setCustomizable] = useState(true);
   const [artistInfo, setArtistInfo] = useState(null);
@@ -75,28 +77,27 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { formatPrice } = useLocale();
-  const [gate, setGate] = useState({ state: "enquire" });
   const [chatOpen, setChatOpen] = useState(false);
   const [ctaBusy, setCtaBusy] = useState(false);
-  // Predefined (fixed-price) works show their price and can be bought directly;
-  // customizable works hide price until the curator reveals it during an enquiry.
+  // Predefined (fixed-price) works show their price; customizable works price
+  // instantly from the buyer's chosen W×H — both are buyable directly.
   const isPredefined = !customizable;
 
-  // Fetch the buy gate for this artwork + user.
-  useEffect(() => {
-    if (!id || !user) { setGate({ state: "enquire" }); return; }
-    let cancelled = false;
-    api.enquiries.gate(id)
-      .then((g) => { if (!cancelled) setGate(g); })
-      .catch(() => { if (!cancelled) setGate({ state: "enquire" }); });
-    return () => { cancelled = true; };
-  }, [id, user, chatOpen]);
+  const unitMap = { cm: "cm", inch: "inch", inches: "inch", feet: "feet" };
 
   const bringHome = async () => {
     setCtaBusy(true);
     try {
       const body = { artwork_id: id, fulfillment: "transport_setup" };
       if (selectedSize) body.size_id = selectedSize.id;
+      // Customizable works: send the buyer's dimensions + options so the backend
+      // computes the same total they were shown.
+      if (customizable) {
+        body.options = customForm;
+        body.custom_width  = parseFloat(customDims.w) || null;
+        body.custom_height = parseFloat(customDims.h) || null;
+        body.custom_unit   = unitMap[customDims.unit] || "cm";
+      }
       await api.cart.addItem(body);
       navigate("/cart");
     } catch (e) {
@@ -108,27 +109,25 @@ export default function ProductDetail() {
 
   const handlePrimaryCta = async () => {
     if (!user) { navigate("/signin"); return; }
-    // Predefined (fixed-price) works, or an already-approved enquiry, go straight to cart.
-    if (!customizable || gate.state === "bring_home") { bringHome(); return; }
-    setCtaBusy(true);
-    try {
-      // Send the buyer's customization so the backend auto-computes & reveals a price.
-      await api.enquiries.create({
-        artwork_id: id,
-        options: customForm,
-        wall_upcharge: wallUpcharge,
-      });
-      // Refresh the gate so the freshly-quoted price shows on the page.
-      api.enquiries.gate(id).then(setGate).catch(() => {});
-      setChatOpen(true);
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setCtaBusy(false);
-    }
+    bringHome();
   };
 
-  const isApproved = gate.state === "bring_home" || isPredefined;
+  // Optional — ask the team a question; opens the chat thread (and records a light enquiry).
+  const openEnquiry = async () => {
+    if (!user) { navigate("/signin"); return; }
+    try {
+      await api.enquiries.create({
+        artwork_id: id,
+        message: enquiryMsg.trim() || undefined,
+        options: customForm,
+        custom_width:  parseFloat(customDims.w)  || null,
+        custom_height: parseFloat(customDims.h) || null,
+        custom_unit:   unitMap[customDims.unit] || "cm",
+      });
+      setEnquiryMsg("");
+    } catch { /* enquiry is best-effort */ }
+    setChatOpen(true);
+  };
 
   // Fetch the artwork from the catalog API.
   useEffect(() => {
@@ -143,6 +142,14 @@ export default function ProductDetail() {
         setSizes(a.sizes || []);
         setSelectedSize(a.sizes && a.sizes.length ? a.sizes[0] : null);
         setActiveImg(0);
+        // Prefill the size inputs from the artwork's base/min dimensions.
+        if (a.customizable !== false) {
+          const nums = (a.base_dimensions || "").match(/[\d.]+/g);
+          const w = nums && nums.length >= 2 ? nums[0] : (a.min_width != null ? String(a.min_width) : "");
+          const h = nums && nums.length >= 2 ? nums[1] : (a.min_height != null ? String(a.min_height) : "");
+          const u = a.unit === "inch" ? "inches" : a.unit === "feet" ? "feet" : "cm";
+          if (w && h) setCustomDims({ w, h, unit: u });
+        }
         setMatched({
           title: a.title,
           artist: a.artist_name,
@@ -154,10 +161,14 @@ export default function ProductDetail() {
           description: a.description || a.narrative,
           unit: a.unit || "cm",
           pricePerUnit: a.price_per_unit,
+          ratioLocked: a.ratio_locked,
           minWidth: a.min_width, maxWidth: a.max_width,
           minHeight: a.min_height, maxHeight: a.max_height,
           minDepth: a.min_depth, maxDepth: a.max_depth,
           categoryId: a.category_id,
+          frameOptions:   a.frame_options   || null,
+          finishOptions:  a.finish_options  || null,
+          paletteOptions: a.palette_options || null,
         });
         // Pull the real artist profile (bio, photo) so the artist block isn't dummy.
         if (a.artist_id) {
@@ -171,40 +182,25 @@ export default function ProductDetail() {
     return () => { cancelled = true; };
   }, [id]);
 
-  const calcWallFit = () => {
-    const w = parseFloat(wall.w), h = parseFloat(wall.h);
-    if (!w || !h) return;
-    const toIn = wall.unit === "Feet" ? 12 : wall.unit === "cm" ? 0.3937 : 1;
-    const wallW = w * toIn, wallH = h * toIn;
-    // base_dimensions are stored in cm (e.g. "80 × 60 cm"); accept either the
-    // unicode "×" or an ASCII "x" separator, then convert cm → inches.
-    const [artW, artH] = (productData?.dimensions || "80 × 60 cm").split(/[×x]/i).map(s => parseFloat(s.trim()) * 0.3937);
-    const fits = artW <= wallW && artH <= wallH;
-    const scaleW = Math.floor((wallW / artW) * 10) / 10;
-    const scaleH = Math.floor((wallH / artH) * 10) / 10;
-    const maxScale = Math.min(scaleW, scaleH);
-    // price upcharge based on how much the artwork needs to scale up to fill the wall
-    const upcharge = !fits ? 0 : maxScale <= 1.2 ? 0 : maxScale <= 1.5 ? 10 : maxScale <= 2 ? 20 : maxScale <= 3 ? 35 : 50;
-    setWallUpcharge(upcharge);
-    setWallFit({ fits, scaleW, scaleH, maxScale, upcharge });
-  };
-
   const productData = matched
     ? {
         ...matched,
-        badge: customizable ? "AVAILABLE FOR ENQUIRY" : "AVAILABLE NOW",
-        availability: customizable ? "Available for Enquiry" : "Ready to bring home",
+        badge: customizable ? "MADE TO YOUR SIZE" : "AVAILABLE NOW",
+        availability: customizable ? "Priced to your size" : "Ready to bring home",
         certificate: "Digital Ledger Authenticity",
-        artistImg: artistInfo?.image_url || FALLBACK_PRODUCT.default.artistImg,
+        artistImg: artistInfo?.image_url || null,
+        artistGender: artistInfo?.gender || null,
         artistBio: artistInfo?.bio || "",
         artistRole: artistInfo?.role || "",
         artistId: artistInfo?.id || matched.artist_id || null,
         aboutArt: matched.description,
+        frameOptions:   matched.frameOptions   || null,
+        finishOptions:  matched.finishOptions  || null,
+        paletteOptions: matched.paletteOptions || null,
       }
     : FALLBACK_PRODUCT.default;
 
   const UPCHARGES = {
-    size:    { Standard: 0, "Small (50%)": -20, "Large (150%)": 30, Custom: 50 },
     frame:   { "No frame": 0, "Simple Wood": 8, "Hand-finished Walnut": 18, "Museum Grade UV Glass": 28, "Custom Gilded": 45 },
     finish:  { "Satin varnish": 0, Matte: 0, "High gloss": 5, Unvarnished: 0 },
     palette: { "As created": 0, "Warmer tones": 10, "Cooler tones": 10, Monochrome: 15, Custom: 20 },
@@ -215,28 +211,66 @@ export default function ProductDetail() {
     if (m.includes("mural") || m.includes("wallpaper")) return "mural";
     return "painting";
   })();
-  const arUrl = (imgUrl) => `/ar-launcher.html?image=${encodeURIComponent(imgUrl)}&type=${arType}`;
+  const arUrl = (imgUrl) => `/ar-view?image=${encodeURIComponent(imgUrl)}&type=${arType}`;
 
-  // Base for the live estimate: the display price if set, else price_per_unit × face area
-  // (mirrors the backend compute_custom_price so the customer's estimate matches the quote).
-  const dimArea = (() => {
-    const nums = (productData?.dimensions || "").match(/[\d.]+/g);
-    return nums && nums.length >= 2 ? parseFloat(nums[0]) * parseFloat(nums[1]) : 0;
+  // Unit conversion to cm; art_unit is the artwork's native measurement unit.
+  const _toCm = { cm: 1, inch: 2.54, inches: 2.54, feet: 30.48 };
+  const artUnit = productData?.unit || "cm";
+
+  // Price is instant from the artwork's public per-unit price × chosen area.
+  const ppu = productData?.pricePerUnit ? Number(productData.pricePerUnit) : null;
+  const ratioLocked = !!productData?.ratioLocked;
+  const hasDims = !!customDims.w && !!customDims.h;
+
+  // Aspect ratio (W/H) for ratio-locked pieces — from base dimensions, else min.
+  const aspect = (() => {
+    const n = (productData?.dimensions || "").match(/[\d.]+/g);
+    if (n && n.length >= 2 && parseFloat(n[1])) return parseFloat(n[0]) / parseFloat(n[1]);
+    if (productData?.minWidth && productData?.minHeight) return Number(productData.minWidth) / Number(productData.minHeight);
+    return null;
   })();
-  const basePrice = (productData?.price && productData.price > 0)
-    ? Number(productData.price)
-    : (productData?.pricePerUnit ? Number(productData.pricePerUnit) * dimArea : 0);
-  const upchargePct = Object.entries(UPCHARGES).reduce((sum, [key, map]) => sum + (map[customForm[key]] ?? 0), 0) + wallUpcharge;
-  const customPrice = Math.round(basePrice * (1 + upchargePct / 100));
-  const fmtPrice = (n) => formatPrice(n);
+  const setDimW = (v) => setCustomDims((d) => {
+    const nd = { ...d, w: v };
+    if (ratioLocked && aspect && v !== "" && !isNaN(parseFloat(v))) nd.h = (parseFloat(v) / aspect).toFixed(1);
+    return nd;
+  });
+  const setDimH = (v) => setCustomDims((d) => {
+    const nd = { ...d, h: v };
+    if (ratioLocked && aspect && v !== "" && !isNaN(parseFloat(v))) nd.w = (parseFloat(v) * aspect).toFixed(1);
+    return nd;
+  });
 
-  // Once the buyer adjusts any customization option (or enters wall dimensions),
-  // the enquiry CTA becomes a direct "talk to our team" prompt.
-  const hasCustomized =
-    customForm.size !== "Standard" || customForm.frame !== "No frame" ||
-    customForm.finish !== "Satin varnish" || customForm.palette !== "As created" ||
-    !!wall.w || !!wall.h;
-  const enquireLabel = hasCustomized ? "TALK TO ART COLISEUM TEAM" : "ENQUIRE NOW";
+  // Compute live area in the artwork's native unit from the buyer's dimensions.
+  const customArea = (() => {
+    const w = parseFloat(customDims.w), h = parseFloat(customDims.h);
+    if (!w || !h) return null;
+    const wCm = w * (_toCm[customDims.unit] || 1);
+    const hCm = h * (_toCm[customDims.unit] || 1);
+    const artUnitCm = _toCm[artUnit] || 1;
+    return (wCm / artUnitCm) * (hCm / artUnitCm);
+  })();
+
+  const basePrice = (() => {
+    if (ppu && customArea) return ppu * customArea;
+    if (productData?.price && productData.price > 0) return Number(productData.price);
+    return 0;
+  })();
+
+  // Resolve per-artwork option tables, falling back to global UPCHARGES.
+  const optTable = (key, artField) => {
+    if (artField) return Object.fromEntries(artField.map(o => [o.label, o.upcharge_pct]));
+    return UPCHARGES[key] || {};
+  };
+  const optionLines = [
+    ["Frame",   customForm.frame,   optTable("frame",   productData?.frameOptions)[customForm.frame]   ?? 0],
+    ["Finish",  customForm.finish,  optTable("finish",  productData?.finishOptions)[customForm.finish]  ?? 0],
+    ["Palette", customForm.palette, optTable("palette", productData?.paletteOptions)[customForm.palette] ?? 0],
+  ];
+  const optionUpchargePct = optionLines.reduce((s, [, , pct]) => s + pct, 0);
+  const customPrice = Math.round(basePrice * (1 + optionUpchargePct / 100));
+  // Price shows live once a width & height are entered and a per-unit/base price exists.
+  const priceReady = hasDims && customPrice > 0;
+  const fmtPrice = (n) => formatPrice(n);
 
   // Build a human-readable available size range from the artwork's min/max.
   // Sculptures (category "sculpture") also carry a depth range.
@@ -353,13 +387,7 @@ export default function ProductDetail() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 14,
-            }}>
+          <div style={{ marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <span
               style={{
                 fontFamily: "'Cinzel',serif",
@@ -370,20 +398,15 @@ export default function ProductDetail() {
               {productData.badge}
             </span>
             <button
-              onClick={() => setFavorited((v) => !v)}
+              onClick={() => toggleCompare(id)}
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                background: "transparent",
-                border: "1px solid rgba(212,175,55,0.25)",
-                color: favorited ? "#D4AF37" : "rgba(200,191,160,0.55)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 13px", borderRadius: 999, cursor: "pointer",
+                background: compareOn ? "rgba(212,175,55,0.14)" : "transparent",
+                border: `1px solid ${compareOn ? "#D4AF37" : "rgba(212,175,55,0.3)"}`,
+                color: compareOn ? "#D4AF37" : "rgba(200,191,160,0.7)",
+                fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", whiteSpace: "nowrap",
               }}>
-              <HeartIcon size={16} filled={favorited} />
+              {compareOn ? "✓ COMPARING" : "+ COMPARE"}
             </button>
           </div>
 
@@ -489,36 +512,52 @@ export default function ProductDetail() {
           {/* The single primary CTA lives inside the panel below (customise → act,
               or pick a size → buy). VIEW IN AR stays here as a secondary action. */}
 
-          {/* VIEW IN AR */}
-          <button
-            onClick={() => window.open(arUrl(productData.images[activeImg]), '_blank')}
-            style={{ ...pillBtn, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
-            <SparkIcon size={14} /> VIEW IN AR
-          </button>
+          {/* Available size range */}
+          {!isPredefined && sizeRange && (
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", marginBottom: 14, fontStyle: "italic" }}>
+              Available size range — {sizeRange}
+            </div>
+          )}
 
-          {/* Customisation panel — always visible when not predefined */}
+          {/* Customisation panel — instant pricing from W×H */}
           {!isPredefined && (
             <div style={{
               background: "rgba(212,175,55,0.04)",
               border: "1px solid rgba(212,175,55,0.18)",
               borderRadius: 12, padding: "20px 22px", marginBottom: 16,
             }}>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: sizeRange ? 8 : 16 }}>CUSTOMISE YOUR PIECE</div>
-              {sizeRange && (
-                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.6)", marginBottom: 16 }}>
-                  Available size range — {sizeRange}
-                </div>
-              )}
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>CUSTOMISE YOUR PIECE</div>
 
-              <div className="pd-custom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              {/* Dimension inputs — shown by default */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.7)" }}>YOUR DESIRED SIZE</span>
+                  {ratioLocked && <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.55)" }}>🔒 ratio locked</span>}
+                </div>
+                <div className="pd-wall-row" style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                  <input type="number" placeholder="Width" value={customDims.w}
+                    onChange={e => setDimW(e.target.value)} style={dimInput} />
+                  <input type="number" placeholder="Height" value={customDims.h}
+                    onChange={e => setDimH(e.target.value)} style={dimInput} />
+                  <select value={customDims.unit}
+                    onChange={e => setCustomDims(d => ({ ...d, unit: e.target.value }))}
+                    style={{ ...dimInput, flex: "0 0 auto", cursor: "pointer" }}>
+                    <option value="cm">cm</option>
+                    <option value="inches">Inches</option>
+                    <option value="feet">Feet</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Frame / Finish / Palette dropdowns */}
+              <div className="pd-custom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
                 {[
-                  ["SIZE", "size", ["Standard", "Small (50%)", "Large (150%)", "Custom"]],
-                  ["FRAME", "frame", ["No frame", "Simple Wood", "Hand-finished Walnut", "Museum Grade UV Glass", "Custom Gilded"]],
-                  ["FINISH", "finish", ["Satin varnish", "Matte", "High gloss", "Unvarnished"]],
-                  ["PALETTE", "palette", ["As created", "Warmer tones", "Cooler tones", "Monochrome", "Custom"]],
+                  ["FRAME",   "frame",   productData?.frameOptions   ? productData.frameOptions.map(o => o.label)   : Object.keys(UPCHARGES.frame)],
+                  ["FINISH",  "finish",  productData?.finishOptions  ? productData.finishOptions.map(o => o.label)  : Object.keys(UPCHARGES.finish)],
+                  ["PALETTE", "palette", productData?.paletteOptions ? productData.paletteOptions.map(o => o.label) : Object.keys(UPCHARGES.palette)],
                 ].map(([label, key, opts]) => (
                   <div key={key}>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 5 }}>{label}</div>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 5 }}>{label}</div>
                     <select
                       value={customForm[key]}
                       onChange={e => setCustomForm(f => ({ ...f, [key]: e.target.value }))}
@@ -529,90 +568,56 @@ export default function ProductDetail() {
                 ))}
               </div>
 
-              {/* Wall size calculator */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 8 }}>ENTER YOUR WALL SIZE</div>
-                <div className="pd-wall-row" style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-                  <input
-                    type="number" placeholder="Width" value={wall.w}
-                    onChange={e => { setWall(f => ({ ...f, w: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
-                    style={{ flex: 1, padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center" }}
-                  />
-                  <input
-                    type="number" placeholder="Height" value={wall.h}
-                    onChange={e => { setWall(f => ({ ...f, h: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
-                    style={{ flex: 1, padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center" }}
-                  />
-                  <select
-                    value={wall.unit} onChange={e => { setWall(f => ({ ...f, unit: e.target.value })); setWallFit(null); setWallUpcharge(0); }}
-                    style={{ padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, cursor: "pointer", outline: "none" }}>
-                    <option>Feet</option>
-                    <option>Inches</option>
-                    <option>cm</option>
-                  </select>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                    onClick={calcWallFit}
-                    style={{ padding: "8px 16px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", border: "none", borderRadius: 6, color: "#0e0c0a", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    CALCULATE
-                  </motion.button>
-                </div>
-                {wallFit && wallFit.upcharge > 0 && (
-                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                    style={{ marginTop: 10, padding: "8px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.2)" }}>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: "#D4AF37" }}>
-                      +{wallFit.upcharge}% wall-size adjustment applied to price
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Live price: estimate before enquiry, quoted after, confirmed on approval */}
+              {/* Live price breakdown */}
               <div style={{ borderTop: "1px solid rgba(212,175,55,0.15)", paddingTop: 14, marginBottom: 16 }}>
-                {gate.state === "bring_home" ? (
+                {priceReady ? (
                   <>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>YOUR CONFIRMED PRICE</div>
-                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>
-                      {formatPrice(gate.final_price)}
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 10 }}>
+                      {ppu ? `PRICE · ₹${ppu.toLocaleString("en-IN")} per ${artUnit}²` : "PRICE"}
                     </div>
-                  </>
-                ) : gate.quoted_price != null ? (
-                  <>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>YOUR PRICE · PENDING TEAM CONFIRMATION</div>
-                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 34, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>
-                      {formatPrice(gate.quoted_price)}
+                    <Row label={`Base · ${customDims.w} × ${customDims.h} ${customDims.unit}${customArea ? ` (≈ ${Math.round(customArea).toLocaleString("en-IN")} ${artUnit}²)` : ""}`} value={fmtPrice(Math.round(basePrice))} />
+                    {optionLines.filter(([, , pct]) => pct > 0).map(([lbl, val, pct]) => (
+                      <Row key={lbl} muted label={`${lbl} · ${val} (+${pct}%)`} value={`+ ${fmtPrice(Math.round(basePrice * pct / 100))}`} />
+                    ))}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderTop: "1px solid rgba(212,175,55,0.12)", marginTop: 8, paddingTop: 10 }}>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)" }}>TOTAL</div>
+                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>{fmtPrice(customPrice)}</div>
                     </div>
                   </>
                 ) : (
-                  <>
-                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontStyle: "italic", color: "rgba(200,191,160,0.55)", lineHeight: 1.4 }}>
-                      Price revealed after enquiry
-                    </div>
-                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.4)", marginTop: 6, lineHeight: 1.6 }}>
-                      Our team will confirm your custom price.
-                    </div>
-                  </>
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.55)" }}>
+                    {ppu ? "Enter width & height above to see your price." : "Enter your size, then talk to our team for pricing."}
+                  </div>
                 )}
               </div>
 
-              {/* Gate-driven CTA */}
-              <motion.button
-                whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handlePrimaryCta}
-                disabled={ctaBusy}
-                style={{
-                  width: "100%", padding: "14px",
-                  background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                  color: "#0e0c0a", border: "none", borderRadius: 999,
-                  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
-                  cursor: ctaBusy ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-                {isApproved ? "BRING IT HOME" : enquireLabel}
-              </motion.button>
+              {/* View in AR + Bring it home — once a size & price are set */}
+              {priceReady && (
+                <>
+                  <button
+                    onClick={() => window.open(arUrl(productData.images[activeImg]), '_blank')}
+                    style={{ ...pillBtn, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                    <SparkIcon size={14} /> VIEW IN AR
+                  </button>
+                  <motion.button
+                    whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handlePrimaryCta}
+                    disabled={ctaBusy}
+                    style={{ ...goldCta, opacity: ctaBusy ? 0.6 : 1, cursor: ctaBusy ? "wait" : "pointer" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                    {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
+                  </motion.button>
+                </>
+              )}
+
+              {/* Optional — talk to the team */}
+              <button onClick={openEnquiry}
+                style={{ width: "100%", marginTop: 10, background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "rgba(200,191,160,0.7)" }}>
+                HAVE A QUESTION? TALK TO OUR TEAM →
+              </button>
             </div>
           )}
 
@@ -661,6 +666,11 @@ export default function ProductDetail() {
                   <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)" }}>{productData.dimensions}</div>
                 )}
               </div>
+              <button
+                onClick={() => window.open(arUrl(productData.images[activeImg]), '_blank')}
+                style={{ ...pillBtn, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                <SparkIcon size={14} /> VIEW IN AR
+              </button>
               <motion.button
                 whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }} whileTap={{ scale: 0.97 }}
                 onClick={handlePrimaryCta}
@@ -690,9 +700,9 @@ export default function ProductDetail() {
         subtitle={`Enquiry · ${productData.artist}`}
         avatar={productData.images?.[0]}
         intro={[
-          `Thanks for your interest in "${productData.title}". A curator will share pricing and details with you shortly.`,
+          `Thanks for your interest in "${productData.title}". A curator will reply shortly — you can also buy it directly on the page.`,
         ]}
-        showTakeItHome={isApproved}
+        showTakeItHome={isPredefined || hasDims}
         takeItHomeLabel="Bring it home →"
         onTakeItHome={bringHome}
       />
@@ -711,18 +721,22 @@ export default function ProductDetail() {
           alignItems: "center",
         }}
         className="pd-artist">
-        <SafeImage
-          src={productData.artistImg}
-          alt={productData.artist}
-          fallbackIndex={1}
-          style={{
-            width: 180,
-            height: 180,
-            borderRadius: "50%",
-            objectFit: "cover",
-            border: "2px solid rgba(212,175,55,0.4)",
-          }}
-        />
+        {productData.artistImg ? (
+          <SafeImage
+            src={productData.artistImg}
+            alt={productData.artist}
+            fallbackIndex={1}
+            style={{
+              width: 180,
+              height: 180,
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "2px solid rgba(212,175,55,0.4)",
+            }}
+          />
+        ) : (
+          <ArtistAvatar gender={productData.artistGender} size={180} style={{ border: "2px solid rgba(212,175,55,0.4)" }} />
+        )}
         <div>
           <div
             style={{
@@ -806,6 +820,29 @@ const pillBtn = {
   borderRadius: 999,
   cursor: "pointer",
 };
+
+const dimInput = {
+  flex: 1, padding: "8px 10px", background: "#111",
+  border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0",
+  fontFamily: "'Raleway',sans-serif", fontSize: 12, outline: "none", textAlign: "center",
+};
+
+const goldCta = {
+  width: "100%", padding: "14px",
+  background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+  color: "#0e0c0a", border: "none", borderRadius: 999,
+  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
+  display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+};
+
+function Row({ label, value, muted }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: muted ? "rgba(200,191,160,0.5)" : "rgba(200,191,160,0.75)" }}>{label}</span>
+      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: muted ? "rgba(200,191,160,0.6)" : "#e8e0d0" }}>{value}</span>
+    </div>
+  );
+}
 
 function CircleBtn({ children, onClick }) {
   return (

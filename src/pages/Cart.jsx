@@ -13,7 +13,7 @@ const FULFILLMENTS = [
   { id: "self_pickup", label: "Self-pickup", desc: "Collect from our vault — no transport fee" },
 ];
 
-const VAULT = {
+const VAULT_FALLBACK = {
   name: "Art Coliseum Vault",
   address: "Kala Ghoda Arts Precinct, Fort, Mumbai, Maharashtra 400001",
   hours: "Mon–Sat · 11:00–19:00",
@@ -26,6 +26,7 @@ export default function Cart() {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
   const [cartLoading, setCartLoading] = useState(true);
+  const [vault, setVault] = useState(VAULT_FALLBACK);
 
   const refresh = () => {
     setCartLoading(true);
@@ -36,6 +37,7 @@ export default function Cart() {
     if (loading) return;
     if (!user) { navigate("/signin"); return; }
     refresh();
+    api.deliveries.estimate().then((e) => { if (e?.vault) setVault(e.vault); }).catch(() => {});
   }, [user, loading]);
 
   const setFulfillment = async (id, fulfillment) => {
@@ -74,7 +76,7 @@ export default function Cart() {
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 26 }}>
             Enquire on a piece — once a curator approves your purchase, it appears here.
           </p>
-          <Link to="/gallery" className="btn-gold-main" style={{ textDecoration: "none", padding: "14px 30px", fontSize: 12 }}>
+          <Link to="/categories" className="btn-gold-main" style={{ textDecoration: "none", padding: "14px 30px", fontSize: 12 }}>
             BROWSE COLLECTION
           </Link>
         </div>
@@ -99,7 +101,7 @@ export default function Cart() {
                       <div className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#D4AF37" }}>
                         {formatPrice(item.line_total)}
                       </div>
-                      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.45)", marginTop: 2 }}>
+                      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", marginTop: 2 }}>
                         incl. delivery
                       </div>
                     </div>
@@ -123,7 +125,7 @@ export default function Cart() {
                     })}
                   </div>
                   {/* per-item line breakdown */}
-                  <div style={{ marginTop: 12, display: "flex", gap: 18, fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
+                  <div style={{ marginTop: 12, display: "flex", gap: 18, fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)" }}>
                     <span>Artwork {formatPrice(item.artwork_price)}</span>
                     <span>Transport {item.transport_cost ? formatPrice(item.transport_cost) : "—"}</span>
                     <span>Setup {item.setup_cost ? formatPrice(item.setup_cost) : "—"}</span>
@@ -135,9 +137,9 @@ export default function Cart() {
             {items.some((it) => it.fulfillment === "self_pickup") && (
               <div style={{ marginTop: 6, padding: "16px 18px", borderRadius: 10, background: "rgba(212,175,55,0.05)", border: "1px dashed rgba(212,175,55,0.3)" }}>
                 <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 8 }}>SELF-PICKUP DETAILS</div>
-                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{VAULT.name}</div>
-                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 3, lineHeight: 1.6 }}>{VAULT.address}</div>
-                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 6 }}>Hours: {VAULT.hours}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{vault.name}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 3, lineHeight: 1.6 }}>{vault.address}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 6 }}>Hours: {vault.hours}</div>
                 <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", marginTop: 8, lineHeight: 1.6 }}>
                   Bring a photo ID and the pickup OTP shared after payment. No transport or delivery fee applies.
                 </div>
@@ -166,7 +168,7 @@ export default function Cart() {
               style={{ width: "100%", padding: "16px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.2em", border: "none", borderRadius: 999, cursor: "pointer", boxShadow: "0 8px 24px rgba(212,175,55,0.25)", marginBottom: 12 }}>
               PROCEED TO CHECKOUT →
             </motion.button>
-            <Link to="/gallery" style={{ display: "block", textAlign: "center", padding: "12px", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "rgba(200,191,160,0.7)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 999, textDecoration: "none" }}>CONTINUE BROWSING</Link>
+            <Link to="/categories" style={{ display: "block", textAlign: "center", padding: "12px", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "rgba(200,191,160,0.7)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 999, textDecoration: "none" }}>CONTINUE BROWSING</Link>
           </div>
         </div>
       )}

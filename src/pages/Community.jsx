@@ -751,7 +751,7 @@ function DirectChat({ user, onClose }) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function Community() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [posts, setPosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -760,6 +760,20 @@ export default function Community() {
   const [activeCommunity, setActiveCommunity] = useState("all");
   const [joined, setJoined] = useState(new Set());
   const [notifications, setNotifications] = useState({});
+  const [, setCommTick] = useState(0);
+
+  // Load the admin-managed community list (replaces the in-place defaults).
+  useEffect(() => {
+    api.community.communities().then((rows) => {
+      if (!rows || rows.length === 0) return;
+      const next = [
+        { id: "all", name: "All Communities", desc: "Browse everything", color: "#D4AF37" },
+        ...rows.map((c) => ({ id: c.slug, name: c.name, desc: c.description, color: c.color || "#D4AF37" })),
+      ];
+      COMMUNITIES.splice(0, COMMUNITIES.length, ...next);
+      setCommTick((t) => t + 1);
+    }).catch(() => {});
+  }, []);
 
   // Load the real feed for the active community.
   useEffect(() => {
@@ -868,12 +882,11 @@ export default function Community() {
             ))}
           </div>
 
-          <button
-            style={{ width: "100%", marginTop: 12, padding: "11px", background: "transparent", border: "1px dashed rgba(212,175,55,0.15)", borderRadius: 10, color: "rgba(200,191,160,0.32)", fontFamily: "'Raleway',sans-serif", fontSize: 11, letterSpacing: "0.08em", cursor: "pointer", transition: "all 0.2s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(212,175,55,0.35)"; e.currentTarget.style.color = "rgba(200,191,160,0.6)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(212,175,55,0.15)"; e.currentTarget.style.color = "rgba(200,191,160,0.32)"; }}>
-            + Create Community
-          </button>
+          {role === "admin" && (
+            <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, border: "1px dashed rgba(212,175,55,0.2)", fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.45)", lineHeight: 1.5 }}>
+              Manage communities in the <strong style={{ color: "#D4AF37" }}>Admin → Categories</strong> panel.
+            </div>
+          )}
         </aside>
 
         {/* ── Feed ── */}

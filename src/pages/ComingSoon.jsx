@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { GlowCard } from "../components/ui/SpotlightCard";
 
 const PAGE_INFO = {
   "saman-setu": {
@@ -251,10 +252,10 @@ export default function ComingSoon({ page }) {
 
         {info.features.length > 0 && (
           <motion.div
+            className="setu-feature-grid"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 320px))",
-              justifyContent: "center",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: 20,
               marginBottom: 72,
             }}
@@ -262,46 +263,14 @@ export default function ComingSoon({ page }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}>
             {info.features.map((feat, i) => (
-              <motion.div
-                key={i}
-                style={{
-                  padding: "24px 26px",
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(212,175,55,0.15)",
-                  borderRadius: 12,
-                }}
-                whileHover={{
-                  borderColor: "rgba(212,175,55,0.35)",
-                  background: "rgba(212,175,55,0.04)",
-                }}
-                transition={{ duration: 0.2 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 14,
-                  }}>
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: "#D4AF37",
-                      flexShrink: 0,
-                      marginTop: 8,
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: "'Raleway',sans-serif",
-                      fontSize: 14,
-                      color: "rgba(200,191,160,0.8)",
-                      lineHeight: 1.6,
-                    }}>
+              <GlowCard key={i} glowColor="gold" style={{ padding: "22px 24px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#D4AF37", flexShrink: 0, marginTop: 8 }} />
+                  <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 15, color: "rgba(220,210,190,0.85)", lineHeight: 1.6 }}>
                     {feat}
                   </span>
                 </div>
-              </motion.div>
+              </GlowCard>
             ))}
           </motion.div>
         )}
@@ -358,6 +327,11 @@ export default function ComingSoon({ page }) {
           </button>
         </motion.div>
       </div>
+      <style>{`
+        @media (max-width: 760px) {
+          .setu-feature-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

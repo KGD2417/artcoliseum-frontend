@@ -7,12 +7,14 @@ import { useLocale, LANGS } from "../context/Locale";
 import { CheckIcon } from "../components/Icons";
 import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
+import { validateForm, isValid, required, phoneIN, pincodeIN, genId } from "../utils/validation";
 import i3 from "../assets/i3.png";
 import i6 from "../assets/i6.png";
 
 const TABS = [
   { id: "details",  label: "Account Details" },
   { id: "orders",   label: "Order Tracking" },
+  { id: "events",   label: "My Events" },
   { id: "inbox",    label: "Messages" },
   { id: "collection", label: "My Collection" },
   { id: "help",     label: "Help Desk" },
@@ -42,6 +44,9 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [user, setUser] = useState(EMPTY_USER);
   const [draft, setDraft] = useState(EMPTY_USER);
+  const [addresses, setAddresses] = useState([]);
+  const [phoneErr, setPhoneErr] = useState("");
+  const [regEvents, setRegEvents] = useState([]);
   const [orders, setOrders] = useState([]);
   const [owned, setOwned] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -70,6 +75,7 @@ export default function Profile() {
       };
       setUser(next);
       setDraft(next);
+      setAddresses(prof?.addresses || []);
 
       try {
         const ords = await api.orders.mine();
@@ -81,6 +87,7 @@ export default function Profile() {
           eta: new Date(o.created_at).toLocaleDateString(),
         })));
       } catch { setOrders([]); }
+      try { setRegEvents(await api.events.myRegistrations()); } catch { setRegEvents([]); }
       try { setOwned(await api.owned()); } catch { setOwned([]); }
 
       let msgs = [], reads = [];
@@ -156,13 +163,22 @@ export default function Profile() {
     } catch (e) { alert(e.message); }
   };
 
-  const startEdit = () => { setDraft(user); setEditing(true); };
+  const startEdit = () => { setDraft(user); setPhoneErr(""); setEditing(true); };
   const save = async () => {
+    const pe = phoneIN(draft.phone);
+    if (pe) { setPhoneErr(pe); return; }
+    setPhoneErr("");
     if (authUser) {
       try { await api.auth.updateMe({ full_name: draft.name, phone: draft.phone }); } catch { /* ignore */ }
     }
     setUser(draft);
     setEditing(false);
+  };
+  // Persist the saved-address book (also drives the checkout picker).
+  const saveAddresses = async (next) => {
+    setAddresses(next);
+    try { const m = await api.auth.updateMe({ addresses: next }); setAddresses(m?.addresses || next); }
+    catch { /* keep optimistic value */ }
   };
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
@@ -262,9 +278,10 @@ export default function Profile() {
                 }>
                   <Field label="Name"     value={editing ? draft.name     : user.name}     editing={editing} onChange={v => setDraft({ ...draft, name: v })} />
                   <Field label="Email"    value={editing ? draft.email    : user.email}    editing={editing} onChange={v => setDraft({ ...draft, email: v })} type="email" />
-                  <Field label="Phone"    value={editing ? draft.phone    : user.phone}    editing={editing} onChange={v => setDraft({ ...draft, phone: v })} type="tel" />
-                  <Field label="Address"  value={editing ? draft.address  : user.address}  editing={editing} onChange={v => setDraft({ ...draft, address: v })} />
+                  <Field label="Phone"    value={editing ? draft.phone    : user.phone}    editing={editing} onChange={v => setDraft({ ...draft, phone: v })} type="tel" error={phoneErr} />
                   <Field label="Password" value={editing ? draft.password : user.password} editing={editing} onChange={v => setDraft({ ...draft, password: v })} type="password" />
+                  <div style={{ height: 1, background: "rgba(212,175,55,0.14)", margin: "8px 0 20px" }} />
+                  <AddressBook addresses={addresses} onChange={saveAddresses} />
                   <button onClick={handleSignOut} className="btn-outline" style={{ marginTop: 8, padding: "10px 22px", fontSize: 11 }}>SIGN OUT</button>
                 </Card>
               )}
@@ -299,6 +316,42 @@ export default function Profile() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </Card>
+              )}
+
+              {tab === "events" && (
+                <Card title="My Events">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {regEvents.length === 0 && (
+                      <div style={{ padding: 24, textAlign: "center", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.55)" }}>
+                        You haven't registered for any events yet. <Link to="/events" style={{ color: "#D4AF37" }}>Browse events →</Link>
+                      </div>
+                    )}
+                    {regEvents.map(ev => {
+                      const when = ev.starts_at ? new Date(ev.starts_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
+                      return (
+                        <div key={ev.id} style={{ padding: "18px 20px", border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                            <div>
+                              <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", color: "#4ade80", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", marginBottom: 8 }}>REGISTERED ✓</div>
+                              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, color: "#f0e8d8" }}>{ev.title}</div>
+                              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.65)", marginTop: 4 }}>
+                                {ev.location || "Venue to be announced"}{when ? ` · ${when}` : ""}
+                              </div>
+                              {ev.address && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>📍 {ev.address}</div>}
+                              {ev.parking && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 2 }}>🅿️ {ev.parking}</div>}
+                            </div>
+                            {(ev.address || ev.location) && (
+                              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.address || ev.location)}`} target="_blank" rel="noopener noreferrer"
+                                className="btn-outline" style={{ padding: "8px 16px", fontSize: 10, textDecoration: "none", whiteSpace: "nowrap" }}>
+                                GET DIRECTIONS →
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </Card>
               )}
@@ -381,7 +434,7 @@ export default function Profile() {
 
               {tab === "collection" && (
                 <Card title="My Collection" action={
-                  <Link to="/gallery" className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11, textDecoration: "none" }}>BROWSE MORE</Link>
+                  <Link to="/categories" className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11, textDecoration: "none" }}>BROWSE MORE</Link>
                 }>
                   {owned.length === 0 ? (
                     <div style={{ textAlign: "center", padding: 40, color: "rgba(200,191,160,0.5)" }}>
@@ -522,7 +575,7 @@ function Card({ title, action, children }) {
   );
 }
 
-function Field({ label, value, editing, onChange, type = "text" }) {
+function Field({ label, value, editing, onChange, type = "text", error }) {
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>{label.toUpperCase()}</div>
@@ -534,7 +587,7 @@ function Field({ label, value, editing, onChange, type = "text" }) {
           style={{
             width: "100%",
             background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(212,175,55,0.2)",
+            border: `1px solid ${error ? "rgba(255,120,120,0.7)" : "rgba(212,175,55,0.2)"}`,
             padding: "12px 14px",
             color: "#e8e0d0",
             fontFamily: "'Raleway',sans-serif", fontSize: 14,
@@ -543,6 +596,86 @@ function Field({ label, value, editing, onChange, type = "text" }) {
         />
       ) : (
         <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 15, color: "#f0e8d8", padding: "8px 0" }}>{value}</div>
+      )}
+      {editing && error && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#ff8a8a", marginTop: 5 }}>{error}</div>}
+    </div>
+  );
+}
+
+const ADDR_BLANK = { label: "", name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: "India" };
+const aErrText = { fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#ff8a8a", marginTop: 4 };
+const aInput = (bad) => ({ width: "100%", boxSizing: "border-box", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: `1px solid ${bad ? "rgba(255,120,120,0.7)" : "rgba(212,175,55,0.2)"}`, borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" });
+
+/** Saved-address book: list, add (validated), remove, set default. Persists via onChange. */
+function AddressBook({ addresses, onChange }) {
+  const [adding, setAdding] = useState(false);
+  const [f, setF] = useState(ADDR_BLANK);
+  const [touched, setTouched] = useState(false);
+
+  const errors = validateForm(f, {
+    name:  [required("Name")],
+    phone: [required("Phone"), phoneIN],
+    line1: [required("Address line 1")],
+    city:  [required("City")],
+    state: [required("State")],
+    zip:   [required("PIN code"), pincodeIN],
+  });
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+
+  const add = () => {
+    if (!isValid(errors)) { setTouched(true); return; }
+    const entry = { id: genId("addr"), ...f, label: f.label || f.city, is_default: addresses.length === 0 };
+    onChange([...addresses, entry]);
+    setF(ADDR_BLANK); setTouched(false); setAdding(false);
+  };
+  const remove = (id) => onChange(addresses.filter((a) => a.id !== id));
+  const setDefault = (id) => onChange(addresses.map((a) => ({ ...a, is_default: a.id === id })));
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37" }}>SAVED ADDRESSES</div>
+        {!adding && <button onClick={() => setAdding(true)} className="btn-outline" style={{ padding: "7px 16px", fontSize: 10 }}>+ ADD</button>}
+      </div>
+
+      {addresses.length === 0 && !adding && (
+        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.5)", marginBottom: 10 }}>No saved addresses yet.</div>
+      )}
+
+      {addresses.map((a) => (
+        <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, padding: "12px 14px", marginBottom: 8, borderRadius: 8, background: "rgba(255,255,255,0.02)", border: `1px solid ${a.is_default ? "#D4AF37" : "rgba(212,175,55,0.15)"}` }}>
+          <div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>
+              {a.label || a.city} {a.is_default && <span style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: "#D4AF37", marginLeft: 6 }}>DEFAULT</span>}
+            </div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 3, lineHeight: 1.5 }}>
+              {a.name} · {a.phone}<br />{a.line1}{a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.state} {a.zip}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+            {!a.is_default && <button onClick={() => setDefault(a.id)} className="btn-outline" style={{ padding: "5px 12px", fontSize: 9 }}>SET DEFAULT</button>}
+            <button onClick={() => remove(a.id)} className="btn-outline" style={{ padding: "5px 12px", fontSize: 9 }}>REMOVE</button>
+          </div>
+        </div>
+      ))}
+
+      {adding && (
+        <div style={{ padding: 14, borderRadius: 8, border: "1px solid rgba(212,175,55,0.22)", background: "rgba(212,175,55,0.03)", marginTop: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div><input placeholder="Label (e.g. Home)" value={f.label} onChange={set("label")} style={aInput(false)} /></div>
+            <div><input placeholder="Full name *" value={f.name} onChange={set("name")} style={aInput(touched && errors.name)} />{touched && errors.name && <div style={aErrText}>{errors.name}</div>}</div>
+            <div><input placeholder="Phone *" value={f.phone} onChange={set("phone")} inputMode="numeric" maxLength={10} style={aInput(touched && errors.phone)} />{touched && errors.phone && <div style={aErrText}>{errors.phone}</div>}</div>
+            <div><input placeholder="PIN code *" value={f.zip} onChange={set("zip")} inputMode="numeric" maxLength={6} style={aInput(touched && errors.zip)} />{touched && errors.zip && <div style={aErrText}>{errors.zip}</div>}</div>
+            <div style={{ gridColumn: "1 / -1" }}><input placeholder="Address line 1 *" value={f.line1} onChange={set("line1")} style={aInput(touched && errors.line1)} />{touched && errors.line1 && <div style={aErrText}>{errors.line1}</div>}</div>
+            <div style={{ gridColumn: "1 / -1" }}><input placeholder="Address line 2" value={f.line2} onChange={set("line2")} style={aInput(false)} /></div>
+            <div><input placeholder="City *" value={f.city} onChange={set("city")} style={aInput(touched && errors.city)} />{touched && errors.city && <div style={aErrText}>{errors.city}</div>}</div>
+            <div><input placeholder="State *" value={f.state} onChange={set("state")} style={aInput(touched && errors.state)} />{touched && errors.state && <div style={aErrText}>{errors.state}</div>}</div>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+            <button onClick={add} className="btn-gold-main" style={{ padding: "9px 20px", fontSize: 11 }}>SAVE ADDRESS</button>
+            <button onClick={() => { setAdding(false); setF(ADDR_BLANK); setTouched(false); }} className="btn-outline" style={{ padding: "9px 20px", fontSize: 11 }}>CANCEL</button>
+          </div>
+        </div>
       )}
     </div>
   );

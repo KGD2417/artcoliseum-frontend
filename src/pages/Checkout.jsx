@@ -7,6 +7,7 @@ import { CopyIcon, CheckIcon } from "../components/Icons";
 import { useLocale } from "../context/Locale";
 import { useAuth } from "../context/Auth";
 import { api, realtime } from "../utils/api";
+import { validateForm, isValid, required, phoneIN, pincodeIN, futureDate, todayISO, genId } from "../utils/validation";
 
 const STAGE_ORDER = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
 const STAGE_LABEL = {
@@ -19,11 +20,11 @@ const STAGE_LABEL = {
 };
 
 const PAY_METHODS = [
-  { id: "razorpay", label: "UPI / Card (Razorpay)", desc: "Dummy gateway for this demo" },
-  { id: "cod", label: "Cash on Delivery", desc: "Pay our courier on arrival" },
+  { id: "razorpay", label: "UPI / Card (Razorpay)", desc: "Secure online payment" },
 ];
 
-const VAULT = {
+// Fallback shown only until the backend vault loads (see /deliveries/estimate).
+const VAULT_FALLBACK = {
   name: "Art Coliseum Vault",
   address: "Kala Ghoda Arts Precinct, Fort, Mumbai, Maharashtra 400001",
   hours: "Mon–Sat · 11:00–19:00",
@@ -36,6 +37,11 @@ export default function Checkout() {
 
   const [data, setData] = useState(null);      // cart breakdown
   const [address, setAddress] = useState({ name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: "India" });
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [saveAddr, setSaveAddr] = useState(true);
+  const [vault, setVault] = useState(VAULT_FALLBACK);
+  const [pickup, setPickup] = useState({ date: "", slot: "" });
+  const [touched, setTouched] = useState(false);   // show errors only after a submit attempt
   const [pay, setPay] = useState("razorpay");
   const [order, setOrder] = useState(null);
   const [delivery, setDelivery] = useState(null);
@@ -54,6 +60,20 @@ export default function Checkout() {
     if (!user) { navigate("/signin"); return; }
     setCkLoading(true);
     api.cart.breakdown().then(setData).catch(() => setData(null)).finally(() => setCkLoading(false));
+    // Backend warehouse details (single source of truth) for self-pickup.
+    api.deliveries.estimate().then((e) => { if (e?.vault) setVault(e.vault); }).catch(() => {});
+    // Prefill from the buyer's profile + load their saved address book.
+    api.auth.me().then((m) => {
+      const addrs = m?.addresses || [];
+      setSavedAddresses(addrs);
+      const def = addrs.find((a) => a.is_default) || addrs[0];
+      setAddress((prev) => ({
+        ...prev,
+        name: prev.name || m?.full_name || "",
+        phone: prev.phone || m?.phone || "",
+        ...(def ? pickAddr(def) : {}),
+      }));
+    }).catch(() => {});
   }, [user, loading]);
 
   // Fetch the shipping zone / ETA / fee whenever a 6-digit pincode is entered.
@@ -77,26 +97,48 @@ export default function Checkout() {
   }, [order]);
 
   const items = data?.items || [];
-  const addressValid = address.name.trim() && address.phone.trim() && address.line1.trim() && address.city.trim() && address.zip.trim();
   // Zone delivery fee applies only when something is shipped (not pure self-pickup).
   const needsTransport = items.some((it) => it.fulfillment !== "self_pickup");
+  const hasPickup = items.some((it) => it.fulfillment === "self_pickup");
   const zoneFee = needsTransport && est ? est.delivery_fee : 0;
   const grandTotal = (data?.total || 0) + zoneFee;   // data.total already includes GST
 
+  // Validation depends on fulfillment: name/phone always; full address when shipping;
+  // a pickup date when any item is self-pickup.
+  const errors = {
+    ...validateForm(address, { name: [required("Full name")], phone: [required("Phone"), phoneIN] }),
+    ...(needsTransport ? validateForm(address, {
+      line1: [required("Address line 1")], city: [required("City")],
+      state: [required("State")], zip: [required("PIN code"), pincodeIN],
+    }) : {}),
+  };
+  const pickupErrors = hasPickup ? validateForm(pickup, { date: [required("Pickup date"), futureDate] }) : {};
+  const formValid = isValid(errors) && isValid(pickupErrors);
+  const err = (field) => (touched ? errors[field] : "");
+
+  const applySaved = (a) => setAddress((prev) => ({ ...prev, ...pickAddr(a) }));
+
   const placeOrder = async () => {
-    if (!items.length || !addressValid || submitting) return;
+    if (!items.length || submitting) return;
+    if (!formValid) { setTouched(true); return; }
     setSubmitting(true);
     try {
       const created = await api.orders.create({
-        full_name: address.name, phone: address.phone, shipping_address: address, payment_provider: pay,
-        pincode: address.zip,
+        full_name: address.name, phone: address.phone,
+        shipping_address: needsTransport ? address : {},
+        payment_provider: pay,
+        pincode: needsTransport ? address.zip : null,
+        pickup_date: hasPickup ? pickup.date : null,
+        pickup_slot: hasPickup ? pickup.slot : null,
       });
-      setOrder(created);
-      if (pay === "cod") {
-        await finalizePaid(created.id);
-      } else {
-        setShowPayOverlay(true);
+      // Save this address to the buyer's book (transport orders only, when asked).
+      if (needsTransport && saveAddr && !addressInBook(savedAddresses, address)) {
+        const entry = { id: genId("addr"), label: address.city || "Address", ...pickAddr(address), is_default: savedAddresses.length === 0 };
+        const next = [...savedAddresses, entry];
+        api.auth.updateMe({ addresses: next }).then((m) => setSavedAddresses(m?.addresses || next)).catch(() => {});
       }
+      setOrder(created);
+      setShowPayOverlay(true);
     } catch (e) {
       alert(e.message);
     } finally {
@@ -281,7 +323,7 @@ export default function Checkout() {
       ) : items.length === 0 ? (
         <div style={{ padding: 80, textAlign: "center", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12 }}>
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: "#fff", marginBottom: 12 }}>Your cart is empty</div>
-          <button onClick={() => navigate("/gallery")} style={{ marginTop: 14, padding: "13px 28px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em" }}>BROWSE COLLECTION</button>
+          <button onClick={() => navigate("/categories")} style={{ marginTop: 14, padding: "13px 28px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em" }}>BROWSE COLLECTION</button>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 36 }} className="ck-grid">
@@ -301,35 +343,67 @@ export default function Checkout() {
               ))}
             </div>
 
-            <SectionLabel>DELIVERY ADDRESS</SectionLabel>
+            <SectionLabel>{needsTransport ? "DELIVERY ADDRESS" : "PICKUP CONTACT"}</SectionLabel>
+
+            {needsTransport && savedAddresses.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginBottom: 8 }}>Use a saved address:</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {savedAddresses.map((a) => (
+                    <button key={a.id} onClick={() => applySaved(a)} style={savedChip}>
+                      <span style={{ color: "#D4AF37" }}>{a.label || a.city || "Address"}</span>
+                      <span style={{ color: "rgba(200,191,160,0.55)" }}> · {a.line1}{a.city ? `, ${a.city}` : ""}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={addrBox}>
               <div style={twoCol}>
-                <Input label="Full Name *" value={address.name} onChange={(v) => setAddress({ ...address, name: v })} />
-                <Input label="Phone *" value={address.phone} onChange={(v) => setAddress({ ...address, phone: v })} type="tel" />
+                <Input label="Full Name *" value={address.name} onChange={(v) => setAddress({ ...address, name: v })} error={err("name")} />
+                <Input label="Phone *" value={address.phone} onChange={(v) => setAddress({ ...address, phone: v })} type="tel" inputMode="numeric" maxLength={10} error={err("phone")} />
               </div>
-              <Input label="Address Line 1 *" value={address.line1} onChange={(v) => setAddress({ ...address, line1: v })} />
-              <Input label="Address Line 2" value={address.line2} onChange={(v) => setAddress({ ...address, line2: v })} />
-              <div style={twoCol}>
-                <Input label="City *" value={address.city} onChange={(v) => setAddress({ ...address, city: v })} />
-                <Input label="State" value={address.state} onChange={(v) => setAddress({ ...address, state: v })} />
-              </div>
-              <div style={twoCol}>
-                <Input label="ZIP / Postal Code *" value={address.zip} onChange={(v) => setAddress({ ...address, zip: v })} />
-                <Input label="Country" value={address.country} onChange={(v) => setAddress({ ...address, country: v })} />
-              </div>
-              {needsTransport && est && (
-                <div style={{ marginTop: 4, padding: "10px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.22)", fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.8)" }}>
-                  <strong style={{ color: "#D4AF37" }}>{est.courier}</strong> · {est.zone} · ETA {est.eta} · delivery {zoneFee ? formatPrice(zoneFee) : "free"}
-                </div>
+              {needsTransport && (
+                <>
+                  <Input label="Address Line 1 *" value={address.line1} onChange={(v) => setAddress({ ...address, line1: v })} error={err("line1")} />
+                  <Input label="Address Line 2" value={address.line2} onChange={(v) => setAddress({ ...address, line2: v })} />
+                  <div style={twoCol}>
+                    <Input label="City *" value={address.city} onChange={(v) => setAddress({ ...address, city: v })} error={err("city")} />
+                    <Input label="State *" value={address.state} onChange={(v) => setAddress({ ...address, state: v })} error={err("state")} />
+                  </div>
+                  <div style={twoCol}>
+                    <Input label="PIN Code *" value={address.zip} onChange={(v) => setAddress({ ...address, zip: v })} inputMode="numeric" maxLength={6} error={err("zip")} />
+                    <Input label="Country" value={address.country} onChange={(v) => setAddress({ ...address, country: v })} />
+                  </div>
+                  {est && (
+                    <div style={{ marginTop: 4, padding: "10px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.22)", fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.8)" }}>
+                      <strong style={{ color: "#D4AF37" }}>{est.courier}</strong> · {est.zone} · ETA {est.eta} · delivery {zoneFee ? formatPrice(zoneFee) : "free"}
+                    </div>
+                  )}
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)" }}>
+                    <input type="checkbox" checked={saveAddr} onChange={(e) => setSaveAddr(e.target.checked)} style={{ accentColor: "#D4AF37" }} />
+                    Save this address to my account
+                  </label>
+                </>
               )}
             </div>
 
-            {items.some((it) => it.fulfillment === "self_pickup") && (
+            {hasPickup && (
               <div style={{ marginBottom: 30, padding: "16px 18px", borderRadius: 10, background: "rgba(212,175,55,0.05)", border: "1px dashed rgba(212,175,55,0.3)" }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 8 }}>SELF-PICKUP</div>
-                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{VAULT.name}</div>
-                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 3, lineHeight: 1.6 }}>{VAULT.address}</div>
-                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 6 }}>Hours: {VAULT.hours} · bring a photo ID and your pickup OTP.</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 8 }}>SELF-PICKUP LOCATION</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{vault.name}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 3, lineHeight: 1.6 }}>{vault.address}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 6 }}>Hours: {vault.hours} · bring a photo ID and your pickup OTP.</div>
+                <div style={{ ...twoCol, marginTop: 14 }}>
+                  <div>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginBottom: 5 }}>Pickup Date *</div>
+                    <input type="date" min={todayISO()} value={pickup.date} onChange={(e) => setPickup({ ...pickup, date: e.target.value })}
+                      style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: `1px solid ${touched && pickupErrors.date ? "rgba(255,120,120,0.7)" : "rgba(212,175,55,0.2)"}`, borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none", colorScheme: "dark" }} />
+                    {touched && pickupErrors.date && <div style={errText}>{pickupErrors.date}</div>}
+                  </div>
+                  <Input label="Preferred Time (optional)" value={pickup.slot} onChange={(v) => setPickup({ ...pickup, slot: v })} placeholder="e.g. 11:00–13:00" />
+                </div>
               </div>
             )}
 
@@ -368,12 +442,12 @@ export default function Checkout() {
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#fff" }}>TOTAL</span>
               <span className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(grandTotal)}</span>
             </div>
-            <motion.button onClick={placeOrder} disabled={!addressValid || submitting}
-              whileHover={addressValid ? { scale: 1.02 } : {}} whileTap={addressValid ? { scale: 0.98 } : {}}
-              style={{ width: "100%", padding: "16px", background: addressValid ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.25)", color: addressValid ? "#111" : "rgba(255,255,255,0.5)", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.2em", border: "none", borderRadius: 999, cursor: addressValid ? "pointer" : "not-allowed" }}>
+            <motion.button onClick={placeOrder} disabled={submitting}
+              whileHover={formValid ? { scale: 1.02 } : {}} whileTap={formValid ? { scale: 0.98 } : {}}
+              style={{ width: "100%", padding: "16px", background: formValid ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.25)", color: formValid ? "#111" : "rgba(255,255,255,0.5)", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.2em", border: "none", borderRadius: 999, cursor: submitting ? "wait" : "pointer" }}>
               {submitting ? "PLACING…" : "PLACE ORDER →"}
             </motion.button>
-            {!addressValid && <div style={{ marginTop: 10, fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", textAlign: "center" }}>Fill in delivery address to continue</div>}
+            {touched && !formValid && <div style={{ marginTop: 10, fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#ff8a8a", textAlign: "center" }}>{needsTransport ? "Please complete the delivery address" : "Please choose a pickup date"}</div>}
           </div>
         </div>
       )}
@@ -424,14 +498,31 @@ function Row({ label, value }) {
     </div>
   );
 }
-function Input({ label, value, onChange, type = "text", placeholder }) {
+function Input({ label, value, onChange, type = "text", placeholder, error, inputMode, maxLength }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginBottom: 5 }}>{label}</div>
-      <input type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" }} />
+      <input type={type} value={value} placeholder={placeholder} inputMode={inputMode} maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: `1px solid ${error ? "rgba(255,120,120,0.7)" : "rgba(212,175,55,0.2)"}`, borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" }} />
+      {error && <div style={errText}>{error}</div>}
     </div>
   );
 }
+const errText = { fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#ff8a8a", marginTop: 4 };
+const savedChip = { textAlign: "left", padding: "8px 12px", borderRadius: 8, cursor: "pointer", background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.22)", fontFamily: "'Raleway',sans-serif", fontSize: 12 };
 const addrBox = { padding: 22, marginBottom: 30, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10 };
 const twoCol = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 };
+
+/** Map a saved address-book entry → the checkout form shape. */
+function pickAddr(a) {
+  return {
+    name: a.name || "", phone: a.phone || "",
+    line1: a.line1 || "", line2: a.line2 || "",
+    city: a.city || "", state: a.state || "", zip: a.zip || "", country: a.country || "India",
+  };
+}
+/** True when an equivalent address is already saved (avoid duplicates). */
+function addressInBook(book, a) {
+  return book.some((x) => (x.line1 || "") === (a.line1 || "") && (x.zip || "") === (a.zip || "") && (x.city || "") === (a.city || ""));
+}

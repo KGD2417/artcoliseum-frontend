@@ -39,6 +39,8 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   /* Guard against stray fixed-width children causing a horizontal scrollbar on mobile */
   overflow-x: hidden;
@@ -4392,7 +4394,9 @@ input[type="email"] {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
-  min-height: 640px;
+  /* Taller than the centre panel so images can scatter into the top & bottom
+     bands as well as down the sides, without sitting behind the panel. */
+  min-height: 900px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4414,6 +4418,9 @@ input[type="email"] {
   .pres-float-hide-mobile {
     display: block;
   }
+}
+@media (max-width: 900px) {
+  .pres-float-section { min-height: 560px; }
 }
 .pres-float-center {
   position: relative;

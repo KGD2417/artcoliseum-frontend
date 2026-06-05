@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { email as emailRule, phoneIN } from "../utils/validation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -221,14 +222,22 @@ export default function Exhibition() {
   };
 
   const canProceed = () => {
-    if (step === 1) return profile.name && profile.email && profile.bio;
+    if (step === 1) return profile.name.trim() && !emailRule(profile.email) && profile.email.trim()
+      && !phoneIN(profile.phone) && profile.bio.trim().length >= 40;
     if (step === 2) return !!exhibType;
     if (step === 3) return !!artPreview;
-    if (step === 4) return art.title && art.type && art.description;
+    if (step === 4) return art.title.trim() && art.type.trim() && art.description.trim();
     return true;
   };
 
-  const next = () => { if (canProceed()) setStep(s => Math.min(5, s + 1)); };
+  const next = () => {
+    if (!canProceed()) {
+      if (step === 1) alert("Please enter a valid name, email, phone and a bio of at least 40 characters.");
+      else alert("Please complete the required fields before continuing.");
+      return;
+    }
+    setStep(s => Math.min(5, s + 1));
+  };
   const back = () => setStep(s => Math.max(1, s - 1));
   const submit = () => setSubmitted(true);
 

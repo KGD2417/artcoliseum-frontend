@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const WELCOME_MESSAGE = {
   id: "welcome",
   from: "bot",
-  text: "Welcome to Art Coliseum! I'm your personal art assistant. Ask me about our artworks, the enquiry process, AR viewer, artists, or anything else you'd like to know.",
+  text: "Welcome to Art Coliseum! I'm Arrt Coliseum Intelligence. Ask me about our artworks, pricing, the AR viewer, artists, or anything else you'd like to know.",
 };
 
 const BOT_RESPONSES = {
@@ -234,7 +234,7 @@ export default function ChatbotWidget() {
                       color: "#f0e8d8",
                       lineHeight: 1.2,
                     }}>
-                    Art Coliseum Assistant
+                    Arrt Coliseum Intelligence
                   </div>
                   <div
                     style={{

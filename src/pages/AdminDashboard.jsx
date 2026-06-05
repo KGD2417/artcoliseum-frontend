@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/Auth";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { api, realtime } from "../utils/api";
+import { email as emailRule, minLen, intRange } from "../utils/validation";
 
 const gold = "#D4AF37";
 const TABS = [
@@ -82,23 +83,81 @@ export default function AdminDashboard() {
 }
 
 function Overview({ stats }) {
+  const [a, setA] = useState(null);
+  useEffect(() => { api.admin.analytics().then(setA).catch(() => setA(null)); }, []);
+
   const cards = [
     ["Pending orders", stats.pending_orders], ["Unread messages", stats.unread_messages],
     ["Event registrations", stats.event_registrations], ["New artworks (7d)", stats.recent_artworks],
     ["Contact messages", stats.contact_messages], ["Open tickets", stats.open_tickets],
     ["Pending artists", stats.pending_artists],
   ];
+
   return (
     <Panel title="Overview">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 14 }}>
         {cards.map(([l, v]) => (
           <div key={l} style={{ padding: 20, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 40, fontWeight: 700, color: gold }}>{v ?? 0}</div>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(200,191,160,0.6)", marginTop: 4 }}>{l.toUpperCase()}</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: "rgba(200,191,160,0.7)", marginTop: 4 }}>{l.toUpperCase()}</div>
           </div>
         ))}
       </div>
+
+      {a && (
+        <>
+          {/* Headline totals across the whole site */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12, marginTop: 22 }}>
+            {[
+              ["Users", a.users.total], ["Artworks", a.artworks.total], ["Orders", a.orders.total],
+              ["Enquiries", a.enquiries.total], ["Events", a.events.total], ["Registrations", a.events.registrations],
+              ["Competitions", a.competitions.total], ["Comp. entries", a.competitions.entries],
+              ["Owned pieces", a.collection.owned], ["Reviews", a.collection.reviews],
+              ["Support tickets", a.support.tickets], ["Contact msgs", a.support.contact_messages],
+            ].map(([l, v]) => (
+              <div key={l} style={{ padding: "14px 16px", border: "1px solid rgba(212,175,55,0.12)", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#f0e8d8" }}>{v ?? 0}</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em", color: "rgba(200,191,160,0.6)", marginTop: 2 }}>{l.toUpperCase()}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Distributions */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16, marginTop: 22 }}>
+            <Distribution title="Users by role" data={a.users.by_role} />
+            <Distribution title="Artworks by category" data={a.artworks.by_category} />
+            <Distribution title="Artworks by status" data={a.artworks.by_status} />
+            <Distribution title="Orders by status" data={a.orders.by_status} />
+            <Distribution title="Enquiries by status" data={a.enquiries.by_status} />
+            <Distribution title="Competitions by status" data={a.competitions.by_status} />
+            <Distribution title="Artwork pricing" data={{ Customizable: a.artworks.customizable, Fixed: a.artworks.fixed, Featured: a.artworks.featured }} />
+            <Distribution title="Artist KYC" data={{ Verified: a.artists.verified, Unverified: a.artists.unverified }} />
+          </div>
+        </>
+      )}
     </Panel>
+  );
+}
+
+// A labelled count list with proportion bars — numeric distribution, no chart lib.
+function Distribution({ title, data }) {
+  const entries = Object.entries(data || {});
+  const total = entries.reduce((s, [, v]) => s + (v || 0), 0) || 1;
+  return (
+    <div style={{ padding: "16px 18px", border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold, marginBottom: 12 }}>{title.toUpperCase()}</div>
+      {entries.length === 0 && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)" }}>No data.</div>}
+      {entries.map(([k, v]) => (
+        <div key={k} style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0", marginBottom: 4 }}>
+            <span style={{ textTransform: "capitalize" }}>{k}</span><span className="num-value" style={{ color: gold }}>{v}</span>
+          </div>
+          <div style={{ height: 5, borderRadius: 999, background: "rgba(212,175,55,0.12)", overflow: "hidden" }}>
+            <div style={{ width: `${Math.round((v / total) * 100)}%`, height: "100%", background: "linear-gradient(90deg,#D4AF37,#e8c53a)" }} />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -136,6 +195,9 @@ function Enquiries() {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
+  // Open an enquiry and prefill the per-unit price field from the artwork.
+  const open = (e) => { setActive(e); setOverride(e?.price_per_unit != null ? String(e.price_per_unit) : ""); };
+
   const send = async () => {
     const text = reply.trim();
     if (!text || !active) return;
@@ -143,14 +205,15 @@ function Enquiries() {
     await api.chat.send({ conversation_key: active.conversation_key, sender: "curator", target_user_id: active.user_id, text });
     setMsgs((prev) => [...prev, { id: `tmp-${Date.now()}`, sender: "curator", text, user_id: active.user_id, conversation_key: active.conversation_key }]);
   };
-  const approve = async () => { await api.enquiries.approve(active.id); load(); };
   const reject = async () => { await api.enquiries.reject(active.id); setActive(null); load(); };
-  const revealOverride = async () => {
-    if (override === "") return;
-    await api.enquiries.revealPrice(active.id, Number(override)); setOverride(""); load();
+  // Reveal & unlock: expose the per-unit price (override optional) and grant buy permission.
+  const reveal = async () => {
+    const ppu = override === "" ? undefined : Number(override);
+    await api.enquiries.revealPrice(active.id, ppu); load();
   };
 
   const sel = active?.selection?.options || {};
+  const dims = active?.selection || {};
 
   return (
     <Panel title="Enquiries">
@@ -159,7 +222,7 @@ function Enquiries() {
         <div style={{ borderRight: "1px solid rgba(212,175,55,0.12)", paddingRight: 12, maxHeight: 560, overflowY: "auto" }}>
           {rows.length === 0 && <Empty>No enquiries yet.</Empty>}
           {rows.map((e) => (
-            <button key={e.id} onClick={() => setActive(e)} style={{
+            <button key={e.id} onClick={() => open(e)} style={{
               display: "block", width: "100%", textAlign: "left", padding: "10px 12px", marginBottom: 6,
               borderRadius: 8, cursor: "pointer", border: `1px solid ${active?.id === e.id ? gold : "rgba(212,175,55,0.15)"}`,
               background: active?.id === e.id ? "rgba(212,175,55,0.10)" : "rgba(255,255,255,0.02)",
@@ -182,16 +245,22 @@ function Enquiries() {
               <div>
                 <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#fff" }}>{active.artwork_title || active.artwork_id}</div>
                 <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)" }}>{active.customer_name || "Customer"}</div>
-                {Object.keys(sel).length > 0 && (
+                {(Object.keys(sel).length > 0 || dims.custom_width || dims.custom_height) && (
                   <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>
-                    {Object.entries(sel).map(([k, v]) => `${k}: ${v}`).join(" · ")}
-                    {active.selection?.wall_upcharge ? ` · wall +${active.selection.wall_upcharge}%` : ""}
+                    {(dims.custom_width || dims.custom_height) && (
+                      <span>Wants {dims.custom_width || "?"} × {dims.custom_height || "?"} {dims.custom_unit || "cm"}</span>
+                    )}
+                    {Object.keys(sel).length > 0 && (
+                      <span>{(dims.custom_width || dims.custom_height) ? " · " : ""}{Object.entries(sel).map(([k, v]) => `${k}: ${v}`).join(" · ")}</span>
+                    )}
                   </div>
                 )}
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(200,191,160,0.5)" }}>AUTO-COMPUTED</div>
-                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: gold }}>{inr(active.revealed_price)}</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(200,191,160,0.5)" }}>PER-UNIT PRICE</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: gold }}>
+                  {active.price_per_unit != null ? `${inr(active.price_per_unit)}/${active.unit || "unit"}` : "—"}
+                </div>
                 <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: gold, marginTop: 2 }}>{active.status.toUpperCase()}</div>
               </div>
             </div>
@@ -220,13 +289,12 @@ function Enquiries() {
               <Btn onClick={send} primary>SEND</Btn>
             </div>
 
-            {/* Actions */}
+            {/* Actions — reveal the per-unit price (unlocks the buyer's checkout) */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", borderTop: "1px solid rgba(212,175,55,0.12)", paddingTop: 12 }}>
-              <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>Override price:</span>
-              <input value={override} onChange={(e) => setOverride(e.target.value)} placeholder={String(active.revealed_price || "")} style={{ ...miniInput, width: 110 }} />
-              <Btn onClick={revealOverride}>SET PRICE</Btn>
+              <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>Price per {active.unit || "unit"} (₹):</span>
+              <input value={override} onChange={(e) => setOverride(e.target.value)} placeholder={String(active.price_per_unit || "")} style={{ ...miniInput, width: 110 }} />
+              <Btn onClick={reveal} primary>{active.status === "approved" ? "UPDATE PRICE" : "REVEAL & UNLOCK"}</Btn>
               <div style={{ flex: 1 }} />
-              <Btn onClick={approve} primary>APPROVE SALE</Btn>
               <Btn onClick={reject} ghost>REJECT</Btn>
             </div>
           </div>
@@ -323,7 +391,7 @@ function EditArtworkModal({ artwork, onClose, onSaved }) {
   const [f, setF] = useState({
     title: artwork.title || "", price: artwork.price ?? "", medium: artwork.medium || "",
     base_dimensions: artwork.base_dimensions || "", price_per_unit: artwork.price_per_unit ?? "",
-    customizable: artwork.customizable !== false, in_stock: artwork.in_stock !== false,
+    customizable: artwork.customizable !== false, ratio_locked: !!artwork.ratio_locked, in_stock: artwork.in_stock !== false,
     status: artwork.status || "active", featured: !!artwork.featured,
   });
   const [busy, setBusy] = useState(false);
@@ -333,7 +401,8 @@ function EditArtworkModal({ artwork, onClose, onSaved }) {
     try {
       await api.admin.updateArtwork(artwork.id, {
         title: f.title, medium: f.medium, base_dimensions: f.base_dimensions,
-        customizable: f.customizable, in_stock: f.in_stock, status: f.status, featured: f.featured,
+        customizable: f.customizable, ratio_locked: f.customizable && f.ratio_locked,
+        in_stock: f.in_stock, status: f.status, featured: f.featured,
         price: f.price !== "" ? Number(f.price) : null,
         price_per_unit: f.customizable && f.price_per_unit !== "" ? Number(f.price_per_unit) : null,
       });
@@ -348,6 +417,7 @@ function EditArtworkModal({ artwork, onClose, onSaved }) {
         <L>Medium</L><input style={miniInput} value={f.medium} onChange={set("medium")} />
         <L>Base dimensions</L><input style={miniInput} value={f.base_dimensions} onChange={set("base_dimensions")} />
         <label style={ckLabel}><input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} /> Customizable</label>
+        {f.customizable && <label style={ckLabel}><input type="checkbox" checked={f.ratio_locked} onChange={(e) => setF({ ...f, ratio_locked: e.target.checked })} style={{ accentColor: gold }} /> Lock width : height ratio</label>}
         {f.customizable
           ? (<><L>Price per unit (₹)</L><input style={miniInput} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></>)
           : (<><L>Price (₹)</L><input style={miniInput} type="number" value={f.price} onChange={set("price")} /></>)}
@@ -411,22 +481,26 @@ function Tally() {
 }
 
 function Events() {
+  const blank = { title: "", description: "", status: "upcoming", location: "", curator: "", address: "", parking: "", details: "" };
   const [rows, setRows] = useState([]);
-  const [f, setF] = useState({ title: "", description: "", status: "upcoming", location: "", curator: "" });
+  const [f, setF] = useState(blank);
   const load = () => api.events.list().then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
-  const create = async () => { if (!f.title) return; await api.events.create(f); setF({ title: "", description: "", status: "upcoming", location: "", curator: "" }); load(); };
+  const create = async () => { if (!f.title) { alert("Event title is required"); return; } await api.events.create(f); setF(blank); load(); };
   const del = async (id) => { await api.events.remove(id); load(); };
   return (
     <Panel title="Events">
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
         <input placeholder="Title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={miniInput} />
-        <input placeholder="Location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} style={miniInput} />
+        <input placeholder="Location (venue name)" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} style={miniInput} />
         <input placeholder="Curator" value={f.curator} onChange={(e) => setF({ ...f, curator: e.target.value })} style={miniInput} />
         <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} style={miniInput}>
           <option value="upcoming">upcoming</option><option value="ongoing">ongoing</option><option value="past">past</option>
         </select>
-        <input placeholder="Description" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+        <input placeholder="Full address" value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+        <input placeholder="Parking information" value={f.parking} onChange={(e) => setF({ ...f, parking: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+        <textarea placeholder="Description" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 54, resize: "vertical" }} />
+        <textarea placeholder="Details / agenda (what to expect, timings, dress code…)" value={f.details} onChange={(e) => setF({ ...f, details: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 54, resize: "vertical" }} />
       </div>
       <Btn onClick={create} primary>+ CREATE EVENT</Btn>
       <div style={{ marginTop: 16 }}>
@@ -453,11 +527,15 @@ function Artists() {
   useEffect(() => { load(); }, []);
   const verify = async (uid) => { await api.admin.verifyArtist(uid); load(); };
   const loadEntries = async (cid) => { const es = await api.competitions.entries(cid); setEntries((p) => ({ ...p, [cid]: es })); };
-  const verdict = async (eid, cid) => { const n = prompt("Juror notes / score (e.g. 90)"); if (n == null) return; await api.competitions.verdict(eid, { juror_name: "Jury", score: Number(n) || null, notes: n }); loadEntries(cid); };
-  const winner = async (eid, cid) => { await api.competitions.markWinner(eid); loadEntries(cid); load(); };
+  const goLive = async (cid) => { await api.competitions.goLive(cid); load(); };
+  const closeComp = async (cid) => {
+    if (!window.confirm("Close judging and crown the highest-rated entry as winner?")) return;
+    await api.competitions.close(cid); load(); loadEntries(cid);
+  };
   return (
     <Panel title="Artists & Competition">
       <AddArtist onCreated={() => { load(); setTick((t) => t + 1); }} />
+      <AddJury />
       <AddArtworkForArtist tick={tick} />
 
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>ARTIST APPLICATIONS (KYC)</div>
@@ -473,20 +551,34 @@ function Artists() {
       ))}
 
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>COMPETITIONS</div>
+      <CreateCompetition onCreated={load} />
       {comps.map((c) => (
         <div key={c.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.14)", borderRadius: 10, marginBottom: 10 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, color: "#fff" }}>{c.title} <span style={{ fontSize: 11, color: gold }}>· {c.status}</span></div>
-            <Btn onClick={() => loadEntries(c.id)}>VIEW ENTRIES</Btn>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, color: "#fff" }}>
+                {c.title} <span style={{ fontSize: 11, color: c.status === "live" ? "#4ade80" : gold }}>· {c.status.toUpperCase()}</span>
+              </div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 2 }}>
+                {c.event_date ? new Date(c.event_date).toLocaleDateString() + " · " : ""}
+                {c.entry_count || 0}{c.min_artists ? ` / ${c.min_artists}` : ""} artists
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <Btn onClick={() => loadEntries(c.id)}>VIEW ENTRIES</Btn>
+              {(c.status === "open" || c.status === "judging") && <Btn onClick={() => goLive(c.id)} primary>GO LIVE</Btn>}
+              {c.status !== "closed" && <Btn onClick={() => closeComp(c.id)}>CLOSE & PICK WINNER</Btn>}
+            </div>
           </div>
           {(entries[c.id] || []).map((e) => (
             <Item key={e.id}>
+              <img src={e.image} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "rgba(212,175,55,0.1)" }} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "#fff" }}>{e.title}</div>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: e.status === "winner" ? "#4ade80" : gold, letterSpacing: "0.12em" }}>{e.status.toUpperCase()}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "#fff" }}>{e.title} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {e.artist_name || "Artist"}</span></div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: e.status === "winner" ? "#4ade80" : gold, letterSpacing: "0.12em" }}>
+                  {e.status.toUpperCase()}{e.avg_score != null ? ` · ★ ${e.avg_score}` : " · UNRATED"}
+                </div>
               </div>
-              <Btn onClick={() => verdict(e.id, c.id)}>RECORD VERDICT</Btn>
-              <Btn onClick={() => winner(e.id, c.id)} primary>MARK WINNER</Btn>
             </Item>
           ))}
         </div>
@@ -495,8 +587,74 @@ function Artists() {
   );
 }
 
+function CreateCompetition({ onCreated }) {
+  const blank = { title: "", description: "", event_date: "", min_artists: "" };
+  const [f, setF] = useState(blank);
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+  const create = async () => {
+    if (!f.title.trim()) { alert("Competition title is required"); return; }
+    setBusy(true);
+    try {
+      await api.competitions.create({
+        title: f.title, description: f.description || null,
+        event_date: f.event_date || null, min_artists: f.min_artists ? Number(f.min_artists) : 0,
+      });
+      setF(blank); onCreated && onCreated();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  return (
+    <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: 14, marginBottom: 14, background: "rgba(212,175,55,0.03)" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 10 }}>NEW COMPETITION</div>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 8 }}>
+        <input placeholder="Title" value={f.title} onChange={set("title")} style={miniInput} />
+        <input type="date" value={f.event_date} onChange={set("event_date")} style={{ ...miniInput, colorScheme: "dark" }} />
+        <input type="number" placeholder="Min artists" value={f.min_artists} onChange={set("min_artists")} style={miniInput} />
+        <input placeholder="Description" value={f.description} onChange={set("description")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <Btn onClick={create} primary disabled={busy}>{busy ? "CREATING…" : "+ CREATE COMPETITION"}</Btn>
+      </div>
+    </div>
+  );
+}
+
+function AddJury() {
+  const blank = { email: "", password: "", name: "" };
+  const [f, setF] = useState(blank);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null);
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+  const submit = async () => {
+    if (!f.name.trim() || !f.email.trim()) { alert("Name and email are required"); return; }
+    if (emailRule(f.email)) { alert("Enter a valid email"); return; }
+    const pe = minLen(6, "Password")(f.password);
+    if (pe) { alert(pe); return; }
+    setBusy(true);
+    try {
+      const res = await api.admin.createJury(f);
+      setDone(`Created jury login for ${res.name} (${res.email}). Share the password you set.`);
+      setF(blank);
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  return (
+    <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: 16, marginBottom: 18, background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 12 }}>ADD A JURY MEMBER</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+        <input placeholder="Full name" value={f.name} onChange={set("name")} style={miniInput} />
+        <input placeholder="Login email" value={f.email} onChange={set("email")} style={miniInput} />
+        <input placeholder="Login password" value={f.password} onChange={set("password")} style={miniInput} />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Btn onClick={submit} primary disabled={busy}>{busy ? "CREATING…" : "+ CREATE JURY LOGIN"}</Btn>
+      </div>
+      {done && <div style={{ marginTop: 10, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#4ade80" }}>{done}</div>}
+    </div>
+  );
+}
+
 function AddArtist({ onCreated }) {
-  const blank = { email: "", password: "", name: "", bio: "", location: "", art_type: "", age: "", image_url: "" };
+  const blank = { email: "", password: "", name: "", bio: "", location: "", art_type: "", age: "", image_url: "", gender: "" };
   const [f, setF] = useState(blank);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
@@ -507,6 +665,11 @@ function AddArtist({ onCreated }) {
   };
   const submit = async () => {
     if (!f.email || !f.password || !f.name) { alert("Email, password and name are required"); return; }
+    if (emailRule(f.email)) { alert("Enter a valid email"); return; }
+    const pe = minLen(6, "Password")(f.password);
+    if (pe) { alert(pe); return; }
+    const ageErr = f.age ? intRange(16, 100, "Age")(f.age) : "";
+    if (ageErr) { alert(ageErr); return; }
     setBusy(true);
     try {
       const res = await api.admin.createArtist({ ...f, age: f.age ? Number(f.age) : null });
@@ -527,6 +690,12 @@ function AddArtist({ onCreated }) {
         <input placeholder="Login password" value={f.password} onChange={set("password")} style={miniInput} />
         <input placeholder="Location" value={f.location} onChange={set("location")} style={miniInput} />
         <input placeholder="Age" value={f.age} onChange={set("age")} style={miniInput} />
+        <select value={f.gender} onChange={set("gender")} style={miniInput}>
+          <option value="">Gender (for default avatar)…</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
         <input placeholder="Bio" value={f.bio} onChange={set("bio")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, gridColumn: "1 / -1" }}>
           <label style={{ ...miniInput, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -545,7 +714,7 @@ function AddArtist({ onCreated }) {
 }
 
 function AddArtworkForArtist({ tick }) {
-  const blank = { artist_id: "", title: "", price: "", medium: "", category_id: "", base_dimensions: "", image_url: "", customizable: false, featured: false, narrative: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "" };
+  const blank = { artist_id: "", title: "", price: "", price_per_unit: "", medium: "", category_id: "", base_dimensions: "", image_url: "", customizable: false, ratio_locked: false, featured: false, narrative: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "" };
   const [artists, setArtists] = useState([]);
   const [cats, setCats] = useState([]);
   const [f, setF] = useState(blank);
@@ -563,13 +732,16 @@ function AddArtworkForArtist({ tick }) {
   const submit = async () => {
     if (!f.artist_id || !f.title || !f.category_id) { alert("Artist, title and category are required"); return; }
     if (!f.customizable && (!f.price || Number(f.price) <= 0)) { alert("Predefined (fixed-price) artworks need a price greater than 0"); return; }
+    if (f.customizable && (!f.price_per_unit || Number(f.price_per_unit) <= 0)) { alert("Customizable artworks need a price per unit greater than 0"); return; }
     setBusy(true);
     try {
       await api.admin.createArtwork({
         title: f.title, narrative: f.narrative || null, medium: f.medium || null,
         category_id: f.category_id, base_dimensions: f.base_dimensions || null,
-        customizable: f.customizable, price: f.price ? Number(f.price) : 0,
+        customizable: f.customizable, ratio_locked: f.customizable && f.ratio_locked,
+        price: f.price ? Number(f.price) : 0,
         unit: f.customizable ? f.unit : null,
+        price_per_unit: f.customizable && f.price_per_unit !== "" ? Number(f.price_per_unit) : null,
         min_width: f.customizable && f.min_width !== "" ? Number(f.min_width) : null,
         max_width: f.customizable && f.max_width !== "" ? Number(f.max_width) : null,
         min_height: f.customizable && f.min_height !== "" ? Number(f.min_height) : null,
@@ -604,6 +776,10 @@ function AddArtworkForArtist({ tick }) {
         {f.customizable && (
           <div style={{ gridColumn: "1 / -1" }}>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.6)", marginBottom: 6 }}>
+              PRICE PER UNIT (₹ per {f.unit}²) — used to calculate the buyer's total
+            </div>
+            <input placeholder={`Price per ${f.unit}² (₹)`} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} style={{ ...miniInput, width: "100%", marginBottom: 12 }} />
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.6)", marginBottom: 6 }}>
               CUSTOMIZATION SIZE RANGE — leave blank for no limit
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
@@ -631,8 +807,14 @@ function AddArtworkForArtist({ tick }) {
           {f.image_url && <img src={f.image_url} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover" }} />}
           <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
             <input type="checkbox" checked={f.customizable} onChange={(e) => setF((v) => ({ ...v, customizable: e.target.checked }))} style={{ accentColor: gold }} />
-            Customizable (price set via enquiry)
+            Customizable (priced per unit)
           </label>
+          {f.customizable && (
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
+              <input type="checkbox" checked={f.ratio_locked} onChange={(e) => setF((v) => ({ ...v, ratio_locked: e.target.checked }))} style={{ accentColor: gold }} />
+              Lock W:H ratio
+            </label>
+          )}
           <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
             <input type="checkbox" checked={f.featured} onChange={(e) => setF((v) => ({ ...v, featured: e.target.checked }))} style={{ accentColor: gold }} />
             Featured on home
@@ -808,7 +990,47 @@ function Categories() {
         ))}
         {mains.length === 0 && <Empty>No categories yet</Empty>}
       </div>
+
+      <div style={{ height: 1, background: "rgba(212,175,55,0.14)", margin: "28px 0 22px" }} />
+      <CommunitiesManager />
     </Panel>
+  );
+}
+
+// Admin-managed discussion communities (shown in the Community feed for everyone).
+function CommunitiesManager() {
+  const [rows, setRows] = useState([]);
+  const [f, setF] = useState({ name: "", description: "", color: "#D4AF37" });
+  const [busy, setBusy] = useState(false);
+  const load = () => api.community.communities().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const create = async () => {
+    if (!f.name.trim()) { alert("Community name is required"); return; }
+    setBusy(true);
+    try { await api.community.createCommunity(f); setF({ name: "", description: "", color: "#D4AF37" }); load(); }
+    catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  const del = async (slug) => { if (window.confirm("Delete this community?")) { await api.community.deleteCommunity(slug); load(); } };
+  return (
+    <div>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold, marginBottom: 10 }}>COMMUNITIES</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+        <input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Community name" style={{ ...miniInput, flex: 1, minWidth: 150 }} />
+        <input value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} placeholder="Description" style={{ ...miniInput, flex: 2, minWidth: 180 }} />
+        <input type="color" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} title="Colour" style={{ width: 42, height: 40, background: "transparent", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, cursor: "pointer" }} />
+        <Btn primary onClick={create} disabled={busy}>{busy ? "…" : "ADD"}</Btn>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {rows.map((c) => (
+          <div key={c.slug} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(212,175,55,0.07)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 999, padding: "5px 12px" }}>
+            <span style={{ width: 9, height: 9, borderRadius: "50%", background: c.color || gold }} />
+            <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#e8e0d0" }}>{c.name}</span>
+            <button onClick={() => del(c.slug)} style={{ background: "none", border: "none", color: "rgba(200,191,160,0.4)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+          </div>
+        ))}
+        {rows.length === 0 && <Empty>No communities yet</Empty>}
+      </div>
+    </div>
   );
 }
 

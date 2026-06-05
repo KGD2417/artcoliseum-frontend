@@ -7,6 +7,7 @@ import { SearchIcon } from "../components/Icons";
 import { SkeletonGrid } from "../components/ui/Skeleton";
 import { api, adaptArtwork } from "../utils/api";
 import { useLocale } from "../context/Locale";
+import { getCompare, toggleCompare, onCompareChange, MAX_COMPARE } from "../utils/compareStore";
 
 const STYLES = [
   { label: "Minimalism",     count: "12" },
@@ -43,6 +44,8 @@ export default function Gallery() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [compareIds, setCompareIds] = useState(getCompare());
+  useEffect(() => onCompareChange(() => setCompareIds(getCompare())), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -221,36 +224,44 @@ export default function Gallery() {
                   </div>
                 </ArtworkHoverCard>
 
-                {/* Card footer — title, artist, price/enquire link */}
+                {/* Card footer — title, artist, price/view link */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{item.title}</div>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{item.artist}</div>
-                    {/* Predefined works show their fixed price; customizable works are priced after enquiry */}
-                    {item.customizable === false && item.price > 0 && (
+                    {item.customizable === false && item.price > 0 ? (
                       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
                         {formatPrice(item.price)}
                       </div>
-                    )}
+                    ) : item.price_per_unit > 0 ? (
+                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
+                        from {formatPrice(item.price_per_unit)}/{item.unit || "unit"}²
+                      </div>
+                    ) : null}
                   </div>
                   <button
                     onClick={() => navigate(`/product/${item.id}`)}
                     style={{
-                      background: "transparent",
-                      border: "none",
-                      fontFamily: "'Cinzel',serif",
-                      fontSize: 10,
-                      letterSpacing: "0.16em",
-                      fontWeight: 600,
-                      color: "#D4AF37",
-                      whiteSpace: "nowrap",
-                      alignSelf: "center",
-                      cursor: "pointer",
-                      padding: 0,
+                      background: "transparent", border: "none",
+                      fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600,
+                      color: "#D4AF37", whiteSpace: "nowrap", alignSelf: "center", cursor: "pointer", padding: 0,
                     }}>
-                    {item.customizable === false ? "VIEW →" : "ENQUIRE →"}
+                    VIEW →
                   </button>
                 </div>
+                {/* Compare toggle */}
+                <label
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 8, cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: compareIds.includes(item.id) ? "#D4AF37" : "rgba(200,191,160,0.5)" }}>
+                  <input
+                    type="checkbox"
+                    checked={compareIds.includes(item.id)}
+                    onChange={() => toggleCompare(item.id)}
+                    disabled={!compareIds.includes(item.id) && compareIds.length >= MAX_COMPARE}
+                    style={{ accentColor: "#D4AF37" }}
+                  />
+                  COMPARE
+                </label>
               </motion.div>
             ))}
           </div>
@@ -275,6 +286,19 @@ export default function Gallery() {
           )}
         </div>
       </div>
+
+      {/* Floating compare tray */}
+      {compareIds.length > 0 && (
+        <div style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: 24, zIndex: 5000, display: "flex", alignItems: "center", gap: 14, padding: "12px 18px", borderRadius: 999, background: "rgba(20,17,11,0.95)", border: "1px solid rgba(212,175,55,0.4)", boxShadow: "0 14px 40px rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
+          <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", color: "#e8e0d0" }}>
+            COMPARE · {compareIds.length}/{MAX_COMPARE}
+          </span>
+          <button onClick={() => navigate("/compare")}
+            style={{ padding: "9px 20px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 700, cursor: "pointer" }}>
+            COMPARE NOW →
+          </button>
+        </div>
+      )}
 
       <style>{`
         @media (max-width: 800px) {

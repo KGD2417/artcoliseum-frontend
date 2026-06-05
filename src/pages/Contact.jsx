@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { api } from '../utils/api';
+import { validateForm, isValid, required, email as emailRule, minLen } from '../utils/validation';
 
 export default function Contact() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [busy, setBusy] = useState(false);
+  const [formErr, setFormErr] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validateForm(formData, {
+      name: [required('Name')], email: [required('Email'), emailRule],
+      message: [required('Message'), minLen(10, 'Message')],
+    });
+    if (!isValid(errs)) { setFormErr(Object.values(errs)[0]); return; }
+    setFormErr('');
     setBusy(true);
     try {
       await api.support.contact({ name: formData.name, email: formData.email, message: formData.message });
@@ -50,9 +58,11 @@ export default function Contact() {
           <textarea rows={5} value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} required
             style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.2)', padding: '14px', color: '#e8e0d0', fontFamily: "'Raleway', sans-serif", outline: 'none', resize: 'vertical' }} />
         </div>
+        {formErr && <p style={{ color: '#ff8a8a', fontFamily: "'Raleway',sans-serif", fontSize: 13, marginBottom: 16 }}>{formErr}</p>}
         <button
           type="submit"
           className="btn-gold"
+          disabled={busy}
           style={{
             width: '100%',
             height: 56,

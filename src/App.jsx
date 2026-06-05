@@ -4,7 +4,7 @@ import Home from './pages/Home';
 import Artists from './pages/Artists';
 import ArtistProfile from './pages/ArtistProfile';
 import ArtistPortal from './pages/ArtistPortal';
-import Gallery from './pages/Gallery';
+import ARView from './pages/ARView';
 import Categories from './pages/Categories';
 import ArtTypeDescription from './pages/ArtTypeDescription';
 import SubTypeDetail from './pages/SubTypeDetail';
@@ -28,16 +28,18 @@ import ChatRooms from './pages/ChatRooms';
 import Estimate from './pages/Estimate';
 import ComingSoon from './pages/ComingSoon';
 import Exhibition from './pages/Exhibition';
+import Compare from './pages/Compare';
 
 function App() {
   return (
     <Routes>
+      <Route path="/ar-view" element={<ARView />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="artists" element={<Artists />} />
         <Route path="artists/:id" element={<ArtistProfile />} />
         <Route path="become-artist" element={<ArtistPortal />} />
-        <Route path="gallery" element={<Gallery />} />
+        <Route path="compare" element={<Compare />} />
         <Route path="categories" element={<Categories />} />
         <Route path="categories/:medium" element={<ArtTypeDescription />} />
         <Route path="categories/:medium/:sub" element={<SubTypeDetail />} />

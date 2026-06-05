@@ -5,6 +5,7 @@ import SafeImage from "../components/SafeImage";
 import { SkeletonGrid } from "../components/ui/Skeleton";
 import { api } from "../utils/api";
 import { useLocale } from "../context/Locale";
+import { getCompare, toggleCompare, onCompareChange, MAX_COMPARE } from "../utils/compareStore";
 
 const SUBTYPE_DATA = {
   paintings: {
@@ -384,6 +385,8 @@ export default function SubTypeDetail() {
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null); // { label, mediumLabel }
   const [loading, setLoading] = useState(true);
+  const [compareIds, setCompareIds] = useState(getCompare());
+  useEffect(() => onCompareChange(() => setCompareIds(getCompare())), []);
 
   const fallback = SUBTYPE_DATA[medium]?.[sub];
 
@@ -594,9 +597,21 @@ export default function SubTypeDetail() {
                   <button
                     onClick={(e) => { e.stopPropagation(); navigate(`/product/${item.id}`); }}
                     style={{ background: "transparent", border: "none", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", fontWeight: 600, color: "#D4AF37", whiteSpace: "nowrap", cursor: "pointer", padding: 0, paddingTop: 4 }}>
-                    {item.customizable ? "ENQUIRE →" : "VIEW →"}
+                    VIEW →
                   </button>
                 </div>
+                <label
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 8, cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: compareIds.includes(item.id) ? "#D4AF37" : "rgba(200,191,160,0.5)" }}>
+                  <input
+                    type="checkbox"
+                    checked={compareIds.includes(item.id)}
+                    onChange={() => toggleCompare(item.id)}
+                    disabled={!compareIds.includes(item.id) && compareIds.length >= MAX_COMPARE}
+                    style={{ accentColor: "#D4AF37" }}
+                  />
+                  COMPARE
+                </label>
               </motion.div>
             ))}
           </div>

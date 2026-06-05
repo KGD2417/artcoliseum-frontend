@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { api } from "../utils/api";
+import { validateForm, isValid, required, email as emailRule, minLen } from "../utils/validation";
 
 const FAQS = [
   {
@@ -28,9 +29,16 @@ const FAQS = [
 export default function HelpDesk() {
   const [open, setOpen] = useState(0);
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [formErr, setFormErr] = useState("");
 
   const submit = async (e) => {
     e.preventDefault();
+    const errs = validateForm(form, {
+      name: [required("Name")], email: [required("Email"), emailRule],
+      subject: [required("Subject")], message: [required("Message"), minLen(10, "Message")],
+    });
+    if (!isValid(errs)) { setFormErr(Object.values(errs)[0]); return; }
+    setFormErr("");
     try {
       await api.support.createTicket({ name: form.name, email: form.email, subject: form.subject, message: form.message });
       alert(`Ticket submitted. Our concierge will respond to ${form.email} within 24 hours.`);
@@ -116,6 +124,7 @@ export default function HelpDesk() {
               value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
               style={{ ...inputS, resize: "vertical", fontFamily: "'Raleway',sans-serif" }}
             />
+            {formErr && <div style={{ color: "#ff8a8a", fontFamily: "'Raleway',sans-serif", fontSize: 12 }}>{formErr}</div>}
             <button type="submit" className="btn-gold-main" style={{ marginTop: 6 }}>SUBMIT TICKET</button>
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", textAlign: "center", marginTop: 4 }}>
               Average response time: under 4 hours

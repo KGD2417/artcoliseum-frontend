@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { SearchIcon } from "../components/Icons";
 import { SkeletonGrid } from "../components/ui/Skeleton";
+import ArtistAvatar from "../components/ArtistAvatar";
 import { api } from "../utils/api";
 
 const DEMO_ARTISTS = [
@@ -322,18 +323,22 @@ export default function Artists() {
                   overflow: "hidden",
                   height: 280,
                 }}>
-                <motion.img
-                  src={artist.image}
-                  alt={artist.name}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                  whileHover={{ scale: 1.06 }}
-                  transition={{ duration: 0.5 }}
-                />
+                {artist.image ? (
+                  <motion.img
+                    src={artist.image}
+                    alt={artist.name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                    whileHover={{ scale: 1.06 }}
+                    transition={{ duration: 0.5 }}
+                  />
+                ) : (
+                  <ArtistAvatar gender={artist.gender} size={200} style={{ width: "100%", height: "100%", borderRadius: 0 }} />
+                )}
                 <div
                   style={{
                     position: "absolute",

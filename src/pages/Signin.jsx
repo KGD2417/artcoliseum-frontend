@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/Auth';
+import { validateForm, isValid, required, email as emailRule, phoneIN, minLen } from '../utils/validation';
 
 export default function SignIn() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +18,11 @@ export default function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const rules = isLogin
+      ? { email: [required('Email'), emailRule], password: [required('Password'), minLen(6, 'Password')] }
+      : { name: [required('Full name')], email: [required('Email'), emailRule], phone: [required('Phone'), phoneIN], password: [required('Password'), minLen(6, 'Password')] };
+    const errs = validateForm({ name, email, phone, password }, rules);
+    if (!isValid(errs)) { setError(Object.values(errs)[0]); return; }
     setBusy(true);
     try {
       const { error } = isLogin

@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { validateForm, isValid, required, email as emailRule, phoneIN } from "../utils/validation";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
+import { useAuth } from "../context/Auth";
+
+// A Google-Maps directions link for a venue location string.
+const directionsUrl = (loc) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc || "")}`;
 import e4 from "../assets/events/e4.png";
 import e5 from "../assets/events/e5.png";
 import e6 from "../assets/events/e6.png";
@@ -99,7 +104,7 @@ const FALLBACK_UPCOMING = [
   },
 ];
 
-function EventCard({ event, index, status, onAction, onOpenDetail }) {
+function EventCard({ event, index, status, registered, onAction, onOpenDetail }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
@@ -128,6 +133,9 @@ function EventCard({ event, index, status, onAction, onOpenDetail }) {
           </div>
         )}
         <div className="ev-page-title">{event.title}</div>
+        {registered && (
+          <div style={{ display: "inline-block", margin: "4px 0", padding: "3px 10px", borderRadius: 999, background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.5)", color: "#4ade80", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em" }}>REGISTERED ✓</div>
+        )}
         <div className="ev-page-location">{event.location}</div>
         <div className="ev-page-desc">{event.desc}</div>
         <div className="ev-page-curator">Curated by <span>{event.curator}</span></div>
@@ -138,7 +146,7 @@ function EventCard({ event, index, status, onAction, onOpenDetail }) {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={(e) => { e.stopPropagation(); onAction(event, "register"); }}>
-              REGISTER →
+              {registered ? "REGISTERED ✓" : "REGISTER →"}
             </motion.button>
             <motion.button
               className="btn-secondary ev-page-btn"
@@ -156,7 +164,7 @@ function EventCard({ event, index, status, onAction, onOpenDetail }) {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={(e) => { e.stopPropagation(); onAction(event, "register"); }}>
-              REGISTER →
+              {registered ? "REGISTERED ✓" : "REGISTER →"}
             </motion.button>
             <motion.button
               className="btn-secondary ev-page-btn"
@@ -172,21 +180,53 @@ function EventCard({ event, index, status, onAction, onOpenDetail }) {
   );
 }
 
+function EventInfo({ event }) {
+  const rows = [
+    ["Address", event.address],
+    ["Parking", event.parking],
+    ["Details", event.details],
+  ].filter(([, v]) => v);
+  if (rows.length === 0) return null;
+  return (
+    <div style={{ display: "grid", gap: 12, marginTop: 4 }}>
+      {rows.map(([label, val]) => (
+        <div key={label}>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 4 }}>{label.toUpperCase()}</div>
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(220,210,190,0.78)", lineHeight: 1.6, whiteSpace: "pre-line" }}>{val}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Events() {
   const navigate = useNavigate();
   const headerRef = useRef(null);
   const headerInView = useInView(headerRef, { once: true });
 
+  const { user } = useAuth();
   const [tab, setTab] = useState("ongoing");
   const [activeEvent, setActiveEvent] = useState(null);
   const [activeMode, setActiveMode] = useState("register");
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
+  const [registeredIds, setRegisteredIds] = useState(() => new Set());
   const [done, setDone] = useState(false);
   const [past, setPast] = useState(FALLBACK_PAST);
   const [ongoing, setOngoing] = useState(FALLBACK_ONGOING);
   const [upcoming, setUpcoming] = useState(FALLBACK_UPCOMING);
   const [detailEvent, setDetailEvent] = useState(null);
   const [search, setSearch] = useState("");
+
+  // Logged-in collectors: prefill the registration form from their profile, and
+  // load which events they've already registered for.
+  useEffect(() => {
+    if (!user) return;
+    api.auth.me().then((m) => setProfile({ name: m?.full_name || "", email: m?.user?.email || user.email || "", phone: m?.phone || "" })).catch(() => {});
+    api.events.myRegistrations().then((rows) => setRegisteredIds(new Set((rows || []).map((r) => r.id)))).catch(() => {});
+  }, [user]);
+
+  const isRegistered = (ev) => !!ev?.id && registeredIds.has(ev.id);
 
   useEffect(() => {
     (async () => {
@@ -220,6 +260,10 @@ export default function Events() {
         location: r.location,
         desc: r.description,
         img: r.image_url,
+        curator: r.curator,
+        address: r.address,
+        parking: r.parking,
+        details: r.details,
       });
       setPast(data.filter(r => r.status === "past").map(map));
       setOngoing(data.filter(r => r.status === "ongoing").map(map));
@@ -231,19 +275,24 @@ export default function Events() {
     setActiveEvent(event);
     setActiveMode(mode);
     setDone(false);
-    setForm({ name: "", email: "", phone: "", message: "" });
+    // Prefill from the collector's profile so they don't re-enter known details.
+    setForm({ name: profile.name, email: profile.email, phone: profile.phone, message: "" });
   };
-  const close = () => { if (!done) setActiveEvent(null); };
+  const close = () => { setActiveEvent(null); setDone(false); };
 
   const submit = async (e) => {
     e.preventDefault();
+    const errs = validateForm(form, {
+      name: [required("Name")], email: [required("Email"), emailRule], phone: [phoneIN],
+    });
+    if (!isValid(errs)) { alert(Object.values(errs)[0]); return; }
     if (activeEvent?.id) {
       try {
         await api.events.register(activeEvent.id, { name: form.name, email: form.email, phone: form.phone, message: form.message });
+        if (activeMode === "register") setRegisteredIds((prev) => new Set(prev).add(activeEvent.id));
       } catch (err) { alert(err.message); return; }
     }
     setDone(true);
-    setTimeout(() => { setActiveEvent(null); setDone(false); }, 2400);
   };
 
   return (
@@ -345,6 +394,7 @@ export default function Events() {
                   event={ev}
                   index={i}
                   status={tab === "past" ? "PAST" : tab === "ongoing" ? "ONGOING" : "UPCOMING"}
+                  registered={isRegistered(ev)}
                   onAction={open}
                   onOpenDetail={setDetailEvent}
                 />
@@ -406,10 +456,11 @@ export default function Events() {
                 }}>
                   {detailEvent.desc}
                 </p>
+                <EventInfo event={detailEvent} />
                 {detailEvent.curator && (
                   <div style={{
                     fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
-                    color: "#D4AF37",
+                    color: "#D4AF37", marginTop: 16,
                   }}>
                     Curated by <span style={{ color: "#fff" }}>{detailEvent.curator}</span>
                   </div>
@@ -436,16 +487,35 @@ export default function Events() {
               exit={{ opacity: 0, y: 24, scale: 0.96 }}
               transition={{ type: "spring", stiffness: 280, damping: 26 }}
               onClick={(e) => e.stopPropagation()}>
-              {done ? (
+              {activeMode === "register" && (done || isRegistered(activeEvent)) ? (
+                <div className="reg-success">
+                  <button className="reg-modal-close" onClick={() => { setActiveEvent(null); setDone(false); }}>×</button>
+                  <div className="reg-success-icon">✓</div>
+                  <h3 className="reg-success-title">You're Registered</h3>
+                  <p className="reg-success-desc">
+                    Your spot for <em>{activeEvent.title}</em> is confirmed. Head to the venue on the day — we'll see you there.
+                  </p>
+                  <div style={{ marginTop: 18, padding: "16px 18px", borderRadius: 10, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.25)", textAlign: "left" }}>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>VENUE</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{activeEvent.location || "To be announced"}</div>
+                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(220,210,190,0.7)", marginTop: 4 }}>
+                      {activeEvent.date}{activeEvent.time ? ` · ${activeEvent.time}` : ""}
+                    </div>
+                    <div style={{ marginTop: 12 }}><EventInfo event={activeEvent} /></div>
+                  </div>
+                  {(activeEvent.address || activeEvent.location) && (
+                    <a href={directionsUrl(activeEvent.address || activeEvent.location)} target="_blank" rel="noopener noreferrer"
+                      className="btn-primary" style={{ display: "inline-block", marginTop: 16, textDecoration: "none" }}>
+                      GET DIRECTIONS →
+                    </a>
+                  )}
+                </div>
+              ) : done ? (
                 <div className="reg-success">
                   <div className="reg-success-icon">✓</div>
-                  <h3 className="reg-success-title">
-                    {activeMode === "register" ? "Registered!" : "Enquiry Received"}
-                  </h3>
+                  <h3 className="reg-success-title">Enquiry Received</h3>
                   <p className="reg-success-desc">
-                    {activeMode === "register"
-                      ? <>You've been registered for <em>{activeEvent.title}</em>. We'll be in touch soon.</>
-                      : <>Thank you for your interest in <em>{activeEvent.title}</em>. Our curator will respond within 24 hours.</>}
+                    Thank you for your interest in <em>{activeEvent.title}</em>. Our curator will respond within 24 hours.
                   </p>
                 </div>
               ) : (
@@ -464,6 +534,11 @@ export default function Events() {
                     </div>
                   </div>
                   <form className="reg-form" onSubmit={submit}>
+                    {user && (
+                      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(212,175,55,0.8)", marginBottom: 4 }}>
+                        Prefilled from your account — edit if needed.
+                      </div>
+                    )}
                     <div className="reg-form-row">
                       <input className="reg-input" required placeholder="Full Name"
                         value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />

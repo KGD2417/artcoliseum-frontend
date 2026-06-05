@@ -160,18 +160,29 @@ const FLIP_IMAGES = [
 const ABOUT_IMAGES = [p8, a1, p3];
 
 /* ── Preservation floating images ────────────────────────────────── */
+// Scattered all around the centre panel — across the top & bottom bands and
+// down both sides at varied depths — but never behind the panel itself.
 const FLOAT_ART = [
-  { src: p1, top: "8%",   left: "10%",  size: 108 },
-  { src: p2, top: "20%",  left: "30%",  size: 84,  mobileHide: true },
-  { src: p3, top: "5%",   left: "50%",  size: 70,  mobileHide: true },
-  { src: p4, top: "10%",  right: "12%", size: 116 },
-  { src: p5, top: "32%",  right: "5%",  size: 88,  mobileHide: true },
-  { src: p6, top: "52%",  right: "9%",  size: 98,  mobileHide: true },
-  { src: p7, top: "50%",  left: "4%",   size: 108, mobileHide: true },
-  { src: p2, bottom: "8%", left: "18%", size: 86,  mobileHide: true },
-  { src: p4, bottom: "16%",left: "44%", size: 68,  mobileHide: true },
-  { src: p6, bottom: "6%", right: "28%",size: 96,  mobileHide: true },
-  { src: p3, bottom: "3%", right: "12%",size: 80 },
+  // top band — spans the full width, above the panel
+  { src: p1, top: "3%",    left: "11%", size: 96 },
+  { src: p3, top: "2%",    left: "41%", size: 72,  mobileHide: true },
+  { src: p5, top: "4%",    left: "59%", size: 70,  mobileHide: true },
+  { src: p4, top: "3%",    right: "12%", size: 104 },
+  // left region — varied depth
+  { src: p2, top: "26%",   left: "3%",  size: 90,  mobileHide: true },
+  { src: p7, top: "48%",   left: "8%",  size: 104, mobileHide: true },
+  { src: p6, top: "70%",   left: "2%",  size: 84,  mobileHide: true },
+  { src: p3, top: "40%",   left: "21%", size: 62,  mobileHide: true },
+  // right region — varied depth
+  { src: p5, top: "28%",   right: "5%",  size: 86,  mobileHide: true },
+  { src: p6, top: "52%",   right: "2%",  size: 100, mobileHide: true },
+  { src: p2, top: "72%",   right: "8%",  size: 76,  mobileHide: true },
+  { src: p4, top: "44%",   right: "21%", size: 60,  mobileHide: true },
+  // bottom band — spans the full width, below the panel
+  { src: p4, bottom: "3%", left: "13%", size: 80 },
+  { src: p2, bottom: "2%", left: "42%", size: 72,  mobileHide: true },
+  { src: p6, bottom: "4%", left: "60%", size: 74,  mobileHide: true },
+  { src: p1, bottom: "3%", right: "13%", size: 86 },
 ];
 
 const FLOAT_PARAMS = FLOAT_ART.map((_, i) => ({
@@ -301,7 +312,7 @@ function CylinderCarousel({ items, navigate }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.06 }}
-              onClick={() => navigate(item.id ? `/product/${item.id}` : "/gallery")}
+              onClick={() => navigate(item.id ? `/product/${item.id}` : "/categories")}
               style={{
                 flex: "0 0 200px", height: 270,
                 borderRadius: 14, overflow: "hidden",
@@ -365,7 +376,7 @@ function CylinderCarousel({ items, navigate }) {
               <div className="carousel-glass-medium">{item.medium}</div>
               <button
                 className="carousel-glass-btn"
-                onClick={(e) => { e.stopPropagation(); navigate(item.id ? `/product/${item.id}` : "/gallery"); }}>
+                onClick={(e) => { e.stopPropagation(); navigate(item.id ? `/product/${item.id}` : "/categories"); }}>
                 View Artwork ›
               </button>
             </div>
@@ -1055,7 +1066,7 @@ export default function Home() {
                 className="btn-secondary"
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => navigate("/gallery")}>
+                onClick={() => navigate("/categories")}>
                 EXPLORE GALLERY →
               </motion.button>
             </ContainerAnimated>

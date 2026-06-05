@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { intRange, minLen } from "../utils/validation";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/Auth";
@@ -143,12 +144,25 @@ function LockedNote({ children }) {
 }
 
 function KycForm({ onApplied }) {
-  const [f, setF] = useState({ name: "", age: "", art_type: "", location: "", about: "" });
+  const [f, setF] = useState({ name: "", age: "", art_type: "", location: "", about: "", gender: "" });
   const [avatar, setAvatar] = useState(null);
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  // You're already a user — prefill name (and location) from your profile.
+  useEffect(() => {
+    api.auth.me().then((m) => setF((p) => ({
+      ...p,
+      name: p.name || m?.full_name || "",
+      location: p.location || (m?.addresses?.find((a) => a.is_default) || m?.addresses?.[0])?.city || "",
+    }))).catch(() => {});
+  }, []);
   const submit = async () => {
-    if (!f.name) return alert("Your name is required.");
+    if (!f.name.trim()) return alert("Your name is required.");
+    if (!f.art_type.trim()) return alert("Tell us what kind of artist you are.");
+    const ageErr = f.age ? intRange(16, 100, "Age")(f.age) : "";
+    if (ageErr) return alert(ageErr);
+    const aboutErr = minLen(20, "About you")(f.about);
+    if (aboutErr) return alert(aboutErr);
     setBusy(true);
     try {
       const s = await api.artist.apply({ ...f, age: f.age ? Number(f.age) : null, avatar_url: avatar });
@@ -162,8 +176,16 @@ function KycForm({ onApplied }) {
         competition. Win it — judged by an external jury — to unlock your seller profile.
       </p>
       <Field l="FULL NAME"><input style={inputStyle} value={f.name} onChange={set("name")} /></Field>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
         <Field l="AGE"><input style={inputStyle} type="number" value={f.age} onChange={set("age")} /></Field>
+        <Field l="GENDER">
+          <select style={inputStyle} value={f.gender} onChange={set("gender")}>
+            <option value="">Prefer not to say</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </Field>
         <Field l="WHERE YOU LIVE"><input style={inputStyle} value={f.location} onChange={set("location")} /></Field>
       </div>
       <Field l="WHAT KIND OF ARTIST ARE YOU?"><input style={inputStyle} value={f.art_type} onChange={set("art_type")} placeholder="e.g. Oil painter, Sculptor" /></Field>
@@ -175,40 +197,72 @@ function KycForm({ onApplied }) {
 }
 
 function CompetitionPanel({ competitions }) {
-  const open = competitions.find((c) => c.status === "open") || competitions[0];
+  const comp = competitions.find((c) => ["open", "live", "judging"].includes(c.status)) || competitions[0];
   const [entry, setEntry] = useState({ title: "", description: "" });
   const [images, setImages] = useState([]);
   const [video, setVideo] = useState(null);
   const [mine, setMine] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => { api.competitions.myEntries().then(setMine).catch(() => setMine([])); }, []);
 
   const submit = async () => {
-    if (!open) return alert("No open competition right now.");
-    if (!entry.title) return alert("Give your entry a title.");
+    if (!comp || comp.status !== "open") return alert("This competition is not accepting entries right now.");
+    if (!agreed) return alert("Please read and agree to the rules & regulations first.");
+    if (!entry.title.trim()) return alert("Give your artwork a title.");
+    if (!entry.description.trim()) return alert("Add a short narrative describing your artwork.");
+    if (images.length === 0) return alert("Upload at least one image of your artwork.");
     setBusy(true);
     try {
-      await api.competitions.submitEntry(open.id, { ...entry, image_urls: images, video_url: video });
+      await api.competitions.submitEntry(comp.id, { ...entry, image_urls: images, video_url: video });
       const m = await api.competitions.myEntries();
       setMine(m);
       setEntry({ title: "", description: "" }); setImages([]); setVideo(null);
-      alert("Entry submitted! Our jury will review it.");
+      alert("Entry submitted! It will appear in the live gallery on the competition day.");
     } catch (e) { alert(e.message); } finally { setBusy(false); }
   };
 
   return (
     <>
       <div style={card}>
-        {open ? (
+        {comp ? (
           <>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: "#fff" }}>{open.title}</div>
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, margin: "8px 0 20px" }}>{open.description}</div>
-            <Field l="ARTWORK TITLE"><input style={inputStyle} value={entry.title} onChange={(e) => setEntry({ ...entry, title: e.target.value })} /></Field>
-            <Field l="DESCRIPTION"><textarea style={{ ...inputStyle, minHeight: 80 }} value={entry.description} onChange={(e) => setEntry({ ...entry, description: e.target.value })} /></Field>
-            <Field l="IMAGES"><Uploader kind="image" multiple hint="UPLOAD IMAGES" onDone={setImages} /></Field>
-            <Field l="VIDEO (OPTIONAL)"><Uploader kind="video" hint="UPLOAD VIDEO" onDone={(u) => setVideo(u[0])} /></Field>
-            <button style={{ ...btn, opacity: busy ? 0.7 : 1 }} disabled={busy} onClick={submit}>{busy ? "SUBMITTING…" : "SUBMIT ENTRY"}</button>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: "#fff" }}>{comp.title}</div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, margin: "8px 0 14px" }}>{comp.description}</div>
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 18 }}>
+              {comp.event_date && (
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: gold }}>
+                  DAY · {new Date(comp.event_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </span>
+              )}
+              {comp.min_artists > 0 && (
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: (comp.entry_count || 0) >= comp.min_artists ? "#4ade80" : "rgba(200,191,160,0.6)" }}>
+                  ARTISTS · {comp.entry_count || 0} / {comp.min_artists}
+                </span>
+              )}
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: gold }}>{comp.status.toUpperCase()}</span>
+            </div>
+            {comp.status === "open" ? (
+              <>
+                <CompetitionRules />
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "4px 0 18px", cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0", lineHeight: 1.5 }}>
+                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ accentColor: gold, marginTop: 3 }} />
+                  I have read and agree to the competition rules &amp; regulations above.
+                </label>
+                <Field l="ARTWORK TITLE"><input style={inputStyle} value={entry.title} onChange={(e) => setEntry({ ...entry, title: e.target.value })} /></Field>
+                <Field l="NARRATIVE — WHAT IT MEANS"><textarea style={{ ...inputStyle, minHeight: 80 }} value={entry.description} onChange={(e) => setEntry({ ...entry, description: e.target.value })} /></Field>
+                <Field l="IMAGES (AT LEAST ONE)"><Uploader kind="image" multiple hint="UPLOAD IMAGES" onDone={setImages} /></Field>
+                <Field l="VIDEO (OPTIONAL)"><Uploader kind="video" hint="UPLOAD VIDEO" onDone={(u) => setVideo(u[0])} /></Field>
+                <button style={{ ...btn, opacity: (busy || !agreed) ? 0.5 : 1, cursor: (busy || !agreed) ? "not-allowed" : "pointer" }} disabled={busy || !agreed} onClick={submit}>{busy ? "SUBMITTING…" : "SUBMIT ENTRY"}</button>
+              </>
+            ) : (
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.7)", padding: "12px 16px", borderRadius: 10, background: "rgba(212,175,55,0.06)", border: "1px dashed rgba(212,175,55,0.3)" }}>
+                {comp.status === "live" || comp.status === "judging"
+                  ? "🎉 The competition is live — open the gallery from the top bar to see all entries being judged."
+                  : "Entries are closed for this competition."}
+              </div>
+            )}
           </>
         ) : (
           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.6)" }}>No competition is open right now. Check back soon.</div>
@@ -229,9 +283,44 @@ function CompetitionPanel({ competitions }) {
   );
 }
 
+const COMPETITION_RULES = [
+  ["Eligibility", "Open only to unverified (competing) artists. Verified sellers and Art Coliseum staff may not enter."],
+  ["Original work", "Each entry must be your own original, unpublished artwork. Plagiarised or AI-generated-only work is disqualified."],
+  ["One entry", "One entry per artist per competition. The most recent submission stands."],
+  ["Submission", "Provide a title, a short narrative and at least one clear, high-resolution image (video optional)."],
+  ["Judging", "An external jury rates each entry 1–5 on the competition day. The highest average score wins."],
+  ["Prize", "The winner is promoted to a verified Art Coliseum artist and may list and sell their work."],
+  ["Conduct", "Entries must be appropriate for public display. The jury's decision is final."],
+];
+
+function CompetitionRules() {
+  const [open, setOpen] = useState(true);
+  return (
+    <div style={{ border: "1px solid rgba(212,175,55,0.22)", borderRadius: 12, padding: "16px 18px", marginBottom: 16, background: "rgba(212,175,55,0.04)" }}>
+      <button onClick={() => setOpen((v) => !v)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: gold }}>RULES &amp; REGULATIONS</span>
+        <span style={{ color: gold, fontSize: 18 }}>{open ? "−" : "+"}</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          {COMPETITION_RULES.map(([h, body]) => (
+            <div key={h} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: gold, marginTop: 7, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.12em", color: "#e8e0d0" }}>{h.toUpperCase()}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.72)", lineHeight: 1.6, marginTop: 2 }}>{body}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ArtworkForm() {
   const [cats, setCats] = useState([]);
-  const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
+  const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, ratio_locked: false, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
   const [images, setImages] = useState([]);
   const [videos, setVideos] = useState([]);
   const [model3d, setModel3d] = useState(null);
@@ -254,12 +343,14 @@ function ArtworkForm() {
 
   const submit = async () => {
     if (!f.title || !f.category_id) return alert("Title and main medium are required.");
+    if (f.customizable && !(Number(f.price_per_unit) > 0)) return alert("Customizable artworks need a price per unit greater than 0.");
+    if (!f.customizable && !(Number(f.price) > 0)) return alert("Fixed-price artworks need a price greater than 0.");
     setBusy(true);
     try {
       await api.artist.createArtwork({
         title: f.title, narrative: f.narrative, medium: f.medium, category_id: f.category_id,
         subtype_id: f.subtype_id || null, base_dimensions: f.base_dimensions,
-        customizable: f.customizable,
+        customizable: f.customizable, ratio_locked: f.customizable && f.ratio_locked,
         price_per_unit: f.customizable && f.price_per_unit ? Number(f.price_per_unit) : null,
         unit: f.customizable ? f.unit : null,
         min_width: f.customizable && f.min_width !== "" ? Number(f.min_width) : null,
@@ -306,6 +397,12 @@ function ArtworkForm() {
         <input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} />
         This artwork is customizable (priced per unit)
       </label>
+      {f.customizable && (
+        <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
+          <input type="checkbox" checked={f.ratio_locked} onChange={(e) => setF({ ...f, ratio_locked: e.target.checked })} style={{ accentColor: gold }} />
+          Lock width : height ratio (buyer's W &amp; H stay proportional)
+        </label>
+      )}
 
       {f.customizable ? (
         <>

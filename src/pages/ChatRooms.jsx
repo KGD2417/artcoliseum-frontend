@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../context/Auth";
 
 /* ─── Data ─────────────────────────────────────────── */
 const ROOMS = [
@@ -283,6 +284,7 @@ function NewRoomModal({ onClose }) {
 
 /* ─── Main ──────────────────────────────────────────── */
 export default function ChatRooms() {
+  const { role } = useAuth();
   const [activeRoom, setActiveRoom] = useState(null);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState({});
@@ -380,25 +382,27 @@ export default function ChatRooms() {
             </motion.button>
           </div>
         )}
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setShowNewRoom(true)}
-          style={{
-            padding: "8px 16px",
-            background: "transparent",
-            color: "rgba(200,191,160,0.6)",
-            border: "1px solid rgba(212,175,55,0.2)",
-            borderRadius: 999,
-            fontFamily: "'Cinzel',serif", fontSize: 9,
-            letterSpacing: "0.14em", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
-          }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          NEW ROOM
-        </motion.button>
+        {role === "admin" && (
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowNewRoom(true)}
+            style={{
+              padding: "8px 16px",
+              background: "transparent",
+              color: "rgba(200,191,160,0.6)",
+              border: "1px solid rgba(212,175,55,0.2)",
+              borderRadius: 999,
+              fontFamily: "'Cinzel',serif", fontSize: 9,
+              letterSpacing: "0.14em", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6,
+            }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            NEW ROOM
+          </motion.button>
+        )}
       </div>
 
       {/* Body: sidebar + chat + users */}

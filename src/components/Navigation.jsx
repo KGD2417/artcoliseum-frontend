@@ -32,7 +32,6 @@ const SETU_LINKS = [
 const ALL_LINKS = [
   ...LINKS,
   ...SETU_LINKS,
-  { label: "GALLERY", to: "/gallery" },
   { label: "CHAT", to: "/chat" },
   { label: "ESTIMATE", to: "/estimate" },
   { label: "CONTACT", to: "/contact" },

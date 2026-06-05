@@ -4,6 +4,8 @@ import Footer from './Footer';
 import ChatbotWidget from './ChatbotWidget';
 import MessagesWidget from './MessagesWidget';
 import ScrollToTop from './ScrollToTop';
+import CompetitionLive from './CompetitionLive';
+import CompareTray from './CompareTray';
 
 export default function Layout() {
   return (
@@ -16,6 +18,8 @@ export default function Layout() {
       <Footer />
       <ChatbotWidget />
       <MessagesWidget />
+      <CompetitionLive />
+      <CompareTray />
     </div>
   );
 }
