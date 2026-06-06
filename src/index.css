@@ -661,14 +661,14 @@ a {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(22px) saturate(170%);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(8, 6, 4, 0.52);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-top: 1px solid rgba(212, 175, 55, 0.28);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 -10px 30px rgba(0, 0, 0, 0.18);
-  padding: 22px 18px 18px;
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 -8px 24px rgba(0, 0, 0, 0.28);
+  padding: 12px 12px 10px;
   transform: translateY(100%);
   transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -678,42 +678,47 @@ a {
 
 .carousel-glass-title {
   font-family: "Cormorant Garamond", serif;
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 600;
   color: #fff;
-  margin-bottom: 4px;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  margin-bottom: 2px;
+  line-height: 1.2;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .carousel-glass-medium {
   font-family: "Raleway", sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.82);
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  font-size: 9px;
+  color: rgba(212, 175, 55, 0.85);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
 }
 .carousel-glass-price {
   font-family: "Cormorant Garamond", serif;
-  font-size: 22px;
+  font-size: 14px;
   font-weight: 700;
   color: #ffe082;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
 .carousel-glass-btn {
   font-family: "Cinzel", serif;
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: 8px;
+  letter-spacing: 0.14em;
   color: #111;
   background: linear-gradient(135deg, #d4af37, #e8c53a);
   border: none;
   border-radius: 999px;
-  padding: 9px 20px;
+  padding: 6px 14px;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 .carousel-glass-btn:hover {
   transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.4);
 }
 
 /* ═══════════════════════════════════════════════
@@ -4975,13 +4980,13 @@ input[type="email"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 80px;
+  gap: 120px;
   max-width: 1200px;
   margin: 0 auto;
 }
 .home-launch-visual {
   flex: 0 0 auto;
-  width: 360px;
+  width: 300px;
 }
 .home-launch-text {
   flex: 1 1 340px;

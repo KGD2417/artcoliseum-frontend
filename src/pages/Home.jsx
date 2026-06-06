@@ -242,7 +242,7 @@ function SectionHeader({ tag, title, italic, sub }) {
 function CylinderCarousel({ items, navigate }) {
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [dims, setDims] = useState({ w: 240, h: 320, r: 420 });
+  const [dims, setDims] = useState({ w: 185, h: 247, r: 296 });
   const [isMobile, setIsMobile] = useState(false);
   const wrapRef = useRef(null);
   const startX = useRef(0);
@@ -253,9 +253,11 @@ function CylinderCarousel({ items, navigate }) {
       const vw = window.innerWidth;
       setIsMobile(vw <= 640);
       const avail = Math.min(vw - 32, 1100);
-      const w = Math.round(Math.max(160, Math.min(240, avail * 0.38)));
+      // Reduced from 0.38 / max 240 → 0.24 / max 160 for smaller cards
+      const w = Math.round(Math.max(140, Math.min(200, avail * 0.28)));
       const h = Math.round(w * (320 / 240));
-      const r = Math.max(220, Math.round(avail / 2 - w * 0.42));
+      // Radius tied to card width so gap stays tight regardless of viewport
+      const r = Math.round(w * 1.6);
       setDims({ w, h, r });
     };
     recompute();
@@ -771,7 +773,7 @@ export default function Home() {
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
             <CircularTestimonials
               imagesOnly
-              cardHeight="480px"
+              cardHeight="380px"
               testimonials={PRODUCT_TESTIMONIALS}
               autoplay={true}
               colors={{
