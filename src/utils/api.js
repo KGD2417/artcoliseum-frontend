@@ -437,6 +437,10 @@ export const api = {
     revenue() {
       return request("GET", "/admin/revenue");
     },
+    // Returns the raw CSV / Tally-XML text for download. format = "csv" | "tally".
+    exportRevenue(format = "csv") {
+      return request("GET", `/admin/revenue/export?format=${encodeURIComponent(format)}`);
+    },
     updateArtwork(id, patch) {
       return request("PATCH", `/artworks/${encodeURIComponent(id)}`, {
         body: patch,

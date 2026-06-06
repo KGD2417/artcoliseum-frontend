@@ -90,7 +90,10 @@
       "Bash(awk 'NR>=5020 && NR<=5044 && /@media/{print NR\": \"$0}' src/index.css)",
       "Bash(awk 'NR<=5044 && /@media/{last=NR\": \"$0} END{}' src/index.css)",
       "Bash(awk -F: '$1<=5044')",
-      "Bash(npx --no-install eslint src/components/Layout.jsx src/pages/AdminDashboard.jsx src/pages/ChatRooms.jsx)"
+      "Bash(npx --no-install eslint src/components/Layout.jsx src/pages/AdminDashboard.jsx src/pages/ChatRooms.jsx)",
+      "Bash(grep -n '\\\\${o.total}\\\\|\\\\$\" + \\\\|Price \\(USD\\)\\\\|· \\\\${\\\\|USD' src/pages/AdminDashboard.jsx)",
+      "Bash(grep -n 'o.total}\\\\|\\(USD\\)\\\\|· \\\\${\\\\| \\\\$o\\\\.\\\\|inr\\(o' src/pages/AdminDashboard.jsx)",
+      "Bash(npx --no-install eslint src/pages/AdminDashboard.jsx)"
     ]
   },
   "hooks": {

@@ -329,7 +329,7 @@ function Orders() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <div>
                 <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold }}>#{o.id.slice(0, 8).toUpperCase()}</div>
-                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, color: "#fff" }}>{(o.items || []).map(i => i.title).join(", ") || "Order"} · ${o.total}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, color: "#fff" }}>{(o.items || []).map(i => i.title).join(", ") || "Order"} · {inr(o.total)}</div>
                 <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{o.full_name} · {o.status.toUpperCase()}</div>
               </div>
               {!d && o.status !== "pending" && <Btn onClick={() => loadDelivery(o.id)}>MANAGE DELIVERY</Btn>}
@@ -444,7 +444,24 @@ const ckLabel = { display: "flex", alignItems: "center", gap: 8, margin: "6px 0 
 
 function Tally() {
   const [data, setData] = useState(null);
-  useEffect(() => { api.admin.revenue().then(setData).catch(() => setData(null)); }, []);
+  const [busy, setBusy] = useState("");
+  const load = () => api.admin.revenue().then(setData).catch(() => setData(null));
+  useEffect(() => { load(); }, []);
+
+  const download = async (format) => {
+    setBusy(format);
+    try {
+      const text = await api.admin.exportRevenue(format);
+      const blob = new Blob([text], { type: format === "tally" ? "application/xml" : "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = format === "tally" ? "art-coliseum-tally.xml" : "art-coliseum-revenue.csv";
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) { alert(e.message); } finally { setBusy(""); }
+  };
+
   if (!data) return <Panel title="Price & Tally"><Empty>Loading P&L…</Empty></Panel>;
   const t = data.totals;
   const cards = [
@@ -455,8 +472,15 @@ function Tally() {
   ];
   return (
     <Panel title="Price & Tally — Profit / Loss">
-      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", marginBottom: 16 }}>
-        Net profit = artwork sales − artist payouts (payout rate {Math.round(data.payout_rate * 100)}%). GST & delivery are pass-through.
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 16 }}>
+        <Btn primary disabled={!!busy} onClick={() => download("tally")}>{busy === "tally" ? "EXPORTING…" : "⬇ EXPORT TO TALLY (.XML)"}</Btn>
+        <Btn disabled={!!busy} onClick={() => download("csv")}>{busy === "csv" ? "EXPORTING…" : "⬇ EXPORT CSV (EXCEL)"}</Btn>
+        <Btn ghost onClick={load}>REFRESH</Btn>
+      </div>
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginBottom: 16, lineHeight: 1.6 }}>
+        Figures are derived from <strong style={{ color: "#D4AF37" }}>{t.orders} paid order{t.orders === 1 ? "" : "s"}</strong>.
+        Net profit = artwork sales − artist payouts (payout rate {Math.round(data.payout_rate * 100)}%). GST &amp; delivery are pass-through.
+        The Tally file imports paid orders as Sales vouchers plus artist-payout journals; the CSV opens in Excel.
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 12, marginBottom: 22 }}>
         {cards.map(([l, v]) => (
@@ -772,7 +796,7 @@ function AddArtworkForArtist({ tick }) {
         <input placeholder="Title" value={f.title} onChange={set("title")} style={miniInput} />
         <input placeholder="Medium (e.g. Oil on canvas)" value={f.medium} onChange={set("medium")} style={miniInput} />
         <input placeholder="Dimensions (e.g. 80 × 60 cm)" value={f.base_dimensions} onChange={set("base_dimensions")} style={miniInput} />
-        <input placeholder="Price (USD)" value={f.price} onChange={set("price")} style={miniInput} disabled={f.customizable} />
+        <input placeholder="Price (₹)" value={f.price} onChange={set("price")} style={miniInput} disabled={f.customizable} />
         <input placeholder="Narrative / description" value={f.narrative} onChange={set("narrative")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
         {f.customizable && (
           <div style={{ gridColumn: "1 / -1" }}>
