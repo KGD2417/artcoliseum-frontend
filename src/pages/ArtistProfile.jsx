@@ -39,7 +39,7 @@ export default function ArtistProfile() {
 
   const demo = DEMO[id];
   const name = artist?.name || works[0]?.artist_name || demo?.name || "Artist";
-  const bio = artist?.bio || demo?.bio || "An ARRT Coliseum artist. Their full monograph is being prepared.";
+  const bio = artist?.bio || demo?.bio || "An Art Coliseum artist. Their full monograph is being prepared.";
   const location = artist?.location || demo?.location || "";
   const artType = artist?.art_type || demo?.art_type || "";
   const image = artist?.image_url || null;

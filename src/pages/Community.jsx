@@ -859,7 +859,7 @@ export default function Community() {
             <div className="grl" style={{ background: "linear-gradient(90deg, #D4AF37, transparent)" }} />
           </div>
           <h1 className="section-heading">
-            <span className="bold-white">ARRT Coliseum</span> <em>Community</em>
+            <span className="bold-white">Art Coliseum</span> <em>Community</em>
           </h1>
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 15, color: "rgba(200,191,160,0.55)", maxWidth: 540, margin: "14px auto 0", lineHeight: 1.75 }}>
             A gathering place for artists, collectors, and curators — organised by community, open for conversation and commerce.

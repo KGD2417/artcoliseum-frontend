@@ -165,7 +165,7 @@ const SEARCH_INDEX = [
     to: "/refund",
   },
   { type: "PAGE", title: "Profile", sub: "Collector profile", to: "/profile" },
-  { type: "PAGE", title: "About ARRT Coliseum", sub: "Our story", to: "/about" },
+  { type: "PAGE", title: "About Art Coliseum", sub: "Our story", to: "/about" },
   { type: "PAGE", title: "Contact", sub: "Get in touch", to: "/contact" },
   {
     type: "PAGE",
@@ -226,7 +226,7 @@ function useSiteSearch(q, limit = 8) {
           .map((ar) => ({
             type: "ARTIST",
             title: ar.name,
-            sub: ar.location || "ARRT Coliseum Artist",
+            sub: ar.location || "Art Coliseum Artist",
             to: `/artists/${ar.id}`,
             img: ar.image_url || null,
           }));
@@ -587,7 +587,7 @@ export default function Navigation() {
           <div className="nav-left">
             <motion.img
               src={logo}
-              alt="ARRT Coliseum"
+              alt="Art Coliseum"
               className="nav-logo-img"
               onClick={() => navigate("/")}
               style={{ cursor: "pointer" }}

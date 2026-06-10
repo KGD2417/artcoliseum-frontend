@@ -97,7 +97,8 @@
       "mcp__code-review-graph__get_architecture_overview_tool",
       "Bash(grep -n -i \"available now\\\\|bring it home\\\\|total\\\\|price\\\\|size\\\\|pattern\\\\|custom\\\\|base\\\\b\\\\|₹\\\\|\\\\\\\\$\\\\|addition\" src/pages/ProductDetail.jsx)",
       "Bash(xargs -0 perl -i -pe 's/\\\\bArt Coliseum\\\\b/ARRT Coliseum/g; s/\\\\bART COLISEUM\\\\b/ARRT COLISEUM/g; s/\\\\bArrt Coliseum\\\\b/ARRT Coliseum/g;')",
-      "Bash(.venv/bin/python -m py_compile app/main.py app/models/community.py app/schemas/extra.py app/routers/community.py)"
+      "Bash(.venv/bin/python -m py_compile app/main.py app/models/community.py app/schemas/extra.py app/routers/community.py)",
+      "Bash(awk '/\\\\.home-sec \\\\{/,/\\\\}/' src/index.css)"
     ]
   },
   "hooks": {

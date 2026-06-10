@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const WELCOME_MESSAGE = {
   id: "welcome",
   from: "bot",
-  text: "Welcome to ARRT Coliseum! I'm ARRT Coliseum Intelligence. Ask me about our artworks, pricing, the AR viewer, artists, or anything else you'd like to know.",
+  text: "Welcome to Art Coliseum! I'm Art Coliseum Intelligence. Ask me about our artworks, pricing, the AR viewer, artists, or anything else you'd like to know.",
 };
 
 const BOT_RESPONSES = {
@@ -30,10 +30,10 @@ const BOT_RESPONSES = {
     "Our Estimate Calculator gives you a ballpark figure based on size, material, and framing. Visit /estimate to explore. Remember, exact pricing is always confirmed after your personalised enquiry.",
   ],
   artist: [
-    "ARRT Coliseum welcomes both established artists (direct registration) and emerging talents (through our curated exhibition & judging process). Visit 'Become an Artist' in the navigation.",
+    "Art Coliseum welcomes both established artists (direct registration) and emerging talents (through our curated exhibition & judging process). Visit 'Become an Artist' in the navigation.",
   ],
   exhibition: [
-    "ARRT Coliseum welcomes both established artists (direct registration) and emerging talents (through our curated exhibition & judging process). Visit 'Become an Artist' in the navigation.",
+    "Art Coliseum welcomes both established artists (direct registration) and emerging talents (through our curated exhibition & judging process). Visit 'Become an Artist' in the navigation.",
   ],
   community: [
     "Our Community Hub connects artists, collectors, and curators. Share your passion, follow artists, join discussions, and stay updated on exhibitions. Visit /community to explore.",
@@ -45,10 +45,10 @@ const BOT_RESPONSES = {
     "We offer global delivery for all artworks, fully insured and professionally packed. Each piece is carefully prepared by our logistics partners to arrive safely — wherever you are in the world.",
   ],
   custom: [
-    "Customisation is at the heart of ARRT Coliseum. Every artwork can be tailored to your exact specifications — dimensions, medium, palette, texture, finish, and framing. Our artists work with you, not just for you.",
+    "Customisation is at the heart of Art Coliseum. Every artwork can be tailored to your exact specifications — dimensions, medium, palette, texture, finish, and framing. Our artists work with you, not just for you.",
   ],
   customiz: [
-    "Customisation is at the heart of ARRT Coliseum. Every artwork can be tailored to your exact specifications — dimensions, medium, palette, texture, finish, and framing. Our artists work with you, not just for you.",
+    "Customisation is at the heart of Art Coliseum. Every artwork can be tailored to your exact specifications — dimensions, medium, palette, texture, finish, and framing. Our artists work with you, not just for you.",
   ],
 };
 
@@ -238,7 +238,7 @@ export default function ChatbotWidget() {
                       color: "#f0e8d8",
                       lineHeight: 1.2,
                     }}>
-                    ARRT Coliseum Intelligence
+                    Art Coliseum Intelligence
                   </div>
                   <div
                     style={{

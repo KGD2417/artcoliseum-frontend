@@ -392,8 +392,8 @@ function CylinderCarousel({ items, navigate }) {
 /* ═══════════════ STACKED CARDS (About) ════════════════════════════ */
 function StackedCardsInteraction({ images }) {
   const [hovered, setHovered] = useState(false);
-  const STACK  = [{ rotate: -7, x: -16, y: 10 }, { rotate: 0, x: 0, y: 0 }, { rotate: 7, x: 16, y: 10 }];
-  const SPREAD = [{ rotate: -20, x: -120, y: 24 }, { rotate: 0, x: 0, y: -34 }, { rotate: 20, x: 120, y: 24 }];
+  const STACK  = [{ rotate: -7, x: -14, y: 8 }, { rotate: 0, x: 0, y: 0 }, { rotate: 7, x: 14, y: 8 }];
+  const SPREAD = [{ rotate: -16, x: -90, y: 18 }, { rotate: 0, x: 0, y: -26 }, { rotate: 16, x: 90, y: 18 }];
   return (
     <div
       className="stacked-cards-wrap"
@@ -638,7 +638,7 @@ export default function Home() {
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
           <motion.img
             src={logo}
-            alt="ARRT Coliseum"
+            alt="Art Coliseum"
             className="hero-logo"
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -681,7 +681,7 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          ABOUT ARRT COLISEUM
+          ABOUT ART COLISEUM
       ═══════════════════════════════════════════════ */}
       <section className="about-col-section">
         <div className="about-col-inner">
@@ -704,9 +704,9 @@ export default function Home() {
               <span className="grt">Our Story</span>
               <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)", maxWidth: 60 }} />
             </div>
-            <h2 className="ar-heading">About <em>ARRT Coliseum</em></h2>
+            <h2 className="ar-heading">About <em>the Platform</em></h2>
             <p className="ar-desc" style={{ marginBottom: 18 }}>
-              ARRT Coliseum is not a marketplace — it is a sanctuary for art. We believe that great art does
+              Art Coliseum is not a marketplace — it is a sanctuary for art. We believe that great art does
               not need a price tag to prove its worth; it speaks through silence, through texture, through
               the quiet authority of a well-considered composition.
             </p>
@@ -740,7 +740,6 @@ export default function Home() {
       <section className="home-sec" style={{
         background: "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
         overflowX: "hidden",
-        paddingBottom: 160,
       }}>
         <SectionHeader
           tag="Curator's Picks"
@@ -761,7 +760,6 @@ export default function Home() {
       ═══════════════════════════════════════════════ */}
       <section className="home-sec home-inline-section" style={{
         background: "linear-gradient(180deg,#080808 0%,#0d0a06 50%,#080808 100%)",
-        paddingTop: 160,
       }}>
         <div className="home-launch-inner">
           {/* Left: rotating card carousel */}

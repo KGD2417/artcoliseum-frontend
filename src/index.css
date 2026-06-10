@@ -32,13 +32,28 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* Force lining (baseline-aligned) figures everywhere so numerals never sit
+     "up and down" — the serif display fonts default to old-style figures. */
+  font-variant-numeric: lining-nums;
+}
+
+/* Render every digit in the clean, readable Inter face regardless of the
+   surrounding typeface. unicode-range scopes this to numerals + the symbols
+   that travel with them (currency, separators, %, #). Inter is prepended to
+   the font stacks below so letters keep their original font. */
+@font-face {
+  font-family: "AC Numerals";
+  font-style: normal;
+  font-weight: 100 900;
+  src: local("Inter"), local("Inter-Regular"), local("Helvetica Neue"), local("Arial");
+  unicode-range: U+0030-0039, U+002C, U+002E, U+0023, U+0025, U+0024, U+20B9;
 }
 
 html,
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: "Cormorant Garamond", Georgia, serif;
+  font-family: "AC Numerals", "Cormorant Garamond", Georgia, serif;
   font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -661,13 +676,23 @@ a {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(8, 6, 4, 0.52);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border-top: 1px solid rgba(212, 175, 55, 0.28);
+  /* Frosted-glass panel. backdrop-filter is suppressed by the carousel's 3D
+     (preserve-3d) context, so the glassmorphism is built from a layered
+     translucent gradient + a bright top edge + inner highlight, which reads as
+     real glass over the artwork rather than a flat translucent fill. */
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(212, 175, 55, 0.10) 40%,
+    rgba(10, 8, 5, 0.62) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    0 -8px 24px rgba(0, 0, 0, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 30px rgba(255, 255, 255, 0.06),
+    0 -10px 30px rgba(0, 0, 0, 0.3);
   padding: 12px 12px 10px;
   transform: translateY(100%);
   transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1173,10 +1198,8 @@ a {
 
 /* numeric value utility — kinder on the eyes */
 .num-value {
-  font-family: "Raleway", "Inter", system-ui, sans-serif;
-  font-feature-settings:
-    "tnum" 1,
-    "lnum" 1;
+  font-family: "AC Numerals", "Raleway", "Inter", system-ui, sans-serif;
+  font-variant-numeric: lining-nums tabular-nums;
   letter-spacing: 0.005em;
   font-weight: 600;
 }
@@ -1696,13 +1719,14 @@ input[type="tel"],
 input[type="number"],
 input[type="email"] {
   font-family:
+    "AC Numerals",
     "Inter",
     "SF Pro Display",
     "Segoe UI",
     system-ui,
     -apple-system,
     sans-serif;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
   letter-spacing: 0.01em;
 }
 
@@ -2976,7 +3000,7 @@ input[type="email"] {
 }
 
 /* ═══════════════════════════════════════════════
-   ABOUT ARRT COLISEUM — two-column stacked cards
+   ABOUT ART COLISEUM — two-column stacked cards
 ═══════════════════════════════════════════════ */
 .about-col-section {
   padding: 100px 48px;
@@ -3004,15 +3028,15 @@ input[type="email"] {
 .stacked-cards-wrap {
   position: relative;
   width: 420px;
-  height: 480px;
+  height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .stacked-card {
   position: absolute;
-  width: 290px;
-  height: 380px;
+  width: 220px;
+  height: 300px;
   border-radius: 16px;
   overflow: hidden;
   box-shadow:
@@ -3393,6 +3417,11 @@ input[type="email"] {
     box-shadow 0.3s ease,
     transform 0.3s ease;
   cursor: default;
+  /* Full-height flex column so the action buttons line up across cards
+     regardless of how long each description runs. */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 .ev-page-card:hover {
   box-shadow:
@@ -3452,6 +3481,10 @@ input[type="email"] {
 }
 .ev-page-body {
   padding: 22px 24px 28px;
+  /* Fill remaining card height so .ev-page-actions can sit at the bottom. */
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 .ev-page-date {
   font-family: "Raleway", sans-serif;
@@ -3509,8 +3542,9 @@ input[type="email"] {
 .ev-page-actions {
   display: flex;
   gap: 12px;
-  margin-top: 20px;
-  flex-wrap: wrap;
+  margin-top: auto;   /* pin to the bottom so buttons align across cards */
+  padding-top: 20px;
+  flex-wrap: nowrap;  /* keep the two buttons on one symmetrical row */
 }
 .ev-page-btn {
   flex: 1 1 140px;

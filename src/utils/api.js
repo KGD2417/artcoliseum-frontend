@@ -1,5 +1,5 @@
 /**
- * REST client for the ARRT Coliseum FastAPI backend.
+ * REST client for the Art Coliseum FastAPI backend.
  *
  * Replaces the Supabase SDK. Holds the access token in memory and the refresh
  * token in localStorage; transparently refreshes on a 401 and retries once.

@@ -41,7 +41,7 @@ const FALLBACK_PRODUCT = {
     origin:
       "Berlin, Germany — completed at Voss's Mitte studio after a three-month period of seclusion. Studio assistants and visitors were not permitted during the gold-leaf application phase.",
     purpose:
-      "Created as the centrepiece of a private 2024 commission, later re-released to the ARRT Coliseum Private Collection at the artist's discretion. Voss describes the work as 'a quiet altar — somewhere to look, when there is nothing left to say.'",
+      "Created as the centrepiece of a private 2024 commission, later re-released to the Art Coliseum Private Collection at the artist's discretion. Voss describes the work as 'a quiet altar — somewhere to look, when there is nothing left to say.'",
     story:
       "The work was begun on the winter solstice of 2022. Voss lit a single candle each morning, then allowed himself one hour of natural daylight to apply gold leaf — never longer. Over three lunar cycles, layer upon layer of leaf was burnished onto a gesso prepared with bone-ash and ground basalt. The resulting surface holds a depth that camera lenses struggle to capture.",
     spread:
@@ -54,7 +54,7 @@ const FALLBACK_PRODUCT = {
       },
       {
         k: "Provenance",
-        v: "Studio of the artist → private commission, Berlin → ARRT Coliseum Private Collection",
+        v: "Studio of the artist → private commission, Berlin → Art Coliseum Private Collection",
       },
       {
         k: "Care",
@@ -515,25 +515,6 @@ export default function ProductDetail() {
               }}>
               {productData.badge}
             </span>
-            <button
-              onClick={() => toggleCompare(id)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                padding: "6px 13px",
-                borderRadius: 999,
-                cursor: "pointer",
-                background: compareOn ? "rgba(212,175,55,0.14)" : "transparent",
-                border: `1px solid ${compareOn ? "#D4AF37" : "rgba(212,175,55,0.3)"}`,
-                color: compareOn ? "#D4AF37" : "rgba(200,191,160,0.7)",
-                fontFamily: "'Cinzel',serif",
-                fontSize: 9,
-                letterSpacing: "0.14em",
-                whiteSpace: "nowrap",
-              }}>
-              {compareOn ? "✓ COMPARING" : "+ COMPARE"}
-            </button>
           </div>
           <h1
             style={{
@@ -874,6 +855,26 @@ export default function ProductDetail() {
                 )}
               </div>
 
+              {/* Compare — prominent CTA, kept above View in AR */}
+              <motion.button
+                onClick={() => toggleCompare(id)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                style={{
+                  width: "100%", marginBottom: 12, padding: "13px",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
+                  borderRadius: 999, cursor: "pointer",
+                  background: compareOn ? "rgba(212,175,55,0.16)" : "rgba(212,175,55,0.06)",
+                  border: `1.5px solid ${compareOn ? "#D4AF37" : "rgba(212,175,55,0.55)"}`,
+                  color: "#D4AF37",
+                  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", fontWeight: 700,
+                }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/>
+                </svg>
+                {compareOn ? "✓ ADDED TO COMPARE" : "COMPARE THIS ARTWORK"}
+              </motion.button>
+
               {/* View in AR + Bring it home — once a size & price are set */}
               {priceReady && (
                 <>
@@ -925,7 +926,7 @@ export default function ProductDetail() {
                 </>
               )}
 
-              {/* Talk to the ARRT Coliseum team */}
+              {/* Talk to the Art Coliseum team */}
               <button
                 onClick={openEnquiry}
                 style={{
@@ -941,7 +942,7 @@ export default function ProductDetail() {
                   letterSpacing: "0.16em",
                   color: "#D4AF37",
                 }}>
-                TALK TO ARRT COLISEUM TEAM →
+                TALK TO ART COLISEUM TEAM →
               </button>
             </div>
           )}
@@ -1089,6 +1090,25 @@ export default function ProductDetail() {
                   Select a size above to see your total.
                 </div>
               )}
+              {/* Compare — prominent CTA, kept above View in AR */}
+              <motion.button
+                onClick={() => toggleCompare(id)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                style={{
+                  width: "100%", marginBottom: 12, padding: "13px",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
+                  borderRadius: 999, cursor: "pointer",
+                  background: compareOn ? "rgba(212,175,55,0.16)" : "rgba(212,175,55,0.06)",
+                  border: `1.5px solid ${compareOn ? "#D4AF37" : "rgba(212,175,55,0.55)"}`,
+                  color: "#D4AF37",
+                  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", fontWeight: 700,
+                }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/>
+                </svg>
+                {compareOn ? "✓ ADDED TO COMPARE" : "COMPARE THIS ARTWORK"}
+              </motion.button>
               <button
                 onClick={() =>
                   window.open(arUrl(productData.images[activeImg]), "_blank")
@@ -1145,7 +1165,7 @@ export default function ProductDetail() {
                   {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
                 </motion.button>
               )}
-              {/* Talk to the ARRT Coliseum team */}
+              {/* Talk to the Art Coliseum team */}
               <button
                 onClick={openEnquiry}
                 style={{
@@ -1161,7 +1181,7 @@ export default function ProductDetail() {
                   letterSpacing: "0.16em",
                   color: "#D4AF37",
                 }}>
-                TALK TO ARRT COLISEUM TEAM →
+                TALK TO ART COLISEUM TEAM →
               </button>
             </div>
           )}

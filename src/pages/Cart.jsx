@@ -14,7 +14,7 @@ const FULFILLMENTS = [
 ];
 
 const VAULT_FALLBACK = {
-  name: "ARRT Coliseum Vault",
+  name: "Art Coliseum Vault",
   address: "Kala Ghoda Arts Precinct, Fort, Mumbai, Maharashtra 400001",
   hours: "Mon–Sat · 11:00–19:00",
 };

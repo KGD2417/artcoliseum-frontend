@@ -30,7 +30,7 @@ export default function About() {
           />
         </div>
         <h2 className="section-heading">
-          <span className="bold-white">About</span> <em>ARRT Coliseum</em>
+          <span className="bold-white">About</span> <em>Art Coliseum</em>
         </h2>
       </div>
       <div
@@ -49,7 +49,7 @@ export default function About() {
             color: "rgba(200,191,160,0.85)",
             marginBottom: "24px",
           }}>
-          ARRT Coliseum is a modern platform dedicated to showcasing and
+          Art Coliseum is a modern platform dedicated to showcasing and
           connecting exceptional artistic talent with collectors around the
           world. We bring together paintings, sculptures, photography, and
           digital art into a single immersive experience.
@@ -76,7 +76,7 @@ export default function About() {
             lineHeight: 1.8,
             color: "rgba(200,191,160,0.85)",
           }}>
-          At ARRT Coliseum, we believe art is not just to be viewed — but
+          At Art Coliseum, we believe art is not just to be viewed — but
           experienced, owned, and lived with. We are building a space where
           creativity meets technology and inspiration becomes accessible to
           everyone.
@@ -170,7 +170,7 @@ export default function About() {
             maxWidth: "720px",
             margin: "0 auto 44px",
           }}>
-          ARRT Coliseum specialises in fully customised, made-to-order artwork tailored to each
+          Art Coliseum specialises in fully customised, made-to-order artwork tailored to each
           client's exact specifications. Every commission begins with a conversation — about your
           space, your story, and the emotions you wish to evoke. From the choice of canvas and
           pigment to the final varnish and frame, every detail is considered.
@@ -266,7 +266,7 @@ export default function About() {
             maxWidth: "720px",
             margin: "0 auto 44px",
           }}>
-          We believe that art flourishes in community. ARRT Coliseum nurtures both established
+          We believe that art flourishes in community. Art Coliseum nurtures both established
           masters and emerging talents through a unique dual pathway — direct entry for established
           artists and a curated exhibition process for newcomers. Our community is built on
           mentorship, shared practice, and the belief that great art deserves a great audience.
@@ -402,7 +402,7 @@ export default function About() {
             </div>
           </div>
 
-          {/* ARRT Coliseum bridge */}
+          {/* Art Coliseum bridge */}
           <div
             style={{
               padding: "28px 20px",
@@ -417,7 +417,7 @@ export default function About() {
                 color: "#D4AF37",
                 marginBottom: "8px",
               }}>
-              ARRT COLISEUM
+              ART COLISEUM
             </div>
             <div style={{ color: "rgba(212,175,55,0.4)", fontSize: "20px" }}>⇌</div>
           </div>
@@ -493,7 +493,7 @@ export default function About() {
             maxWidth: "720px",
             margin: "0 auto 48px",
           }}>
-          ARRT Coliseum is fundamentally a customisation-first platform. No two orders need to be
+          Art Coliseum is fundamentally a customisation-first platform. No two orders need to be
           the same. We offer an unparalleled degree of personalisation: size, medium, palette,
           texture, finish, framing, and even the subject itself. Our artists work with you, not
           just for you.

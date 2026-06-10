@@ -176,7 +176,7 @@ export default function ComingSoon({ page }) {
     title: "Coming Soon",
     subtitle: "Something Extraordinary Is Being Crafted",
     description:
-      "This chapter of ARRT Coliseum is still being shaped by our curators and craftspeople. We'd rather take the time to get it right than rush an unfinished experience to your screen — join the waitlist and we'll let you know the moment it opens.",
+      "This chapter of Art Coliseum is still being shaped by our curators and craftspeople. We'd rather take the time to get it right than rush an unfinished experience to your screen — join the waitlist and we'll let you know the moment it opens.",
     icon: "✦",
     features: [],
   };
@@ -323,7 +323,7 @@ export default function ComingSoon({ page }) {
               color: "rgba(200,191,160,0.4)",
               cursor: "pointer",
             }}>
-            ← RETURN TO ARRT COLISEUM
+            ← RETURN TO ART COLISEUM
           </button>
         </motion.div>
       </div>

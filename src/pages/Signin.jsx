@@ -77,7 +77,7 @@ export default function SignIn() {
           </h2>
           <div style={{ width: 60, height: 1, background: '#D4AF37', margin: '14px auto' }} />
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: 'rgba(200,191,160,0.55)' }}>
-            {isLogin ? 'Welcome back to ARRT Coliseum.' : 'Join the private collector circle.'}
+            {isLogin ? 'Welcome back to Art Coliseum.' : 'Join the private collector circle.'}
           </p>
         </div>
 
