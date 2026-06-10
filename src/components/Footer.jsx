@@ -27,7 +27,7 @@ export default function Footer() {
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <img
             src={logo}
-            alt="Art Coliseum"
+            alt="ARRT Coliseum"
             style={{ height: 44, cursor: "pointer", opacity: 0.9 }}
             onClick={() => navigate("/")}
           />
@@ -35,7 +35,7 @@ export default function Footer() {
             fontFamily: "'Raleway', sans-serif", fontSize: 13,
             color: "rgba(200,191,160,0.55)", letterSpacing: "0.05em",
           }}>
-            © {new Date().getFullYear()} Art Coliseum
+            © {new Date().getFullYear()} ARRT Coliseum
           </span>
         </div>
 

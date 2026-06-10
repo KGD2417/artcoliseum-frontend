@@ -4,7 +4,11 @@ import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import ArtistAvatar from "../components/ArtistAvatar";
 import ChatModal from "../components/ChatModal";
-import { toggleCompare, isCompared, onCompareChange } from "../utils/compareStore";
+import {
+  toggleCompare,
+  isCompared,
+  onCompareChange,
+} from "../utils/compareStore";
 import { SkeletonDetail } from "../components/ui/Skeleton";
 import { ZoomIcon, SparkIcon } from "../components/Icons";
 import { api } from "../utils/api";
@@ -37,7 +41,7 @@ const FALLBACK_PRODUCT = {
     origin:
       "Berlin, Germany — completed at Voss's Mitte studio after a three-month period of seclusion. Studio assistants and visitors were not permitted during the gold-leaf application phase.",
     purpose:
-      "Created as the centrepiece of a private 2024 commission, later re-released to the Art Coliseum Private Collection at the artist's discretion. Voss describes the work as 'a quiet altar — somewhere to look, when there is nothing left to say.'",
+      "Created as the centrepiece of a private 2024 commission, later re-released to the ARRT Coliseum Private Collection at the artist's discretion. Voss describes the work as 'a quiet altar — somewhere to look, when there is nothing left to say.'",
     story:
       "The work was begun on the winter solstice of 2022. Voss lit a single candle each morning, then allowed himself one hour of natural daylight to apply gold leaf — never longer. Over three lunar cycles, layer upon layer of leaf was burnished onto a gesso prepared with bone-ash and ground basalt. The resulting surface holds a depth that camera lenses struggle to capture.",
     spread:
@@ -50,7 +54,7 @@ const FALLBACK_PRODUCT = {
       },
       {
         k: "Provenance",
-        v: "Studio of the artist → private commission, Berlin → Art Coliseum Private Collection",
+        v: "Studio of the artist → private commission, Berlin → ARRT Coliseum Private Collection",
       },
       {
         k: "Care",
@@ -64,11 +68,19 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeImg, setActiveImg] = useState(0);
-  const [customForm, setCustomForm] = useState({ frame: "No frame", finish: "Satin varnish", palette: "As created" });
+  const [customForm, setCustomForm] = useState({
+    frame: "No frame",
+    finish: "Satin varnish",
+    palette: "As created",
+  });
   const [customDims, setCustomDims] = useState({ w: "", h: "", unit: "cm" });
   const [enquiryMsg, setEnquiryMsg] = useState("");
   const [compareOn, setCompareOn] = useState(false);
-  useEffect(() => { const f = () => setCompareOn(isCompared(id)); f(); return onCompareChange(f); }, [id]);
+  useEffect(() => {
+    const f = () => setCompareOn(isCompared(id));
+    f();
+    return onCompareChange(f);
+  }, [id]);
   const [matched, setMatched] = useState(null);
   const [customizable, setCustomizable] = useState(true);
   const [artistInfo, setArtistInfo] = useState(null);
@@ -94,9 +106,9 @@ export default function ProductDetail() {
       // computes the same total they were shown.
       if (customizable) {
         body.options = customForm;
-        body.custom_width  = parseFloat(customDims.w) || null;
+        body.custom_width = parseFloat(customDims.w) || null;
         body.custom_height = parseFloat(customDims.h) || null;
-        body.custom_unit   = unitMap[customDims.unit] || "cm";
+        body.custom_unit = unitMap[customDims.unit] || "cm";
       }
       await api.cart.addItem(body);
       navigate("/cart");
@@ -108,31 +120,43 @@ export default function ProductDetail() {
   };
 
   const handlePrimaryCta = async () => {
-    if (!user) { navigate("/signin"); return; }
+    if (!user) {
+      navigate("/signin");
+      return;
+    }
     bringHome();
   };
 
   // Optional — ask the team a question; opens the chat thread (and records a light enquiry).
   const openEnquiry = async () => {
-    if (!user) { navigate("/signin"); return; }
+    if (!user) {
+      navigate("/signin");
+      return;
+    }
     try {
       await api.enquiries.create({
         artwork_id: id,
         message: enquiryMsg.trim() || undefined,
         options: customForm,
-        custom_width:  parseFloat(customDims.w)  || null,
+        custom_width: parseFloat(customDims.w) || null,
         custom_height: parseFloat(customDims.h) || null,
-        custom_unit:   unitMap[customDims.unit] || "cm",
+        custom_unit: unitMap[customDims.unit] || "cm",
       });
       setEnquiryMsg("");
-    } catch { /* enquiry is best-effort */ }
+    } catch {
+      /* enquiry is best-effort */
+    }
     setChatOpen(true);
   };
 
   // Fetch the artwork from the catalog API.
   useEffect(() => {
     let cancelled = false;
-    if (!id) { setMatched(null); setLoading(false); return; }
+    if (!id) {
+      setMatched(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     api.catalog
       .artwork(id)
@@ -140,15 +164,15 @@ export default function ProductDetail() {
         if (cancelled) return;
         setCustomizable(a.customizable !== false);
         setSizes(a.sizes || []);
-        setSelectedSize(a.sizes && a.sizes.length ? a.sizes[0] : null);
+        // No size pre-selected — the total stays hidden until the buyer chooses.
+        setSelectedSize(null);
         setActiveImg(0);
-        // Prefill the size inputs from the artwork's base/min dimensions.
+        // Match the size unit to the artwork, but leave the dimensions blank so the
+        // total only appears once the buyer enters a size of their own.
         if (a.customizable !== false) {
-          const nums = (a.base_dimensions || "").match(/[\d.]+/g);
-          const w = nums && nums.length >= 2 ? nums[0] : (a.min_width != null ? String(a.min_width) : "");
-          const h = nums && nums.length >= 2 ? nums[1] : (a.min_height != null ? String(a.min_height) : "");
-          const u = a.unit === "inch" ? "inches" : a.unit === "feet" ? "feet" : "cm";
-          if (w && h) setCustomDims({ w, h, unit: u });
+          const u =
+            a.unit === "inch" ? "inches" : a.unit === "feet" ? "feet" : "cm";
+          setCustomDims({ w: "", h: "", unit: u });
         }
         setMatched({
           title: a.title,
@@ -162,31 +186,45 @@ export default function ProductDetail() {
           unit: a.unit || "cm",
           pricePerUnit: a.price_per_unit,
           ratioLocked: a.ratio_locked,
-          minWidth: a.min_width, maxWidth: a.max_width,
-          minHeight: a.min_height, maxHeight: a.max_height,
-          minDepth: a.min_depth, maxDepth: a.max_depth,
+          minWidth: a.min_width,
+          maxWidth: a.max_width,
+          minHeight: a.min_height,
+          maxHeight: a.max_height,
+          minDepth: a.min_depth,
+          maxDepth: a.max_depth,
           categoryId: a.category_id,
-          frameOptions:   a.frame_options   || null,
-          finishOptions:  a.finish_options  || null,
+          frameOptions: a.frame_options || null,
+          finishOptions: a.finish_options || null,
           paletteOptions: a.palette_options || null,
         });
         // Pull the real artist profile (bio, photo) so the artist block isn't dummy.
         if (a.artist_id) {
-          api.catalog.artist(a.artist_id)
-            .then((ar) => { if (!cancelled) setArtistInfo(ar); })
+          api.catalog
+            .artist(a.artist_id)
+            .then((ar) => {
+              if (!cancelled) setArtistInfo(ar);
+            })
             .catch(() => {});
         }
       })
-      .catch(() => { if (!cancelled) setMatched(null); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .catch(() => {
+        if (!cancelled) setMatched(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const productData = matched
     ? {
         ...matched,
-        badge: customizable ? "MADE TO YOUR SIZE" : "AVAILABLE NOW",
-        availability: customizable ? "Priced to your size" : "Ready to bring home",
+        badge: customizable ? "MADE TO YOUR SIZE" : "",
+        availability: customizable
+          ? "Priced to your size"
+          : "Ready to bring home",
         certificate: "Digital Ledger Authenticity",
         artistImg: artistInfo?.image_url || null,
         artistGender: artistInfo?.gender || null,
@@ -194,16 +232,28 @@ export default function ProductDetail() {
         artistRole: artistInfo?.role || "",
         artistId: artistInfo?.id || matched.artist_id || null,
         aboutArt: matched.description,
-        frameOptions:   matched.frameOptions   || null,
-        finishOptions:  matched.finishOptions  || null,
+        frameOptions: matched.frameOptions || null,
+        finishOptions: matched.finishOptions || null,
         paletteOptions: matched.paletteOptions || null,
       }
     : FALLBACK_PRODUCT.default;
 
   const UPCHARGES = {
-    frame:   { "No frame": 0, "Simple Wood": 8, "Hand-finished Walnut": 18, "Museum Grade UV Glass": 28, "Custom Gilded": 45 },
-    finish:  { "Satin varnish": 0, Matte: 0, "High gloss": 5, Unvarnished: 0 },
-    palette: { "As created": 0, "Warmer tones": 10, "Cooler tones": 10, Monochrome: 15, Custom: 20 },
+    frame: {
+      "No frame": 0,
+      "Simple Wood": 8,
+      "Hand-finished Walnut": 18,
+      "Museum Grade UV Glass": 28,
+      "Custom Gilded": 45,
+    },
+    finish: { "Satin varnish": 0, Matte: 0, "High gloss": 5, Unvarnished: 0 },
+    palette: {
+      "As created": 0,
+      "Warmer tones": 10,
+      "Cooler tones": 10,
+      Monochrome: 15,
+      Custom: 20,
+    },
   };
   const arType = (() => {
     const m = (productData?.medium || "").toLowerCase();
@@ -211,38 +261,48 @@ export default function ProductDetail() {
     if (m.includes("mural") || m.includes("wallpaper")) return "mural";
     return "painting";
   })();
-  const arUrl = (imgUrl) => `/ar-view?image=${encodeURIComponent(imgUrl)}&type=${arType}`;
+  const arUrl = (imgUrl) =>
+    `/ar-view?image=${encodeURIComponent(imgUrl)}&type=${arType}`;
 
   // Unit conversion to cm; art_unit is the artwork's native measurement unit.
   const _toCm = { cm: 1, inch: 2.54, inches: 2.54, feet: 30.48 };
   const artUnit = productData?.unit || "cm";
 
   // Price is instant from the artwork's public per-unit price × chosen area.
-  const ppu = productData?.pricePerUnit ? Number(productData.pricePerUnit) : null;
+  const ppu = productData?.pricePerUnit
+    ? Number(productData.pricePerUnit)
+    : null;
   const ratioLocked = !!productData?.ratioLocked;
   const hasDims = !!customDims.w && !!customDims.h;
 
   // Aspect ratio (W/H) for ratio-locked pieces — from base dimensions, else min.
   const aspect = (() => {
     const n = (productData?.dimensions || "").match(/[\d.]+/g);
-    if (n && n.length >= 2 && parseFloat(n[1])) return parseFloat(n[0]) / parseFloat(n[1]);
-    if (productData?.minWidth && productData?.minHeight) return Number(productData.minWidth) / Number(productData.minHeight);
+    if (n && n.length >= 2 && parseFloat(n[1]))
+      return parseFloat(n[0]) / parseFloat(n[1]);
+    if (productData?.minWidth && productData?.minHeight)
+      return Number(productData.minWidth) / Number(productData.minHeight);
     return null;
   })();
-  const setDimW = (v) => setCustomDims((d) => {
-    const nd = { ...d, w: v };
-    if (ratioLocked && aspect && v !== "" && !isNaN(parseFloat(v))) nd.h = (parseFloat(v) / aspect).toFixed(1);
-    return nd;
-  });
-  const setDimH = (v) => setCustomDims((d) => {
-    const nd = { ...d, h: v };
-    if (ratioLocked && aspect && v !== "" && !isNaN(parseFloat(v))) nd.w = (parseFloat(v) * aspect).toFixed(1);
-    return nd;
-  });
+  const setDimW = (v) =>
+    setCustomDims((d) => {
+      const nd = { ...d, w: v };
+      if (ratioLocked && aspect && v !== "" && !isNaN(parseFloat(v)))
+        nd.h = (parseFloat(v) / aspect).toFixed(1);
+      return nd;
+    });
+  const setDimH = (v) =>
+    setCustomDims((d) => {
+      const nd = { ...d, h: v };
+      if (ratioLocked && aspect && v !== "" && !isNaN(parseFloat(v)))
+        nd.w = (parseFloat(v) * aspect).toFixed(1);
+      return nd;
+    });
 
   // Compute live area in the artwork's native unit from the buyer's dimensions.
   const customArea = (() => {
-    const w = parseFloat(customDims.w), h = parseFloat(customDims.h);
+    const w = parseFloat(customDims.w),
+      h = parseFloat(customDims.h);
     if (!w || !h) return null;
     const wCm = w * (_toCm[customDims.unit] || 1);
     const hCm = h * (_toCm[customDims.unit] || 1);
@@ -252,19 +312,33 @@ export default function ProductDetail() {
 
   const basePrice = (() => {
     if (ppu && customArea) return ppu * customArea;
-    if (productData?.price && productData.price > 0) return Number(productData.price);
+    if (productData?.price && productData.price > 0)
+      return Number(productData.price);
     return 0;
   })();
 
   // Resolve per-artwork option tables, falling back to global UPCHARGES.
   const optTable = (key, artField) => {
-    if (artField) return Object.fromEntries(artField.map(o => [o.label, o.upcharge_pct]));
+    if (artField)
+      return Object.fromEntries(artField.map((o) => [o.label, o.upcharge_pct]));
     return UPCHARGES[key] || {};
   };
   const optionLines = [
-    ["Frame",   customForm.frame,   optTable("frame",   productData?.frameOptions)[customForm.frame]   ?? 0],
-    ["Finish",  customForm.finish,  optTable("finish",  productData?.finishOptions)[customForm.finish]  ?? 0],
-    ["Palette", customForm.palette, optTable("palette", productData?.paletteOptions)[customForm.palette] ?? 0],
+    [
+      "Frame",
+      customForm.frame,
+      optTable("frame", productData?.frameOptions)[customForm.frame] ?? 0,
+    ],
+    [
+      "Finish",
+      customForm.finish,
+      optTable("finish", productData?.finishOptions)[customForm.finish] ?? 0,
+    ],
+    [
+      "Palette",
+      customForm.palette,
+      optTable("palette", productData?.paletteOptions)[customForm.palette] ?? 0,
+    ],
   ];
   const optionUpchargePct = optionLines.reduce((s, [, , pct]) => s + pct, 0);
   const customPrice = Math.round(basePrice * (1 + optionUpchargePct / 100));
@@ -277,21 +351,51 @@ export default function ProductDetail() {
   const isSculpture = productData?.categoryId === "sculpture";
   const sizeRange = (() => {
     if (!productData) return null;
-    const { minWidth, maxWidth, minHeight, maxHeight, minDepth, maxDepth, unit } = productData;
-    const hasWH = minWidth != null || maxWidth != null || minHeight != null || maxHeight != null;
+    const {
+      minWidth,
+      maxWidth,
+      minHeight,
+      maxHeight,
+      minDepth,
+      maxDepth,
+      unit,
+    } = productData;
+    const hasWH =
+      minWidth != null ||
+      maxWidth != null ||
+      minHeight != null ||
+      maxHeight != null;
     const hasD = minDepth != null || maxDepth != null;
     if (!hasWH && !hasD) return null;
-    const span = (lo, hi) => lo != null && hi != null ? `${lo}–${hi}` : lo != null ? `from ${lo}` : hi != null ? `up to ${hi}` : "any";
-    const parts = [`Width ${span(minWidth, maxWidth)}`, `Height ${span(minHeight, maxHeight)}`];
+    const span = (lo, hi) =>
+      lo != null && hi != null
+        ? `${lo}–${hi}`
+        : lo != null
+          ? `from ${lo}`
+          : hi != null
+            ? `up to ${hi}`
+            : "any";
+    const parts = [
+      `Width ${span(minWidth, maxWidth)}`,
+      `Height ${span(minHeight, maxHeight)}`,
+    ];
     if (isSculpture && hasD) parts.push(`Depth ${span(minDepth, maxDepth)}`);
     return `${parts.join(" · ")} ${unit || "cm"}`;
   })();
 
-  useEffect(() => { setActiveImg(0); window.scrollTo(0, 0); }, [id]);
+  useEffect(() => {
+    setActiveImg(0);
+    window.scrollTo(0, 0);
+  }, [id]);
 
   if (loading) {
     return (
-      <section style={{ padding: "100px 24px 80px", maxWidth: 1280, margin: "0 auto" }}>
+      <section
+        style={{
+          padding: "100px 24px 80px",
+          maxWidth: 1280,
+          margin: "0 auto",
+        }}>
         <SkeletonDetail />
       </section>
     );
@@ -336,7 +440,10 @@ export default function ProductDetail() {
               <CircleBtn>
                 <ZoomIcon size={16} />
               </CircleBtn>
-              <CircleBtn onClick={() => window.open(arUrl(productData.images[activeImg]), '_blank')}>
+              <CircleBtn
+                onClick={() =>
+                  window.open(arUrl(productData.images[activeImg]), "_blank")
+                }>
                 <SparkIcon size={16} />
               </CircleBtn>
             </div>
@@ -374,7 +481,11 @@ export default function ProductDetail() {
                     src={img}
                     alt=""
                     fallbackIndex={i}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
                   />
                 </div>
               ))}
@@ -387,7 +498,14 @@ export default function ProductDetail() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}>
-          <div style={{ marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div
+            style={{
+              marginBottom: 14,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+            }}>
             <span
               style={{
                 fontFamily: "'Cinzel',serif",
@@ -400,25 +518,22 @@ export default function ProductDetail() {
             <button
               onClick={() => toggleCompare(id)}
               style={{
-                display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 13px", borderRadius: 999, cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                padding: "6px 13px",
+                borderRadius: 999,
+                cursor: "pointer",
                 background: compareOn ? "rgba(212,175,55,0.14)" : "transparent",
                 border: `1px solid ${compareOn ? "#D4AF37" : "rgba(212,175,55,0.3)"}`,
                 color: compareOn ? "#D4AF37" : "rgba(200,191,160,0.7)",
-                fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", whiteSpace: "nowrap",
+                fontFamily: "'Cinzel',serif",
+                fontSize: 9,
+                letterSpacing: "0.14em",
+                whiteSpace: "nowrap",
               }}>
               {compareOn ? "✓ COMPARING" : "+ COMPARE"}
             </button>
-          </div>
-
-          <div
-            style={{
-              fontFamily: "'Cinzel',serif",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              color: "rgba(200,191,160,0.55)",
-              marginBottom: 4,
-            }}>
-            NAME
           </div>
           <h1
             style={{
@@ -514,34 +629,95 @@ export default function ProductDetail() {
 
           {/* Available size range */}
           {!isPredefined && sizeRange && (
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", marginBottom: 14, fontStyle: "italic" }}>
+            <div
+              style={{
+                fontFamily: "'Raleway',sans-serif",
+                fontSize: 12,
+                color: "rgba(200,191,160,0.6)",
+                marginBottom: 14,
+                fontStyle: "italic",
+              }}>
               Available size range — {sizeRange}
             </div>
           )}
 
           {/* Customisation panel — instant pricing from W×H */}
           {!isPredefined && (
-            <div style={{
-              background: "rgba(212,175,55,0.04)",
-              border: "1px solid rgba(212,175,55,0.18)",
-              borderRadius: 12, padding: "20px 22px", marginBottom: 16,
-            }}>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 16 }}>CUSTOMISE YOUR PIECE</div>
+            <div
+              style={{
+                background: "rgba(212,175,55,0.04)",
+                border: "1px solid rgba(212,175,55,0.18)",
+                borderRadius: 12,
+                padding: "20px 22px",
+                marginBottom: 16,
+              }}>
+              <div
+                style={{
+                  fontFamily: "'Cinzel',serif",
+                  fontSize: 10,
+                  letterSpacing: "0.2em",
+                  color: "#D4AF37",
+                  marginBottom: 16,
+                }}>
+                CUSTOMISE YOUR PIECE
+              </div>
 
               {/* Dimension inputs — shown by default */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.7)" }}>YOUR DESIRED SIZE</span>
-                  {ratioLocked && <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.55)" }}>🔒 ratio locked</span>}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 8,
+                  }}>
+                  <span
+                    style={{
+                      fontFamily: "'Cinzel',serif",
+                      fontSize: 9,
+                      letterSpacing: "0.16em",
+                      color: "rgba(212,175,55,0.7)",
+                    }}>
+                    YOUR DESIRED SIZE
+                  </span>
+                  {ratioLocked && (
+                    <span
+                      style={{
+                        fontFamily: "'Raleway',sans-serif",
+                        fontSize: 10,
+                        color: "rgba(200,191,160,0.55)",
+                      }}>
+                      🔒 ratio locked
+                    </span>
+                  )}
                 </div>
-                <div className="pd-wall-row" style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-                  <input type="number" placeholder="Width" value={customDims.w}
-                    onChange={e => setDimW(e.target.value)} style={dimInput} />
-                  <input type="number" placeholder="Height" value={customDims.h}
-                    onChange={e => setDimH(e.target.value)} style={dimInput} />
-                  <select value={customDims.unit}
-                    onChange={e => setCustomDims(d => ({ ...d, unit: e.target.value }))}
-                    style={{ ...dimInput, flex: "0 0 auto", cursor: "pointer" }}>
+                <div
+                  className="pd-wall-row"
+                  style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                  <input
+                    type="number"
+                    placeholder="Width"
+                    value={customDims.w}
+                    onChange={(e) => setDimW(e.target.value)}
+                    style={dimInput}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Height"
+                    value={customDims.h}
+                    onChange={(e) => setDimH(e.target.value)}
+                    style={dimInput}
+                  />
+                  <select
+                    value={customDims.unit}
+                    onChange={(e) =>
+                      setCustomDims((d) => ({ ...d, unit: e.target.value }))
+                    }
+                    style={{
+                      ...dimInput,
+                      flex: "0 0 auto",
+                      cursor: "pointer",
+                    }}>
                     <option value="cm">cm</option>
                     <option value="inches">Inches</option>
                     <option value="feet">Feet</option>
@@ -550,43 +726,150 @@ export default function ProductDetail() {
               </div>
 
               {/* Frame / Finish / Palette dropdowns */}
-              <div className="pd-custom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+              <div
+                className="pd-custom-grid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: 12,
+                  marginBottom: 16,
+                }}>
                 {[
-                  ["FRAME",   "frame",   productData?.frameOptions   ? productData.frameOptions.map(o => o.label)   : Object.keys(UPCHARGES.frame)],
-                  ["FINISH",  "finish",  productData?.finishOptions  ? productData.finishOptions.map(o => o.label)  : Object.keys(UPCHARGES.finish)],
-                  ["PALETTE", "palette", productData?.paletteOptions ? productData.paletteOptions.map(o => o.label) : Object.keys(UPCHARGES.palette)],
+                  [
+                    "FRAME",
+                    "frame",
+                    productData?.frameOptions
+                      ? productData.frameOptions.map((o) => o.label)
+                      : Object.keys(UPCHARGES.frame),
+                  ],
+                  [
+                    "FINISH",
+                    "finish",
+                    productData?.finishOptions
+                      ? productData.finishOptions.map((o) => o.label)
+                      : Object.keys(UPCHARGES.finish),
+                  ],
+                  [
+                    "PALETTE",
+                    "palette",
+                    productData?.paletteOptions
+                      ? productData.paletteOptions.map((o) => o.label)
+                      : Object.keys(UPCHARGES.palette),
+                  ],
                 ].map(([label, key, opts]) => (
                   <div key={key}>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 5 }}>{label}</div>
+                    <div
+                      style={{
+                        fontFamily: "'Cinzel',serif",
+                        fontSize: 9,
+                        letterSpacing: "0.16em",
+                        color: "rgba(212,175,55,0.65)",
+                        marginBottom: 5,
+                      }}>
+                      {label}
+                    </div>
                     <select
                       value={customForm[key]}
-                      onChange={e => setCustomForm(f => ({ ...f, [key]: e.target.value }))}
-                      style={{ width: "100%", padding: "8px 10px", background: "#111", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 12, cursor: "pointer", outline: "none" }}>
-                      {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                      onChange={(e) =>
+                        setCustomForm((f) => ({ ...f, [key]: e.target.value }))
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        background: "#111",
+                        border: "1px solid rgba(212,175,55,0.2)",
+                        borderRadius: 6,
+                        color: "#e8e0d0",
+                        fontFamily: "'Raleway',sans-serif",
+                        fontSize: 12,
+                        cursor: "pointer",
+                        outline: "none",
+                      }}>
+                      {opts.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 ))}
               </div>
 
               {/* Live price breakdown */}
-              <div style={{ borderTop: "1px solid rgba(212,175,55,0.15)", paddingTop: 14, marginBottom: 16 }}>
+              <div
+                style={{
+                  borderTop: "1px solid rgba(212,175,55,0.15)",
+                  paddingTop: 14,
+                  marginBottom: 16,
+                }}>
                 {priceReady ? (
                   <>
-                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 10 }}>
-                      {ppu ? `PRICE · ₹${ppu.toLocaleString("en-IN")} per ${artUnit}²` : "PRICE"}
+                    <div
+                      style={{
+                        fontFamily: "'Cinzel',serif",
+                        fontSize: 9,
+                        letterSpacing: "0.16em",
+                        color: "rgba(200,191,160,0.5)",
+                        marginBottom: 10,
+                      }}>
+                      {ppu
+                        ? `PRICE · ₹${ppu.toLocaleString("en-IN")} per ${artUnit}²`
+                        : "PRICE"}
                     </div>
-                    <Row label={`Base · ${customDims.w} × ${customDims.h} ${customDims.unit}${customArea ? ` (≈ ${Math.round(customArea).toLocaleString("en-IN")} ${artUnit}²)` : ""}`} value={fmtPrice(Math.round(basePrice))} />
-                    {optionLines.filter(([, , pct]) => pct > 0).map(([lbl, val, pct]) => (
-                      <Row key={lbl} muted label={`${lbl} · ${val} (+${pct}%)`} value={`+ ${fmtPrice(Math.round(basePrice * pct / 100))}`} />
-                    ))}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderTop: "1px solid rgba(212,175,55,0.12)", marginTop: 8, paddingTop: 10 }}>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)" }}>TOTAL</div>
-                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>{fmtPrice(customPrice)}</div>
+                    <Row
+                      label={`Base · ${customDims.w} × ${customDims.h} ${customDims.unit}${customArea ? ` (≈ ${Math.round(customArea).toLocaleString("en-IN")} ${artUnit}²)` : ""}`}
+                      value={fmtPrice(Math.round(basePrice))}
+                    />
+                    {optionLines
+                      .filter(([, , pct]) => pct > 0)
+                      .map(([lbl, val, pct]) => (
+                        <Row
+                          key={lbl}
+                          muted
+                          label={`${lbl} · ${val} (+${pct}%)`}
+                          value={`+ ${fmtPrice(Math.round((basePrice * pct) / 100))}`}
+                        />
+                      ))}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-end",
+                        borderTop: "1px solid rgba(212,175,55,0.12)",
+                        marginTop: 8,
+                        paddingTop: 10,
+                      }}>
+                      <div
+                        style={{
+                          fontFamily: "'Cinzel',serif",
+                          fontSize: 9,
+                          letterSpacing: "0.16em",
+                          color: "rgba(200,191,160,0.5)",
+                        }}>
+                        TOTAL
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "'Cormorant Garamond',serif",
+                          fontSize: 36,
+                          fontWeight: 700,
+                          color: "#D4AF37",
+                          lineHeight: 1,
+                        }}>
+                        {fmtPrice(customPrice)}
+                      </div>
                     </div>
                   </>
                 ) : (
-                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.55)" }}>
-                    {ppu ? "Enter width & height above to see your price." : "Enter your size, then talk to our team for pricing."}
+                  <div
+                    style={{
+                      fontFamily: "'Raleway',sans-serif",
+                      fontSize: 13,
+                      color: "rgba(200,191,160,0.55)",
+                    }}>
+                    {ppu
+                      ? "Enter width & height above to see your price."
+                      : "Enter your size, then talk to our team for pricing."}
                   </div>
                 )}
               </div>
@@ -595,39 +878,103 @@ export default function ProductDetail() {
               {priceReady && (
                 <>
                   <button
-                    onClick={() => window.open(arUrl(productData.images[activeImg]), '_blank')}
-                    style={{ ...pillBtn, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                    onClick={() =>
+                      window.open(
+                        arUrl(productData.images[activeImg]),
+                        "_blank",
+                      )
+                    }
+                    style={{
+                      ...pillBtn,
+                      width: "100%",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      marginBottom: 12,
+                    }}>
                     <SparkIcon size={14} /> VIEW IN AR
                   </button>
                   <motion.button
-                    whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }}
+                    whileHover={{
+                      scale: 1.02,
+                      boxShadow: "0 10px 32px rgba(212,175,55,0.35)",
+                    }}
                     whileTap={{ scale: 0.97 }}
                     onClick={handlePrimaryCta}
                     disabled={ctaBusy}
-                    style={{ ...goldCta, opacity: ctaBusy ? 0.6 : 1, cursor: ctaBusy ? "wait" : "pointer" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                    style={{
+                      ...goldCta,
+                      opacity: ctaBusy ? 0.6 : 1,
+                      cursor: ctaBusy ? "wait" : "pointer",
+                    }}>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" />
                     </svg>
                     {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
                   </motion.button>
                 </>
               )}
 
-              {/* Optional — talk to the team */}
-              <button onClick={openEnquiry}
-                style={{ width: "100%", marginTop: 10, background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "rgba(200,191,160,0.7)" }}>
-                HAVE A QUESTION? TALK TO OUR TEAM →
+              {/* Talk to the ARRT Coliseum team */}
+              <button
+                onClick={openEnquiry}
+                style={{
+                  width: "100%",
+                  marginTop: 10,
+                  padding: "12px",
+                  background: "transparent",
+                  border: "1px solid rgba(212,175,55,0.4)",
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  fontFamily: "'Cinzel',serif",
+                  fontSize: 10,
+                  letterSpacing: "0.16em",
+                  color: "#D4AF37",
+                }}>
+                TALK TO ARRT COLISEUM TEAM →
               </button>
             </div>
           )}
 
           {/* Predefined (fixed-price) panel — size options + price, bought directly */}
           {isPredefined && (
-            <div style={{ background: "rgba(212,175,55,0.04)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, padding: "20px 22px", marginBottom: 16 }}>
+            <div
+              style={{
+                background: "rgba(212,175,55,0.04)",
+                border: "1px solid rgba(212,175,55,0.18)",
+                borderRadius: 12,
+                padding: "20px 22px",
+                marginBottom: 16,
+              }}>
               {sizes.length > 0 && (
                 <>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 12 }}>SELECT SIZE</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
+                  <div
+                    style={{
+                      fontFamily: "'Cinzel',serif",
+                      fontSize: 9,
+                      letterSpacing: "0.2em",
+                      color: "#D4AF37",
+                      marginBottom: 12,
+                    }}>
+                    SELECT SIZE
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 10,
+                      marginBottom: 18,
+                    }}>
                     {sizes.map((sz) => {
                       const sel = selectedSize?.id === sz.id;
                       return (
@@ -635,58 +982,187 @@ export default function ProductDetail() {
                           key={sz.id}
                           onClick={() => setSelectedSize(sz)}
                           style={{
-                            textAlign: "left", padding: "12px 14px", borderRadius: 10, cursor: "pointer",
-                            background: sel ? "rgba(212,175,55,0.12)" : "rgba(255,255,255,0.02)",
+                            textAlign: "left",
+                            padding: "12px 14px",
+                            borderRadius: 10,
+                            cursor: "pointer",
+                            background: sel
+                              ? "rgba(212,175,55,0.12)"
+                              : "rgba(255,255,255,0.02)",
                             border: `1px solid ${sel ? "#D4AF37" : "rgba(212,175,55,0.18)"}`,
                             transition: "all 0.15s",
                           }}>
-                          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.12em", color: sel ? "#D4AF37" : "#e8e0d0", marginBottom: 3 }}>{sz.label}</div>
+                          <div
+                            style={{
+                              fontFamily: "'Cinzel',serif",
+                              fontSize: 10,
+                              letterSpacing: "0.12em",
+                              color: sel ? "#D4AF37" : "#e8e0d0",
+                              marginBottom: 3,
+                            }}>
+                            {sz.label}
+                          </div>
                           {(sz.width || sz.height) && (
-                            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>
+                            <div
+                              style={{
+                                fontFamily: "'Raleway',sans-serif",
+                                fontSize: 10,
+                                color: "rgba(200,191,160,0.5)",
+                                marginBottom: 4,
+                              }}>
                               {sz.width} × {sz.height} {sz.unit || ""}
                             </div>
                           )}
-                          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, fontWeight: 700, color: "#D4AF37" }}>{fmtPrice(sz.price)}</div>
+                          <div
+                            style={{
+                              fontFamily: "'Cormorant Garamond',serif",
+                              fontSize: 18,
+                              fontWeight: 700,
+                              color: "#D4AF37",
+                            }}>
+                            {fmtPrice(sz.price)}
+                          </div>
                         </button>
                       );
                     })}
                   </div>
                 </>
               )}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 18, borderTop: sizes.length ? "1px solid rgba(212,175,55,0.12)" : "none", paddingTop: sizes.length ? 14 : 0 }}>
-                <div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: "rgba(200,191,160,0.5)", marginBottom: 4 }}>
-                    {selectedSize ? `${selectedSize.label.toUpperCase()} · TOTAL` : "PRICE"}
+              {/* Total stays hidden until a size is chosen (or there's a single fixed price). */}
+              {selectedSize || !sizes.length ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-end",
+                    marginBottom: 18,
+                    borderTop: sizes.length
+                      ? "1px solid rgba(212,175,55,0.12)"
+                      : "none",
+                    paddingTop: sizes.length ? 14 : 0,
+                  }}>
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: "'Cinzel',serif",
+                        fontSize: 8,
+                        letterSpacing: "0.16em",
+                        color: "rgba(200,191,160,0.5)",
+                        marginBottom: 4,
+                      }}>
+                      {selectedSize
+                        ? `${selectedSize.label.toUpperCase()} · TOTAL`
+                        : "TOTAL"}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Cormorant Garamond',serif",
+                        fontSize: 36,
+                        fontWeight: 700,
+                        color: "#D4AF37",
+                        lineHeight: 1,
+                      }}>
+                      {fmtPrice(selectedSize ? selectedSize.price : basePrice)}
+                    </div>
                   </div>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, fontWeight: 700, color: "#D4AF37", lineHeight: 1 }}>
-                    {fmtPrice(selectedSize ? selectedSize.price : basePrice)}
-                  </div>
+                  {!sizes.length && productData.dimensions && (
+                    <div
+                      style={{
+                        fontFamily: "'Raleway',sans-serif",
+                        fontSize: 12,
+                        color: "rgba(200,191,160,0.55)",
+                      }}>
+                      {productData.dimensions}
+                    </div>
+                  )}
                 </div>
-                {!sizes.length && productData.dimensions && (
-                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)" }}>{productData.dimensions}</div>
-                )}
-              </div>
+              ) : (
+                <div
+                  style={{
+                    marginBottom: 18,
+                    borderTop: "1px solid rgba(212,175,55,0.12)",
+                    paddingTop: 14,
+                    fontFamily: "'Raleway',sans-serif",
+                    fontSize: 13,
+                    color: "rgba(200,191,160,0.55)",
+                  }}>
+                  Select a size above to see your total.
+                </div>
+              )}
               <button
-                onClick={() => window.open(arUrl(productData.images[activeImg]), '_blank')}
-                style={{ ...pillBtn, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+                onClick={() =>
+                  window.open(arUrl(productData.images[activeImg]), "_blank")
+                }
+                style={{
+                  ...pillBtn,
+                  width: "100%",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  marginBottom: 12,
+                }}>
                 <SparkIcon size={14} /> VIEW IN AR
               </button>
-              <motion.button
-                whileHover={{ scale: 1.02, boxShadow: "0 10px 32px rgba(212,175,55,0.35)" }} whileTap={{ scale: 0.97 }}
-                onClick={handlePrimaryCta}
-                disabled={ctaBusy}
+              {(selectedSize || !sizes.length) && (
+                <motion.button
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 10px 32px rgba(212,175,55,0.35)",
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handlePrimaryCta}
+                  disabled={ctaBusy}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+                    color: "#0e0c0a",
+                    border: "none",
+                    borderRadius: 999,
+                    fontFamily: "'Cinzel',serif",
+                    fontSize: 11,
+                    letterSpacing: "0.2em",
+                    fontWeight: 700,
+                    cursor: ctaBusy ? "wait" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                  }}>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                  {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
+                </motion.button>
+              )}
+              {/* Talk to the ARRT Coliseum team */}
+              <button
+                onClick={openEnquiry}
                 style={{
-                  width: "100%", padding: "14px",
-                  background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                  color: "#0e0c0a", border: "none",
-                  borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700,
-                  cursor: ctaBusy ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                  width: "100%",
+                  marginTop: 10,
+                  padding: "12px",
+                  background: "transparent",
+                  border: "1px solid rgba(212,175,55,0.4)",
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  fontFamily: "'Cinzel',serif",
+                  fontSize: 10,
+                  letterSpacing: "0.16em",
+                  color: "#D4AF37",
                 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-                {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
-              </motion.button>
+                TALK TO ARRT COLISEUM TEAM →
+              </button>
             </div>
           )}
         </motion.div>
@@ -735,7 +1211,11 @@ export default function ProductDetail() {
             }}
           />
         ) : (
-          <ArtistAvatar gender={productData.artistGender} size={180} style={{ border: "2px solid rgba(212,175,55,0.4)" }} />
+          <ArtistAvatar
+            gender={productData.artistGender}
+            size={180}
+            style={{ border: "2px solid rgba(212,175,55,0.4)" }}
+          />
         )}
         <div>
           <div
@@ -822,24 +1302,60 @@ const pillBtn = {
 };
 
 const dimInput = {
-  flex: 1, padding: "10px 12px", background: "#111",
-  border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0",
-  fontFamily: "'Raleway',sans-serif", fontSize: 14, outline: "none", textAlign: "center",
+  flex: 1,
+  padding: "10px 12px",
+  background: "#111",
+  border: "1px solid rgba(212,175,55,0.2)",
+  borderRadius: 6,
+  color: "#e8e0d0",
+  fontFamily: "'Raleway',sans-serif",
+  fontSize: 14,
+  outline: "none",
+  textAlign: "center",
 };
 
 const goldCta = {
-  width: "100%", padding: "15px",
+  width: "100%",
+  padding: "15px",
   background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-  color: "#0e0c0a", border: "none", borderRadius: 999,
-  fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: "0.2em", fontWeight: 700,
-  display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+  color: "#0e0c0a",
+  border: "none",
+  borderRadius: 999,
+  fontFamily: "'Cinzel',serif",
+  fontSize: 13,
+  letterSpacing: "0.2em",
+  fontWeight: 700,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 10,
 };
 
 function Row({ label, value, muted }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: muted ? "rgba(200,191,160,0.5)" : "rgba(200,191,160,0.75)" }}>{label}</span>
-      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: muted ? "rgba(200,191,160,0.6)" : "#e8e0d0" }}>{value}</span>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        marginBottom: 6,
+      }}>
+      <span
+        style={{
+          fontFamily: "'Raleway',sans-serif",
+          fontSize: 13,
+          color: muted ? "rgba(200,191,160,0.5)" : "rgba(200,191,160,0.75)",
+        }}>
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: "'Raleway',sans-serif",
+          fontSize: 14,
+          color: muted ? "rgba(200,191,160,0.6)" : "#e8e0d0",
+        }}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -890,4 +1406,3 @@ function Meta({ label, value }) {
     </div>
   );
 }
-

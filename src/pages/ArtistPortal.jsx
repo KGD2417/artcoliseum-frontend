@@ -284,12 +284,12 @@ function CompetitionPanel({ competitions }) {
 }
 
 const COMPETITION_RULES = [
-  ["Eligibility", "Open only to unverified (competing) artists. Verified sellers and Art Coliseum staff may not enter."],
+  ["Eligibility", "Open only to unverified (competing) artists. Verified sellers and ARRT Coliseum staff may not enter."],
   ["Original work", "Each entry must be your own original, unpublished artwork. Plagiarised or AI-generated-only work is disqualified."],
   ["One entry", "One entry per artist per competition. The most recent submission stands."],
   ["Submission", "Provide a title, a short narrative and at least one clear, high-resolution image (video optional)."],
   ["Judging", "An external jury rates each entry 1–5 on the competition day. The highest average score wins."],
-  ["Prize", "The winner is promoted to a verified Art Coliseum artist and may list and sell their work."],
+  ["Prize", "The winner is promoted to a verified ARRT Coliseum artist and may list and sell their work."],
   ["Conduct", "Entries must be appropriate for public display. The jury's decision is final."],
 ];
 

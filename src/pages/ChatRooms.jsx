@@ -152,7 +152,7 @@ const MESSAGES = {
     { id: 5, author: "Yuki Tanaka", role: "Collector", time: "4:10 PM", text: "I've found that the acquisitions I've most regretted were ones where I let market enthusiasm override a nagging aesthetic uncertainty. And the ones I've most treasured were pure gut responses." },
     { id: 6, author: "Daniel Hoffmann", role: "Collector", time: "4:12 PM", text: "There's also the question of what you owe to artists. Buying speculative work and flipping immediately is harmful to the primary market ecosystem. The most respected collectors hold and genuinely support careers." },
     { id: 7, author: "Lena Bach", role: "Curator", time: "4:14 PM", text: "Exactly. The best collectors function almost as patrons — they take positions in careers, not just individual objects. That relationship benefits both parties over decades." },
-    { id: 8, author: "Nathan Cole", role: "Collector", time: "4:16 PM", text: "The Art Coliseum model I appreciate — the direct collector-artist relationship enabled here is genuinely different from the gallery system. Less intermediation, more conversation." },
+    { id: 8, author: "Nathan Cole", role: "Collector", time: "4:16 PM", text: "The ARRT Coliseum model I appreciate — the direct collector-artist relationship enabled here is genuinely different from the gallery system. Less intermediation, more conversation." },
     { id: 9, author: "Yuki Tanaka", role: "Collector", time: "4:18 PM", text: "That's exactly why I started collecting through this platform. Knowing the artist personally changes everything about how you experience the work." },
   ],
   theory: [
@@ -345,7 +345,7 @@ export default function ChatRooms() {
             fontFamily: "'Cinzel',serif", fontSize: 10,
             letterSpacing: "0.22em", color: "#D4AF37",
           }}>
-            ART COLISEUM
+            ARRT COLISEUM
           </div>
           <div style={{
             fontFamily: "'Cormorant Garamond',serif", fontSize: 20,

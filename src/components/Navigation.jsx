@@ -165,7 +165,7 @@ const SEARCH_INDEX = [
     to: "/refund",
   },
   { type: "PAGE", title: "Profile", sub: "Collector profile", to: "/profile" },
-  { type: "PAGE", title: "About Art Coliseum", sub: "Our story", to: "/about" },
+  { type: "PAGE", title: "About ARRT Coliseum", sub: "Our story", to: "/about" },
   { type: "PAGE", title: "Contact", sub: "Get in touch", to: "/contact" },
   {
     type: "PAGE",
@@ -226,7 +226,7 @@ function useSiteSearch(q, limit = 8) {
           .map((ar) => ({
             type: "ARTIST",
             title: ar.name,
-            sub: ar.location || "Art Coliseum Artist",
+            sub: ar.location || "ARRT Coliseum Artist",
             to: `/artists/${ar.id}`,
             img: ar.image_url || null,
           }));
@@ -587,7 +587,7 @@ export default function Navigation() {
           <div className="nav-left">
             <motion.img
               src={logo}
-              alt="Art Coliseum"
+              alt="ARRT Coliseum"
               className="nav-logo-img"
               onClick={() => navigate("/")}
               style={{ cursor: "pointer" }}
@@ -655,6 +655,8 @@ export default function Navigation() {
             <NavSearch />
 
             <span className="nav-divider" aria-hidden />
+
+            <LangButton />
 
             <motion.button
               title="Cart"
@@ -749,6 +751,7 @@ export default function Navigation() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.38 }}>
+              <LangButton compact />
               {isAdmin && (
                 <motion.button
                   title="Admin Panel"

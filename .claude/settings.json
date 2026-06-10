@@ -93,7 +93,11 @@
       "Bash(npx --no-install eslint src/components/Layout.jsx src/pages/AdminDashboard.jsx src/pages/ChatRooms.jsx)",
       "Bash(grep -n '\\\\${o.total}\\\\|\\\\$\" + \\\\|Price \\(USD\\)\\\\|· \\\\${\\\\|USD' src/pages/AdminDashboard.jsx)",
       "Bash(grep -n 'o.total}\\\\|\\(USD\\)\\\\|· \\\\${\\\\| \\\\$o\\\\.\\\\|inr\\(o' src/pages/AdminDashboard.jsx)",
-      "Bash(npx --no-install eslint src/pages/AdminDashboard.jsx)"
+      "Bash(npx --no-install eslint src/pages/AdminDashboard.jsx)",
+      "mcp__code-review-graph__get_architecture_overview_tool",
+      "Bash(grep -n -i \"available now\\\\|bring it home\\\\|total\\\\|price\\\\|size\\\\|pattern\\\\|custom\\\\|base\\\\b\\\\|₹\\\\|\\\\\\\\$\\\\|addition\" src/pages/ProductDetail.jsx)",
+      "Bash(xargs -0 perl -i -pe 's/\\\\bArt Coliseum\\\\b/ARRT Coliseum/g; s/\\\\bART COLISEUM\\\\b/ARRT COLISEUM/g; s/\\\\bArrt Coliseum\\\\b/ARRT Coliseum/g;')",
+      "Bash(.venv/bin/python -m py_compile app/main.py app/models/community.py app/schemas/extra.py app/routers/community.py)"
     ]
   },
   "hooks": {

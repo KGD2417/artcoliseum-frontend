@@ -25,7 +25,7 @@ const PAY_METHODS = [
 
 // Fallback shown only until the backend vault loads (see /deliveries/estimate).
 const VAULT_FALLBACK = {
-  name: "Art Coliseum Vault",
+  name: "ARRT Coliseum Vault",
   address: "Kala Ghoda Arts Precinct, Fort, Mumbai, Maharashtra 400001",
   hours: "Mon–Sat · 11:00–19:00",
 };
@@ -460,7 +460,7 @@ export default function Checkout() {
             <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 380, overflow: "hidden", fontFamily: "system-ui, sans-serif" }}>
               <div style={{ background: "#0a1f44", color: "#fff", padding: "18px 22px" }}>
                 <div style={{ fontSize: 18, fontWeight: 700 }}>Razorpay</div>
-                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Art Coliseum · DEMO MODE</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>ARRT Coliseum · DEMO MODE</div>
               </div>
               <div style={{ padding: 22 }}>
                 <div style={{ fontSize: 13, color: "#555" }}>Amount payable</div>

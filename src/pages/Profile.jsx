@@ -434,7 +434,7 @@ export default function Profile() {
 
               {tab === "collection" && (
                 <Card title="My Collection" action={
-                  <Link to="/categories" className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11, textDecoration: "none" }}>BROWSE MORE</Link>
+                  <Link to="/become-artist" className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11, textDecoration: "none" }}>UPDATE SELF COLLECTION</Link>
                 }>
                   {owned.length === 0 ? (
                     <div style={{ textAlign: "center", padding: 40, color: "rgba(200,191,160,0.5)" }}>
@@ -520,7 +520,7 @@ export default function Profile() {
               {tab === "language" && (
                 <Card title="Language Preferences">
                   <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.65)", marginBottom: 20 }}>
-                    Choose how Art Coliseum should appear across the site, in receipts, and in delivery communication.
+                    Choose how ARRT Coliseum should appear across the site, in receipts, and in delivery communication.
                   </p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10 }}>
                     {Object.entries(LANGS).map(([code, l]) => (

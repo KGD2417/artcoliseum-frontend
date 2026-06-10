@@ -85,7 +85,10 @@ export default function AdminDashboard() {
 
 function Overview({ stats }) {
   const [a, setA] = useState(null);
-  useEffect(() => { api.admin.analytics().then(setA).catch(() => setA(null)); }, []);
+  const [aErr, setAErr] = useState("");
+  useEffect(() => {
+    api.admin.analytics().then((d) => { setA(d); setAErr(""); }).catch((e) => { setA(null); setAErr(e.message || "Request failed"); });
+  }, []);
 
   const cards = [
     ["Pending orders", stats.pending_orders], ["Unread messages", stats.unread_messages],
@@ -96,6 +99,11 @@ function Overview({ stats }) {
 
   return (
     <Panel title="Overview">
+      {aErr && (
+        <div style={{ marginBottom: 14, padding: "10px 14px", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, background: "rgba(239,68,68,0.08)", fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#fca5a5" }}>
+          Site analytics failed to load — {aErr}. Showing summary counts only.
+        </div>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 14 }}>
         {cards.map(([l, v]) => (
           <div key={l} style={{ padding: 20, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
@@ -444,8 +452,12 @@ const ckLabel = { display: "flex", alignItems: "center", gap: 8, margin: "6px 0 
 
 function Tally() {
   const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
   const [busy, setBusy] = useState("");
-  const load = () => api.admin.revenue().then(setData).catch(() => setData(null));
+  const load = () => {
+    setErr("");
+    api.admin.revenue().then(setData).catch((e) => { setData(null); setErr(e.message || "Request failed"); });
+  };
   useEffect(() => { load(); }, []);
 
   const download = async (format) => {
@@ -462,6 +474,12 @@ function Tally() {
     } catch (e) { alert(e.message); } finally { setBusy(""); }
   };
 
+  if (err) return (
+    <Panel title="Price & Tally">
+      <Empty>Couldn't load the P&amp;L report — {err}.<br />Check that the API is reachable and you're signed in as an admin.</Empty>
+      <div style={{ textAlign: "center" }}><Btn ghost onClick={load}>RETRY</Btn></div>
+    </Panel>
+  );
   if (!data) return <Panel title="Price & Tally"><Empty>Loading P&L…</Empty></Panel>;
   const t = data.totals;
   const cards = [

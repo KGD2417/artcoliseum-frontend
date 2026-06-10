@@ -16,7 +16,7 @@ export default function ARView() {
     <div style={{ position: "fixed", inset: 0, background: "#0a0a0a", zIndex: 50, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid rgba(212,175,55,0.18)", background: "rgba(10,10,10,0.85)" }}>
         <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, letterSpacing: "0.1em", color: "#f0ece4" }}>
-          Art Coliseum <span style={{ color: "#D4AF37" }}>· AR View</span>
+          ARRT Coliseum <span style={{ color: "#D4AF37" }}>· AR View</span>
         </div>
         <button
           onClick={() => (window.history.length > 1 ? navigate(-1) : window.close())}
@@ -25,7 +25,7 @@ export default function ARView() {
         </button>
       </div>
       <iframe
-        title="Art Coliseum AR"
+        title="ARRT Coliseum AR"
         src={src}
         allow="camera; xr-spatial-tracking; accelerometer; gyroscope; magnetometer"
         style={{ flex: 1, width: "100%", border: "none" }}

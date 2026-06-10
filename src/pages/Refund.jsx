@@ -19,7 +19,7 @@ const SECTIONS = [
   },
   {
     title: "Damaged in Transit",
-    body: "If your acquisition arrives damaged, photograph the packaging and the artwork immediately and contact us within 48 hours. A full refund or replacement will be issued at no cost — our Art Coliseum Guarantee covers all transit risk.",
+    body: "If your acquisition arrives damaged, photograph the packaging and the artwork immediately and contact us within 48 hours. A full refund or replacement will be issued at no cost — our ARRT Coliseum Guarantee covers all transit risk.",
   },
 ];
 
@@ -38,7 +38,7 @@ export default function Refund() {
           <span className="bold-white">Refund</span> <em>Policy</em>
         </h2>
         <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.6)", maxWidth: 560, margin: "16px auto 0", lineHeight: 1.7 }}>
-          Every Art Coliseum acquisition is backed by our 14-day collector confidence guarantee. The terms below explain how returns and refunds are processed.
+          Every ARRT Coliseum acquisition is backed by our 14-day collector confidence guarantee. The terms below explain how returns and refunds are processed.
         </p>
       </motion.div>
 

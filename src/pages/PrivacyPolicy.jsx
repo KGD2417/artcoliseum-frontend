@@ -7,7 +7,7 @@ const SECTIONS = [
   },
   {
     title: "2. How We Use Your Information",
-    body: "Art Coliseum uses your information to process acquisitions, deliver authenticated artworks, send important account notifications, provide tailored curation suggestions, and protect against fraud. We never sell your data to third parties.",
+    body: "ARRT Coliseum uses your information to process acquisitions, deliver authenticated artworks, send important account notifications, provide tailored curation suggestions, and protect against fraud. We never sell your data to third parties.",
   },
   {
     title: "3. Data Storage & Security",

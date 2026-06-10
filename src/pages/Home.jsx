@@ -638,7 +638,7 @@ export default function Home() {
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
           <motion.img
             src={logo}
-            alt="Art Coliseum"
+            alt="ARRT Coliseum"
             className="hero-logo"
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -681,7 +681,7 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          ABOUT ART COLISEUM
+          ABOUT ARRT COLISEUM
       ═══════════════════════════════════════════════ */}
       <section className="about-col-section">
         <div className="about-col-inner">
@@ -704,9 +704,9 @@ export default function Home() {
               <span className="grt">Our Story</span>
               <div className="grl" style={{ background: "linear-gradient(90deg,#D4AF37,transparent)", maxWidth: 60 }} />
             </div>
-            <h2 className="ar-heading">About <em>Art Coliseum</em></h2>
+            <h2 className="ar-heading">About <em>ARRT Coliseum</em></h2>
             <p className="ar-desc" style={{ marginBottom: 18 }}>
-              Art Coliseum is not a marketplace — it is a sanctuary for art. We believe that great art does
+              ARRT Coliseum is not a marketplace — it is a sanctuary for art. We believe that great art does
               not need a price tag to prove its worth; it speaks through silence, through texture, through
               the quiet authority of a well-considered composition.
             </p>
@@ -746,7 +746,7 @@ export default function Home() {
           tag="Curator's Picks"
           title="Art of"
           italic="Seasons"
-          sub="A rotating selection of the most coveted works in our collection — drag the cylinder to explore."
+          sub="Explore a rotating showcase of remarkable pieces from our featured collection."
         />
         <CylinderCarousel items={carouselItems} navigate={navigate} />
       </section>
@@ -791,12 +791,6 @@ export default function Home() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}>
-            <div className="gold-rule" style={{ marginBottom: 24 }}>
-              <div className="grl" style={{ background: "linear-gradient(90deg, transparent, #D4AF37)" }} />
-              <span className="grt">NEW ARRIVALS</span>
-              <div className="grl" style={{ background: "linear-gradient(90deg, #D4AF37, transparent)" }} />
-            </div>
-
             <h2 style={{
               fontFamily: "'Cormorant Garamond',serif",
               fontSize: "clamp(36px,4.5vw,64px)", fontWeight: 400,
@@ -805,13 +799,6 @@ export default function Home() {
               Launch of{" "}
               <em style={{ color: "#D4AF37", fontStyle: "italic" }}>New Product</em>
             </h2>
-
-            <p style={{
-              fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic",
-              fontSize: 18, color: "#D4AF37", marginBottom: 24, lineHeight: 1.6,
-            }}>
-              Forty-eight new works. Eighteen artists. One season.
-            </p>
 
             <p style={{
               fontFamily: "'Cormorant Garamond',serif", fontSize: 18,
@@ -823,9 +810,7 @@ export default function Home() {
 
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 0 0", display: "flex", flexDirection: "column", gap: 14 }}>
               {[
-                "48 new works across painting, sculpture & photography",
                 "Verified provenance, direct from each artist's studio",
-                "Members get 48-hour early access",
               ].map((b, i) => (
                 <li key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{

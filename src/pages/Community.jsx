@@ -41,7 +41,7 @@ function mapPost(p) {
     time: timeAgo(p.created_at),
     text: p.text,
     images: p.images && p.images.length ? p.images : null,
-    video: p.video || null,
+    videos: p.videos && p.videos.length ? p.videos : (p.video ? [p.video] : null),
     title: p.title, condition: p.condition, location: p.location,
     likes: p.likes || 0, liked: !!p.liked,
     comments: (p.comments || []).length, commentsList: p.comments || [],
@@ -376,10 +376,14 @@ function PostCard({ post, onLike, onDelete, onEdit, onChat, isOwn }) {
         </div>
       )}
 
-      {/* Video */}
-      {post.video && (
-        <div style={{ margin: "0 18px 14px", borderRadius: 10, overflow: "hidden", background: "#000" }}>
-          <video src={post.video} controls style={{ width: "100%", display: "block", maxHeight: 380 }} />
+      {/* Videos */}
+      {post.videos && post.videos.length > 0 && (
+        <div style={{ margin: "0 18px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {post.videos.map((src, i) => (
+            <div key={i} style={{ borderRadius: 10, overflow: "hidden", background: "#000" }}>
+              <video src={src} controls style={{ width: "100%", display: "block", maxHeight: 380 }} />
+            </div>
+          ))}
         </div>
       )}
 
@@ -469,7 +473,7 @@ function PostCard({ post, onLike, onDelete, onEdit, onChat, isOwn }) {
 function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
   const [text, setText] = useState(editingPost?.text || "");
   const [images, setImages] = useState(editingPost?.images || []);
-  const [video, setVideo] = useState(editingPost?.video || null);
+  const [videos, setVideos] = useState(editingPost?.videos || (editingPost?.video ? [editingPost.video] : []));
   const [community, setCommunity] = useState(editingPost?.community || defaultCommunity || "general");
   const [listingTitle, setListingTitle] = useState(editingPost?.title || "");
   const [condition, setCondition] = useState(editingPost?.condition || "Excellent");
@@ -486,23 +490,25 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
     }
   };
 
-  const handleVideo = async (e) => {
-    const file = e.target.files[0];
+  const handleVideos = async (e) => {
+    const files = Array.from(e.target.files);
     e.target.value = "";
-    if (!file) return;
-    try { const { url } = await api.uploads.file(file, "video"); setVideo(url); }
-    catch (err) { alert(err.message); }
+    for (const file of files) {
+      try { const { url } = await api.uploads.file(file, "video"); setVideos((prev) => [...prev, url]); }
+      catch (err) { alert(err.message); }
+    }
   };
 
   const removeImage = i => setImages(prev => prev.filter((_, idx) => idx !== i));
+  const removeVideo = i => setVideos(prev => prev.filter((_, idx) => idx !== i));
 
-  const hasContent = text.trim() || images.length > 0 || video;
+  const hasContent = text.trim() || images.length > 0 || videos.length > 0;
   const canPost = isMarketplace ? (hasContent && listingTitle.trim()) : hasContent;
 
   const handlePost = () => {
     if (!canPost) return;
     onPost({
-      text, images, video, community,
+      text, images, videos, community,
       type: isMarketplace ? "listing" : "discussion",
       ...(isMarketplace ? { title: listingTitle, condition, location } : {}),
     });
@@ -599,11 +605,15 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
           </div>
         )}
 
-        {/* Video preview */}
-        {video && (
-          <div style={{ position: "relative", marginTop: 12, borderRadius: 10, overflow: "hidden", background: "#000" }}>
-            <video src={video} controls style={{ width: "100%", display: "block", maxHeight: 240 }} />
-            <button onClick={() => setVideo(null)} style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "rgba(0,0,0,0.72)", border: "none", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+        {/* Video previews */}
+        {videos.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+            {videos.map((src, i) => (
+              <div key={i} style={{ position: "relative", borderRadius: 10, overflow: "hidden", background: "#000" }}>
+                <video src={src} controls style={{ width: "100%", display: "block", maxHeight: 240 }} />
+                <button onClick={() => removeVideo(i)} style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "rgba(0,0,0,0.72)", border: "none", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+              </div>
+            ))}
           </div>
         )}
 
@@ -621,18 +631,16 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
               <input type="file" accept="image/*" multiple onChange={handleImages} style={{ display: "none" }} />
             </label>
 
-            {/* Video */}
-            {!video && (
-              <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", color: "rgba(200,191,160,0.5)", fontFamily: "'Raleway',sans-serif", fontSize: 11, padding: "8px 13px", borderRadius: 999, border: "1px solid rgba(212,175,55,0.15)", background: "rgba(255,255,255,0.03)", transition: "all 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.color = "#D4AF37"; e.currentTarget.style.borderColor = "rgba(212,175,55,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = "rgba(200,191,160,0.5)"; e.currentTarget.style.borderColor = "rgba(212,175,55,0.15)"; }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                </svg>
-                Video
-                <input type="file" accept="video/*" onChange={handleVideo} style={{ display: "none" }} />
-              </label>
-            )}
+            {/* Videos */}
+            <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", color: "rgba(200,191,160,0.5)", fontFamily: "'Raleway',sans-serif", fontSize: 11, padding: "8px 13px", borderRadius: 999, border: "1px solid rgba(212,175,55,0.15)", background: "rgba(255,255,255,0.03)", transition: "all 0.2s" }}
+              onMouseEnter={e => { e.currentTarget.style.color = "#D4AF37"; e.currentTarget.style.borderColor = "rgba(212,175,55,0.4)"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "rgba(200,191,160,0.5)"; e.currentTarget.style.borderColor = "rgba(212,175,55,0.15)"; }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+              {videos.length > 0 ? `${videos.length} video${videos.length > 1 ? "s" : ""}` : "Videos"}
+              <input type="file" accept="video/*" multiple onChange={handleVideos} style={{ display: "none" }} />
+            </label>
           </div>
 
           <div style={{ display: "flex", gap: 10 }}>
@@ -851,7 +859,7 @@ export default function Community() {
             <div className="grl" style={{ background: "linear-gradient(90deg, #D4AF37, transparent)" }} />
           </div>
           <h1 className="section-heading">
-            <span className="bold-white">Art Coliseum</span> <em>Community</em>
+            <span className="bold-white">ARRT Coliseum</span> <em>Community</em>
           </h1>
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 15, color: "rgba(200,191,160,0.55)", maxWidth: 540, margin: "14px auto 0", lineHeight: 1.75 }}>
             A gathering place for artists, collectors, and curators — organised by community, open for conversation and commerce.

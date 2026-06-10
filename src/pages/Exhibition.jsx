@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 const ART_TYPES = ["Oil on Canvas", "Acrylic", "Watercolor", "Mixed Media", "Sculpture", "Photography", "Digital Art", "Charcoal", "Pastel", "Ink", "Tempera", "Fresco", "Other"];
 const ART_STYLES = ["Abstract", "Realism", "Impressionism", "Surrealism", "Expressionism", "Minimalism", "Pop Art", "Contemporary", "Traditional", "Folk", "Other"];
 const EXHIBITION_TYPES = [
-  { id: "solo", label: "Solo Exhibition", desc: "Showcase your complete vision — an entire exhibition of your works, curated by Art Coliseum specialists." },
+  { id: "solo", label: "Solo Exhibition", desc: "Showcase your complete vision — an entire exhibition of your works, curated by ARRT Coliseum specialists." },
   { id: "group", label: "Group Exhibition", desc: "Join a curated group of artists around a shared theme, medium, or cultural narrative." },
   { id: "competition", label: "Art Competition", desc: "Submit your best work for our juried competition. Cash prizes, acquisition opportunities, and critical recognition." },
   { id: "online", label: "Online Exhibition", desc: "A fully digital exhibition with AR integration, reaching collectors across the globe." },
@@ -475,7 +475,7 @@ export default function Exhibition() {
                 </div>
                 <div style={{ padding: "16px 20px", background: "rgba(212,175,55,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 10, marginBottom: 24 }}>
                   <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", lineHeight: 1.7, margin: 0 }}>
-                    By submitting, you confirm that this is your original work, that you hold all rights to the image and artwork, and that you agree to Art Coliseum's exhibition terms and conditions. Our curatorial team will review your submission and contact you within 5 business days.
+                    By submitting, you confirm that this is your original work, that you hold all rights to the image and artwork, and that you agree to ARRT Coliseum's exhibition terms and conditions. Our curatorial team will review your submission and contact you within 5 business days.
                   </p>
                 </div>
               </div>

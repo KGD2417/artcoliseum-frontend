@@ -95,7 +95,7 @@ export default function ArtistChat() {
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37" }}>ARTIST NETWORK</div>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#fff", marginTop: 4 }}>Artist Chat</h1>
         <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)", marginTop: 6 }}>
-          Private conversations between Art Coliseum artists.
+          Private conversations between ARRT Coliseum artists.
         </p>
       </div>
 
