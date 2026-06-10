@@ -75,6 +75,8 @@ export default function ProductDetail() {
   });
   const [customDims, setCustomDims] = useState({ w: "", h: "", unit: "cm" });
   const [enquiryMsg, setEnquiryMsg] = useState("");
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [arOpen, setArOpen] = useState(false);
   const [compareOn, setCompareOn] = useState(false);
   useEffect(() => {
     const f = () => setCompareOn(isCompared(id));
@@ -437,14 +439,8 @@ export default function ProductDetail() {
                 display: "flex",
                 gap: 10,
               }}>
-              <CircleBtn>
+              <CircleBtn onClick={() => setZoomOpen(true)} title="Zoom in">
                 <ZoomIcon size={16} />
-              </CircleBtn>
-              <CircleBtn
-                onClick={() =>
-                  window.open(arUrl(productData.images[activeImg]), "_blank")
-                }>
-                <SparkIcon size={16} />
               </CircleBtn>
             </div>
           </div>
@@ -855,83 +851,58 @@ export default function ProductDetail() {
                 )}
               </div>
 
-              {/* Compare — prominent CTA, kept above View in AR */}
-              <motion.button
-                onClick={() => toggleCompare(id)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                style={{
-                  width: "100%", marginBottom: 12, padding: "13px",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
-                  borderRadius: 999, cursor: "pointer",
-                  background: compareOn ? "rgba(212,175,55,0.16)" : "rgba(212,175,55,0.06)",
-                  border: `1.5px solid ${compareOn ? "#D4AF37" : "rgba(212,175,55,0.55)"}`,
-                  color: "#D4AF37",
-                  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", fontWeight: 700,
-                }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/>
-                </svg>
-                {compareOn ? "✓ ADDED TO COMPARE" : "COMPARE THIS ARTWORK"}
-              </motion.button>
-
-              {/* View in AR + Bring it home — once a size & price are set */}
+              {/* Primary CTA — Bring it home (once a size & price are set) */}
               {priceReady && (
-                <>
-                  <button
-                    onClick={() =>
-                      window.open(
-                        arUrl(productData.images[activeImg]),
-                        "_blank",
-                      )
-                    }
-                    style={{
-                      ...pillBtn,
-                      width: "100%",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                      marginBottom: 12,
-                    }}>
-                    <SparkIcon size={14} /> VIEW IN AR
-                  </button>
-                  <motion.button
-                    whileHover={{
-                      scale: 1.02,
-                      boxShadow: "0 10px 32px rgba(212,175,55,0.35)",
-                    }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={handlePrimaryCta}
-                    disabled={ctaBusy}
-                    style={{
-                      ...goldCta,
-                      opacity: ctaBusy ? 0.6 : 1,
-                      cursor: ctaBusy ? "wait" : "pointer",
-                    }}>
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                      <polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
-                    {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
-                  </motion.button>
-                </>
+                <motion.button
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 10px 32px rgba(212,175,55,0.35)",
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handlePrimaryCta}
+                  disabled={ctaBusy}
+                  style={{
+                    ...goldCta,
+                    marginBottom: 12,
+                    opacity: ctaBusy ? 0.6 : 1,
+                    cursor: ctaBusy ? "wait" : "pointer",
+                  }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                  {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
+                </motion.button>
               )}
 
-              {/* Talk to the Art Coliseum team */}
+              {/* Secondary actions — compare & AR, paired on one row */}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => toggleCompare(id)}
+                  style={{
+                    ...secondaryBtn,
+                    color: compareOn ? "#D4AF37" : "rgba(212,175,55,0.9)",
+                    background: compareOn ? "rgba(212,175,55,0.16)" : "transparent",
+                    borderColor: compareOn ? "#D4AF37" : "rgba(212,175,55,0.4)",
+                  }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/>
+                  </svg>
+                  {compareOn ? "COMPARING" : "COMPARE"}
+                </button>
+                <button
+                  onClick={() => setArOpen(true)}
+                  style={secondaryBtn}>
+                  <SparkIcon size={13} /> VIEW IN AR
+                </button>
+              </div>
+
+              {/* Tertiary — talk to the team */}
               <button
                 onClick={openEnquiry}
                 style={{
                   width: "100%",
-                  marginTop: 10,
+                  marginTop: 12,
                   padding: "12px",
                   background: "transparent",
                   border: "1px solid rgba(212,175,55,0.4)",
@@ -1090,40 +1061,7 @@ export default function ProductDetail() {
                   Select a size above to see your total.
                 </div>
               )}
-              {/* Compare — prominent CTA, kept above View in AR */}
-              <motion.button
-                onClick={() => toggleCompare(id)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                style={{
-                  width: "100%", marginBottom: 12, padding: "13px",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
-                  borderRadius: 999, cursor: "pointer",
-                  background: compareOn ? "rgba(212,175,55,0.16)" : "rgba(212,175,55,0.06)",
-                  border: `1.5px solid ${compareOn ? "#D4AF37" : "rgba(212,175,55,0.55)"}`,
-                  color: "#D4AF37",
-                  fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", fontWeight: 700,
-                }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/>
-                </svg>
-                {compareOn ? "✓ ADDED TO COMPARE" : "COMPARE THIS ARTWORK"}
-              </motion.button>
-              <button
-                onClick={() =>
-                  window.open(arUrl(productData.images[activeImg]), "_blank")
-                }
-                style={{
-                  ...pillBtn,
-                  width: "100%",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  marginBottom: 12,
-                }}>
-                <SparkIcon size={14} /> VIEW IN AR
-              </button>
+              {/* Primary CTA — Bring it home (once a size is chosen / single price) */}
               {(selectedSize || !sizes.length) && (
                 <motion.button
                   whileHover={{
@@ -1134,43 +1072,47 @@ export default function ProductDetail() {
                   onClick={handlePrimaryCta}
                   disabled={ctaBusy}
                   style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                    color: "#0e0c0a",
-                    border: "none",
-                    borderRadius: 999,
-                    fontFamily: "'Cinzel',serif",
-                    fontSize: 11,
-                    letterSpacing: "0.2em",
-                    fontWeight: 700,
+                    ...goldCta,
+                    marginBottom: 12,
+                    opacity: ctaBusy ? 0.6 : 1,
                     cursor: ctaBusy ? "wait" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
                   }}>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
                   </svg>
                   {user ? "BRING IT HOME" : "SIGN IN TO BUY"}
                 </motion.button>
               )}
-              {/* Talk to the Art Coliseum team */}
+
+              {/* Secondary actions — compare & AR, paired on one row */}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => toggleCompare(id)}
+                  style={{
+                    ...secondaryBtn,
+                    color: compareOn ? "#D4AF37" : "rgba(212,175,55,0.9)",
+                    background: compareOn ? "rgba(212,175,55,0.16)" : "transparent",
+                    borderColor: compareOn ? "#D4AF37" : "rgba(212,175,55,0.4)",
+                  }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="7" height="16" rx="1"/><rect x="14" y="4" width="7" height="16" rx="1"/>
+                  </svg>
+                  {compareOn ? "COMPARING" : "COMPARE"}
+                </button>
+                <button
+                  onClick={() => setArOpen(true)}
+                  style={secondaryBtn}>
+                  <SparkIcon size={13} /> VIEW IN AR
+                </button>
+              </div>
+
+              {/* Tertiary — talk to the team */}
               <button
                 onClick={openEnquiry}
                 style={{
                   width: "100%",
-                  marginTop: 10,
+                  marginTop: 12,
                   padding: "12px",
                   background: "transparent",
                   border: "1px solid rgba(212,175,55,0.4)",
@@ -1202,6 +1144,113 @@ export default function ProductDetail() {
         takeItHomeLabel="Bring it home →"
         onTakeItHome={bringHome}
       />
+
+      {/* Zoom lightbox — full-screen view of the active image */}
+      {zoomOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          onClick={() => setZoomOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "rgba(6,5,4,0.92)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 32,
+            cursor: "zoom-out",
+          }}>
+          <button
+            onClick={() => setZoomOpen(false)}
+            title="Close"
+            style={{
+              position: "absolute",
+              top: 22,
+              right: 26,
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(0,0,0,0.6)",
+              border: "1px solid rgba(212,175,55,0.4)",
+              color: "#D4AF37",
+              fontSize: 22,
+              lineHeight: 1,
+              cursor: "pointer",
+            }}>
+            ×
+          </button>
+          <motion.img
+            initial={{ scale: 0.92 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            src={productData.images[activeImg]}
+            alt={productData.title}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "92vw",
+              maxHeight: "90vh",
+              objectFit: "contain",
+              borderRadius: 8,
+              boxShadow: "0 30px 80px rgba(0,0,0,0.7)",
+              cursor: "default",
+            }}
+          />
+        </motion.div>
+      )}
+
+      {/* View in AR — in-page overlay (stays on the product page; close to return) */}
+      {arOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            background: "#0a0a0a",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 20px",
+              borderBottom: "1px solid rgba(212,175,55,0.18)",
+              background: "rgba(10,10,10,0.9)",
+              flexShrink: 0,
+            }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, letterSpacing: "0.08em", color: "#f0ece4" }}>
+              {productData.title} <span style={{ color: "#D4AF37" }}>· AR View</span>
+            </div>
+            <button
+              onClick={() => setArOpen(false)}
+              title="Close AR"
+              style={{
+                background: "transparent",
+                border: "1px solid rgba(212,175,55,0.3)",
+                color: "#D4AF37",
+                borderRadius: 999,
+                padding: "7px 18px",
+                fontFamily: "'Cinzel',serif",
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                cursor: "pointer",
+              }}>
+              ✕ CLOSE
+            </button>
+          </div>
+          <iframe
+            title="Art Coliseum AR"
+            src={`/ar-launcher.html?image=${encodeURIComponent(productData.images[activeImg])}&type=${encodeURIComponent(arType)}`}
+            allow="camera; xr-spatial-tracking; accelerometer; gyroscope; magnetometer"
+            style={{ flex: 1, width: "100%", border: "none" }}
+          />
+        </motion.div>
+      )}
 
       {/* artist block */}
       <div
@@ -1351,6 +1400,27 @@ const goldCta = {
   gap: 10,
 };
 
+// Compact, equal-width secondary action (Compare / View in AR) — sits in a row
+// so the panel reads as one primary CTA + a pair of secondaries, not a stack.
+const secondaryBtn = {
+  flex: 1,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 7,
+  padding: "11px 10px",
+  borderRadius: 999,
+  cursor: "pointer",
+  border: "1px solid rgba(212,175,55,0.4)",
+  background: "transparent",
+  color: "rgba(212,175,55,0.9)",
+  fontFamily: "'Cinzel',serif",
+  fontSize: 10,
+  letterSpacing: "0.12em",
+  fontWeight: 600,
+  whiteSpace: "nowrap",
+};
+
 function Row({ label, value, muted }) {
   return (
     <div
@@ -1380,10 +1450,11 @@ function Row({ label, value, muted }) {
   );
 }
 
-function CircleBtn({ children, onClick }) {
+function CircleBtn({ children, onClick, title }) {
   return (
     <button
       onClick={onClick}
+      title={title}
       style={{
         width: 36,
         height: 36,

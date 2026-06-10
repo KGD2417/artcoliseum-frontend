@@ -229,15 +229,13 @@ export default function Gallery() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{item.title}</div>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{item.artist}</div>
-                    {item.customizable === false && item.price > 0 ? (
-                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
-                        {formatPrice(item.price)}
-                      </div>
-                    ) : item.price_per_unit > 0 ? (
+                    {/* Predefined (fixed) prices are revealed on the product page, not in
+                        the listing. Customizable works keep a per-unit "from" guide. */}
+                    {item.customizable !== false && item.price_per_unit > 0 && (
                       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
                         from {formatPrice(item.price_per_unit)}/{item.unit || "unit"}²
                       </div>
-                    ) : null}
+                    )}
                   </div>
                   <button
                     onClick={() => navigate(`/product/${item.id}`)}

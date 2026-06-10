@@ -588,11 +588,7 @@ export default function SubTypeDetail() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 19, fontWeight: 600, color: "#f0e8d8" }}>{item.title}</div>
                     <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.45)", marginTop: 4 }}>{item.artist}</div>
-                    {!item.customizable && item.price > 0 && (
-                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#D4AF37", marginTop: 4 }}>
-                        {formatPrice(item.price)}
-                      </div>
-                    )}
+                    {/* Predefined prices are shown on the product page, not in the listing. */}
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); navigate(`/product/${item.id}`); }}

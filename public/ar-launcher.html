@@ -108,7 +108,15 @@
   .fade-in { animation: fadeInUp 0.7s ease forwards; }
   .fade-in-delay-1 { animation-delay: 0.1s; opacity: 0; }
   .fade-in-delay-2 { animation-delay: 0.2s; opacity: 0; }
+  /* When embedded in the app's in-page AR overlay, the host provides the top bar,
+     so hide this launcher's own nav to avoid a duplicate bar / second close. */
+  html.embedded nav { display: none !important; }
+  html.embedded #studio { padding-top: 56px; }
 </style>
+<script>
+  // Detect the in-page overlay (iframe) and let CSS drop our own nav.
+  if (window.self !== window.top) document.documentElement.classList.add('embedded');
+</script>
 </head>
 <body>
 <div id="app">
