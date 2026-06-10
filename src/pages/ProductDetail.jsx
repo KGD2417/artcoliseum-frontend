@@ -1140,9 +1140,6 @@ export default function ProductDetail() {
         intro={[
           `Thanks for your interest in "${productData.title}". A curator will reply shortly — you can also buy it directly on the page.`,
         ]}
-        showTakeItHome={isPredefined || hasDims}
-        takeItHomeLabel="Bring it home →"
-        onTakeItHome={bringHome}
       />
 
       {/* Zoom lightbox — full-screen view of the active image */}

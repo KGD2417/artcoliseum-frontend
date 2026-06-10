@@ -14,14 +14,19 @@ import { useAuth } from "../context/Auth";
  */
 const gold = "#D4AF37";
 
-function titleFor(key) {
+function titleFor(key, titles = {}) {
   if (!key) return "Conversation";
-  if (key.startsWith("enquiry:")) return "Enquiry · " + key.slice(8);
+  // Enquiries are "you ↔ the Art Coliseum team about an artwork" — show the
+  // artwork's real title once resolved, not the raw id slug.
+  if (key.startsWith("enquiry:")) {
+    const id = key.slice(8);
+    return titles[id] || "Art Coliseum Team";
+  }
   if (key.startsWith("peer:")) return "Direct message";
-  if (key.startsWith("artist:")) return "Artist · " + key.slice(7);
-  if (key.startsWith("curator:")) return "Curator · " + key.slice(8);
-  if (key.startsWith("support:")) return "Support";
-  return key;
+  if (key.startsWith("artist:")) return "Artist Studio";
+  if (key.startsWith("curator:")) return "Art Coliseum Curator";
+  if (key.startsWith("support:")) return "Support Team";
+  return "Conversation";
 }
 
 function timeAgo(iso) {
@@ -44,7 +49,10 @@ export default function MessagesWidget() {
   const [input, setInput] = useState("");
   const [unread, setUnread] = useState(0);
   const [sending, setSending] = useState(false);
+  const [titles, setTitles] = useState({}); // artworkId -> title, for enquiry tab names
   const scrollRef = useRef(null);
+  const titlesRef = useRef({});
+  titlesRef.current = titles;
 
   // Keep latest UI state readable inside the (stable) WS handler.
   const stateRef = useRef({ open, view, active });
@@ -72,9 +80,21 @@ export default function MessagesWidget() {
       }
     }
     const list = [...groups.values()]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .map((g) => ({ ...g, title: titleFor(g.key) }));
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     setConvos(list);
+
+    // Resolve real artwork titles for enquiry tabs (cached; one fetch per id).
+    const ids = [...new Set(
+      list.filter((c) => c.key.startsWith("enquiry:")).map((c) => c.key.slice(8)),
+    )].filter((id) => id && !(id in titlesRef.current));
+    if (ids.length) {
+      const fetched = {};
+      await Promise.all(ids.map(async (id) => {
+        try { const a = await api.catalog.artwork(id); fetched[id] = a?.title || null; }
+        catch { fetched[id] = null; }
+      }));
+      setTitles((prev) => ({ ...prev, ...fetched }));
+    }
   }, [user, isAdmin]);
 
   useEffect(() => { if (user) loadUnread(); }, [user, loadUnread]);
@@ -150,7 +170,7 @@ export default function MessagesWidget() {
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#f0e8d8", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {view === "thread" ? active?.title : "Your Messages"}
+                  {view === "thread" ? titleFor(active?.key, titles) : "Your Messages"}
                 </div>
                 <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.7)", marginTop: 2 }}>
                   {view === "thread" ? "ART COLISEUM" : isAdmin ? "ALL CONVERSATIONS" : "CURATORS & SUPPORT"}
@@ -172,11 +192,11 @@ export default function MessagesWidget() {
                   <button key={`${c.key}__${c.userId}`} onClick={() => openThread(c)}
                     style={{ display: "flex", gap: 12, alignItems: "center", width: "100%", textAlign: "left", padding: "14px 16px", background: "transparent", border: "none", borderBottom: "1px solid rgba(212,175,55,0.08)", cursor: "pointer" }}>
                     <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#D4AF37,#a8892a)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 11, color: "#080808", fontWeight: 700 }}>
-                      {(c.title[0] || "C").toUpperCase()}
+                      {(titleFor(c.key, titles)[0] || "C").toUpperCase()}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                        <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600, color: "#f0e8d8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.title}</span>
+                        <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600, color: "#f0e8d8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titleFor(c.key, titles)}</span>
                         <span style={{ fontSize: 10, color: "rgba(200,191,160,0.4)", flexShrink: 0 }}>{timeAgo(c.created_at)}</span>
                       </div>
                       <div style={{ fontSize: 12, color: "rgba(200,191,160,0.55)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
