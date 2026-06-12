@@ -924,11 +924,17 @@ function Item({ children }) {
   return <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "12px 0", borderBottom: "1px solid rgba(212,175,55,0.1)" }}>{children}</div>;
 }
 /* ═══════════════ CATEGORIES ══════════════════════════════════════ */
+const DEFAULT_CATEGORY_TABS = [
+  { label: "About the Art", heading: "", body: "", image_url: "" },
+  { label: "History & Origins", heading: "", body: "", image_url: "" },
+  { label: "Modern Era", heading: "", body: "", image_url: "" },
+  { label: "Pioneers & Masters", heading: "", body: "", image_url: "" },
+];
+
 function Categories() {
   const [cats, setCats] = useState([]);
-  const [newMain, setNewMain] = useState("");
-  const [newSubLabel, setNewSubLabel] = useState("");
-  const [newSubParent, setNewSubParent] = useState("");
+  const [editing, setEditing] = useState(null);       // "new" | main-category object
+  const [subEditing, setSubEditing] = useState(null); // "new" | subtype object
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -937,22 +943,6 @@ function Categories() {
 
   const mains = cats.filter((c) => c.kind === "main").sort((a, b) => a.label.localeCompare(b.label));
   const subtypesOf = (id) => cats.filter((c) => c.kind === "subtype" && c.parent_id === id);
-
-  const addMain = async () => {
-    if (!newMain.trim()) return;
-    setBusy(true); setErr("");
-    try { await api.categories.createMain(newMain.trim()); setNewMain(""); await load(); }
-    catch (e) { setErr(e.message); }
-    finally { setBusy(false); }
-  };
-
-  const addSub = async () => {
-    if (!newSubLabel.trim() || !newSubParent) return;
-    setBusy(true); setErr("");
-    try { await api.categories.createSubtype(newSubLabel.trim(), newSubParent); setNewSubLabel(""); await load(); }
-    catch (e) { setErr(e.message); }
-    finally { setBusy(false); }
-  };
 
   const del = async (id, label) => {
     if (!window.confirm(`Delete "${label}"?`)) return;
@@ -966,74 +956,254 @@ function Categories() {
     <Panel title="Categories & Subtypes">
       {err && <div style={{ color: "#e05", marginBottom: 12, fontFamily: "'Raleway',sans-serif", fontSize: 13 }}>{err}</div>}
 
-      {/* Add main category */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold, marginBottom: 10 }}>ADD MAIN CATEGORY</div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            value={newMain}
-            onChange={(e) => setNewMain(e.target.value)}
-            placeholder="e.g. Ceramics"
-            style={{ ...miniInput, flex: 1 }}
-            onKeyDown={(e) => e.key === "Enter" && addMain()}
-          />
-          <Btn primary onClick={addMain} disabled={busy || !newMain.trim()}>ADD</Btn>
-        </div>
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", lineHeight: 1.6, marginBottom: 14 }}>
+        A main category carries its full page setup — the card/hero image, tagline, short description,
+        the four detail-page tabs (each with its own text and image) and the pioneers list.
+        Subtypes carry an image and a short description.
       </div>
-
-      {/* Add subtype */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold, marginBottom: 10 }}>ADD SUBTYPE / STYLE</div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <select
-            value={newSubParent}
-            onChange={(e) => setNewSubParent(e.target.value)}
-            style={{ ...miniInput, minWidth: 160 }}>
-            <option value="">— select medium —</option>
-            {mains.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-          </select>
-          <input
-            value={newSubLabel}
-            onChange={(e) => setNewSubLabel(e.target.value)}
-            placeholder="e.g. Impressionism"
-            style={{ ...miniInput, flex: 1, minWidth: 160 }}
-            onKeyDown={(e) => e.key === "Enter" && addSub()}
-          />
-          <Btn primary onClick={addSub} disabled={busy || !newSubLabel.trim() || !newSubParent}>ADD</Btn>
-        </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+        <Btn primary onClick={() => setEditing("new")}>+ ADD MAIN CATEGORY</Btn>
+        <Btn onClick={() => setSubEditing("new")} disabled={mains.length === 0}>+ ADD SUBTYPE / STYLE</Btn>
       </div>
 
       {/* Category tree */}
       <div style={{ display: "grid", gap: 16 }}>
-        {mains.map((m) => (
-          <div key={m.id} style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: "14px 16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <div>
-                <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{m.label}</span>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(200,191,160,0.4)", marginLeft: 10 }}>ID: {m.id}</span>
+        {mains.map((m) => {
+          const hasContent = m.image_url && (m.tabs || []).some((t) => t.body || t.image_url);
+          return (
+            <div key={m.id} style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                {m.image_url
+                  ? <img src={m.image_url} alt="" style={{ width: 46, height: 46, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(212,175,55,0.25)" }} />
+                  : <div style={{ width: 46, height: 46, borderRadius: 6, border: "1px dashed rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(212,175,55,0.4)", fontSize: 16, flexShrink: 0 }}>✦</div>}
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{m.label}</span>
+                  <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(200,191,160,0.4)", marginLeft: 10 }}>ID: {m.id}</span>
+                  {!hasContent && (
+                    <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#fbbf24", marginTop: 2 }}>
+                      Page content incomplete — the site shows default text and images until you EDIT.
+                    </div>
+                  )}
+                </div>
+                <Btn onClick={() => setEditing(m)} disabled={busy}>EDIT</Btn>
+                <Btn ghost onClick={() => del(m.id, m.label)} disabled={busy || subtypesOf(m.id).length > 0}>DELETE</Btn>
               </div>
-              <Btn ghost onClick={() => del(m.id, m.label)} disabled={busy || subtypesOf(m.id).length > 0}>DELETE</Btn>
+              {subtypesOf(m.id).length === 0 ? (
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.4)" }}>No subtypes yet</div>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {subtypesOf(m.id).map((s) => (
+                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(212,175,55,0.07)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 999, padding: "4px 12px" }}>
+                      {s.image_url && <img src={s.image_url} alt="" style={{ width: 18, height: 18, borderRadius: "50%", objectFit: "cover" }} />}
+                      <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#e8e0d0" }}>{s.label}</span>
+                      <button
+                        onClick={() => setSubEditing(s)}
+                        disabled={busy}
+                        title="Edit style"
+                        style={{ background: "none", border: "none", color: gold, cursor: "pointer", fontSize: 11, lineHeight: 1, padding: 0 }}>✎</button>
+                      <button
+                        onClick={() => del(s.id, s.label)}
+                        disabled={busy}
+                        style={{ background: "none", border: "none", color: "rgba(200,191,160,0.4)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {subtypesOf(m.id).length === 0 ? (
-              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.4)" }}>No subtypes yet</div>
-            ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {subtypesOf(m.id).map((s) => (
-                  <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(212,175,55,0.07)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 999, padding: "4px 12px" }}>
-                    <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#e8e0d0" }}>{s.label}</span>
-                    <button
-                      onClick={() => del(s.id, s.label)}
-                      disabled={busy}
-                      style={{ background: "none", border: "none", color: "rgba(200,191,160,0.4)", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
         {mains.length === 0 && <Empty>No categories yet</Empty>}
       </div>
+
+      {editing && (
+        <CategoryEditorModal
+          category={editing === "new" ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); load(); }}
+        />
+      )}
+      {subEditing && (
+        <SubtypeEditorModal
+          subtype={subEditing === "new" ? null : subEditing}
+          mains={mains}
+          onClose={() => setSubEditing(null)}
+          onSaved={() => { setSubEditing(null); load(); }}
+        />
+      )}
     </Panel>
+  );
+}
+
+// Upload button + thumbnail preview for a single image URL field.
+function ImageField({ label, value, onChange, hint }) {
+  const upload = async (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    try { const { url } = await api.uploads.file(file, "image"); onChange(url); }
+    catch (err) { alert(err.message); }
+    e.target.value = "";
+  };
+  return (
+    <div style={{ marginBottom: 12 }}>
+      {label && <L>{label}</L>}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <label style={{ ...miniInput, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+          <input type="file" accept="image/*" onChange={upload} style={{ display: "none" }} />
+          {value ? "REPLACE IMAGE" : "UPLOAD IMAGE"}
+        </label>
+        {value
+          ? <img src={value} alt="" style={{ width: 54, height: 54, borderRadius: 6, objectFit: "cover", border: "1px solid rgba(212,175,55,0.3)" }} />
+          : <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.45)" }}>{hint || "No image yet"}</span>}
+        {value && (
+          <button onClick={() => onChange("")} style={{ background: "none", border: "none", color: "rgba(200,191,160,0.5)", cursor: "pointer", fontSize: 12, fontFamily: "'Raleway',sans-serif" }}>remove</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Full page-content editor for a main category: card/hero image, tagline,
+// description, the four detail-page tabs and the pioneers list.
+function CategoryEditorModal({ category, onClose, onSaved }) {
+  const isNew = !category;
+  const [f, setF] = useState({
+    label: category?.label || "",
+    tagline: category?.tagline || "",
+    description: category?.description || "",
+    image_url: category?.image_url || "",
+    pioneers: (category?.pioneers || []).join(", "),
+    tabs: DEFAULT_CATEGORY_TABS.map((d, i) => ({ ...d, ...(category?.tabs?.[i] || {}) })),
+  });
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+  const setTab = (i, k, val) => setF((v) => ({ ...v, tabs: v.tabs.map((t, j) => (j === i ? { ...t, [k]: val } : t)) }));
+
+  const save = async () => {
+    if (!f.label.trim()) { alert("Category name is required"); return; }
+    if (isNew && !f.image_url) { alert("Upload the main category image — it is shown on the Collections card and as the page hero."); return; }
+    const missing = [];
+    if (!f.image_url) missing.push("main image");
+    if (!f.tagline.trim()) missing.push("tagline");
+    if (!f.description.trim()) missing.push("short description");
+    f.tabs.forEach((t, i) => {
+      if (!t.image_url) missing.push(`"${t.label || `tab ${i + 1}`}" image`);
+      if (i !== 3 && !t.body.trim()) missing.push(`"${t.label || `tab ${i + 1}`}" text`);
+    });
+    if (!f.pioneers.trim()) missing.push("pioneer names");
+    if (missing.length && !window.confirm(`Still missing: ${missing.join(", ")}.\n\nThe public page falls back to default editorial content for anything left empty. Save anyway?`)) return;
+    setBusy(true);
+    try {
+      const payload = {
+        label: f.label.trim(),
+        tagline: f.tagline.trim() || null,
+        description: f.description.trim() || null,
+        image_url: f.image_url || null,
+        tabs: f.tabs.map((t) => ({ label: t.label, heading: t.heading, body: t.body, image_url: t.image_url || null })),
+        pioneers: f.pioneers.split(",").map((s) => s.trim()).filter(Boolean),
+      };
+      if (isNew) await api.categories.createMain(payload);
+      else await api.categories.update(category.id, payload);
+      onSaved();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 7000, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "#15120c", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 14, padding: 24, width: "100%", maxWidth: 660, maxHeight: "88vh", overflowY: "auto" }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, marginBottom: 16 }}>
+          {isNew ? "NEW MAIN CATEGORY" : `EDIT · ${category.label}`}
+        </div>
+
+        <L>Category name *</L>
+        <input style={wideInput} value={f.label} onChange={set("label")} placeholder="e.g. Ceramics" />
+        <L>Tagline — the small gold line above the page title</L>
+        <input style={wideInput} value={f.tagline} onChange={set("tagline")} placeholder="e.g. THE ART OF CERAMICS" />
+        <L>Short description — shown on the Collections card</L>
+        <textarea style={wideArea} value={f.description} onChange={set("description")} placeholder="e.g. Hand-thrown stoneware & porcelain" />
+        <ImageField
+          label="Main image * — Collections card + page hero"
+          value={f.image_url}
+          onChange={(url) => setF((v) => ({ ...v, image_url: url }))}
+        />
+
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "18px 0 10px" }}>DETAIL PAGE TABS</div>
+        {f.tabs.map((t, i) => (
+          <div key={i} style={{ border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, padding: 14, marginBottom: 12, background: "rgba(255,255,255,0.015)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontStyle: "italic", color: "rgba(212,175,55,0.5)" }}>{String(i + 1).padStart(2, "0")}</span>
+              <input style={{ ...miniInput, flex: 1, fontSize: 12, padding: "7px 10px" }} value={t.label} onChange={(e) => setTab(i, "label", e.target.value)} placeholder="Tab name" />
+            </div>
+            <input style={{ ...wideInput, marginBottom: 8 }} value={t.heading} onChange={(e) => setTab(i, "heading", e.target.value)} placeholder={`Heading, e.g. "${["The Art of …", "Ancient Beginnings", "Into the Modern Era", "The Great Masters"][i] || "…"}"`} />
+            {i === 3 ? (
+              <textarea style={{ ...wideArea, marginBottom: 8 }} value={f.pioneers} onChange={set("pioneers")} placeholder="Pioneer / master names, comma separated — shown as gold chips" />
+            ) : (
+              <textarea style={{ ...wideArea, marginBottom: 8 }} value={t.body} onChange={(e) => setTab(i, "body", e.target.value)} placeholder="Tab text — the paragraph shown beside the image" />
+            )}
+            <ImageField value={t.image_url || ""} onChange={(url) => setTab(i, "image_url", url)} hint="Tab image — the left panel of this slide" />
+          </div>
+        ))}
+
+        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <Btn onClick={save} primary disabled={busy}>{busy ? "SAVING…" : isNew ? "+ CREATE CATEGORY" : "SAVE"}</Btn>
+          <Btn onClick={onClose} ghost>CANCEL</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Compact editor for a subtype/style: parent, label, image and description.
+function SubtypeEditorModal({ subtype, mains, onClose, onSaved }) {
+  const isNew = !subtype;
+  const [f, setF] = useState({
+    label: subtype?.label || "",
+    parent_id: subtype?.parent_id || "",
+    description: subtype?.description || "",
+    image_url: subtype?.image_url || "",
+  });
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+
+  const save = async () => {
+    if (!f.label.trim()) { alert("Style name is required"); return; }
+    if (isNew && !f.parent_id) { alert("Pick the main category this style belongs under"); return; }
+    if (isNew && !f.image_url) { alert("Upload an image for this style — it is shown on the Styles & Forms card."); return; }
+    setBusy(true);
+    try {
+      const extra = { image_url: f.image_url || null, description: f.description.trim() || null };
+      if (isNew) await api.categories.createSubtype(f.label.trim(), f.parent_id, extra);
+      else await api.categories.update(subtype.id, { label: f.label.trim(), ...extra });
+      onSaved();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 7000, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "#15120c", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 14, padding: 24, width: "100%", maxWidth: 460, maxHeight: "85vh", overflowY: "auto" }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, marginBottom: 16 }}>
+          {isNew ? "NEW SUBTYPE / STYLE" : `EDIT · ${subtype.label}`}
+        </div>
+
+        <L>Main category *</L>
+        <select style={wideInput} value={f.parent_id} onChange={set("parent_id")} disabled={!isNew}>
+          <option value="">— select medium —</option>
+          {mains.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+        </select>
+        <L>Style name *</L>
+        <input style={wideInput} value={f.label} onChange={set("label")} placeholder="e.g. Impressionism" />
+        <L>Short description — shown on the style's page</L>
+        <textarea style={wideArea} value={f.description} onChange={set("description")} placeholder="One or two sentences about this style" />
+        <ImageField
+          label="Image * — the Styles & Forms card + page hero"
+          value={f.image_url}
+          onChange={(url) => setF((v) => ({ ...v, image_url: url }))}
+        />
+
+        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <Btn onClick={save} primary disabled={busy}>{busy ? "SAVING…" : isNew ? "+ CREATE STYLE" : "SAVE"}</Btn>
+          <Btn onClick={onClose} ghost>CANCEL</Btn>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1100,3 +1270,5 @@ function Empty({ children }) { return <div style={{ padding: 24, textAlign: "cen
 function Center({ children }) { return <section style={{ padding: "140px 24px", textAlign: "center" }}>{children}</section>; }
 const preStyle = { display: "inline-block", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", padding: 14, borderRadius: 8, color: gold, marginTop: 10, fontFamily: "monospace", fontSize: 12 };
 const miniInput = { padding: "10px 13px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 14.5, outline: "none" };
+const wideInput = { ...miniInput, width: "100%", boxSizing: "border-box", marginBottom: 12 };
+const wideArea = { ...wideInput, minHeight: 64, resize: "vertical" };

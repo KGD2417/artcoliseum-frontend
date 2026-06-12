@@ -99,7 +99,11 @@
       "Bash(xargs -0 perl -i -pe 's/\\\\bArt Coliseum\\\\b/ARRT Coliseum/g; s/\\\\bART COLISEUM\\\\b/ARRT COLISEUM/g; s/\\\\bArrt Coliseum\\\\b/ARRT Coliseum/g;')",
       "Bash(.venv/bin/python -m py_compile app/main.py app/models/community.py app/schemas/extra.py app/routers/community.py)",
       "Bash(awk '/\\\\.home-sec \\\\{/,/\\\\}/' src/index.css)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(open\\('vercel.json'\\)\\); print\\('valid JSON ✓'\\); [print\\(' ', r['source'], '→', r['destination']\\) for r in d['rewrites']]\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(open\\('vercel.json'\\)\\); print\\('valid JSON ✓'\\); [print\\(' ', r['source'], '→', r['destination']\\) for r in d['rewrites']]\")",
+      "mcp__code-review-graph__query_graph_tool",
+      "Bash(python3.11 -c ' *)",
+      "Bash(DATABASE_URL=postgresql://x:x@localhost/x JWT_SECRET=test python3.11 -c ' *)",
+      "Bash(python3.11 -m py_compile app/routers/categories.py app/models/catalog.py app/schemas/catalog.py app/schemas/extra.py app/main.py)"
     ]
   },
   "hooks": {

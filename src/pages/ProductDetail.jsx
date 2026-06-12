@@ -16,54 +16,6 @@ import { useAuth } from "../context/Auth";
 import { useLocale } from "../context/Locale";
 import i4 from "../assets/i4.png";
 
-const FALLBACK_PRODUCT = {
-  default: {
-    title: "Solstice in Obsidian",
-    artist: "Julian Voss",
-    year: "2023",
-    badge: "PRIVATE COLLECTION",
-    price: 18500,
-    images: [i4, i4, i4, i4],
-    description:
-      'A masterwork of tactile minimalism, "Solstice in Obsidian" explores the intersection of celestial events and terrestrial silence. Each stroke of genuine 24k gold leaf is applied during the first hour of daylight over three lunar cycles.',
-    medium: "Oil & 24k Gold on Linen",
-    dimensions: "180 x 140 cm",
-    availability: "Available for Inquiry",
-    certificate: "Digital Ledger Authenticity",
-    artistImg:
-      "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&q=80&auto=format&fit=crop",
-    artistBio:
-      "Based in Berlin, Voss's work has been featured in the Tate Modern and private collections across six continents. His process involves extreme isolation and traditional alchemy.",
-    quote:
-      '"My work is a dialogue with the unseen. I use gold not as a symbol of wealth, but as a capture of light in its most primal, static form."',
-    aboutArt:
-      "Solstice in Obsidian belongs to Voss's celebrated Lunar Series — a body of work begun in 2019 that meditates on the moments between stillness and revelation. The piece marries the patience of classical gold-leaf gilding with the bold flatness of post-minimalist abstraction. Viewed from across a room, it reads as a single deep void; viewed up close, it reveals an intricate field of micro-scratches and shifting tonal layers.",
-    origin:
-      "Berlin, Germany — completed at Voss's Mitte studio after a three-month period of seclusion. Studio assistants and visitors were not permitted during the gold-leaf application phase.",
-    purpose:
-      "Created as the centrepiece of a private 2024 commission, later re-released to the Art Coliseum Private Collection at the artist's discretion. Voss describes the work as 'a quiet altar — somewhere to look, when there is nothing left to say.'",
-    story:
-      "The work was begun on the winter solstice of 2022. Voss lit a single candle each morning, then allowed himself one hour of natural daylight to apply gold leaf — never longer. Over three lunar cycles, layer upon layer of leaf was burnished onto a gesso prepared with bone-ash and ground basalt. The resulting surface holds a depth that camera lenses struggle to capture.",
-    spread:
-      "Held in 12 private collections across Berlin, London, New York and Hong Kong. Featured in the 2024 monograph 'Voss: Substance & Silence' (Hatje Cantz). Reviewed by The Art Newspaper, ArtForum, and Frieze. A sister work resides in the permanent collection of the Tate Modern.",
-    specs: [
-      { k: "Edition", v: "Unique work, signed verso" },
-      {
-        k: "Framing",
-        v: "Float-mounted in hand-finished walnut frame, museum-grade UV glass",
-      },
-      {
-        k: "Provenance",
-        v: "Studio of the artist → private commission, Berlin → Art Coliseum Private Collection",
-      },
-      {
-        k: "Care",
-        v: "Dust with soft sable brush. Avoid direct sunlight and humidity above 60%.",
-      },
-    ],
-  },
-};
-
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -238,7 +190,7 @@ export default function ProductDetail() {
         finishOptions: matched.finishOptions || null,
         paletteOptions: matched.paletteOptions || null,
       }
-    : FALLBACK_PRODUCT.default;
+    : null;
 
   const UPCHARGES = {
     frame: {
@@ -399,6 +351,32 @@ export default function ProductDetail() {
           margin: "0 auto",
         }}>
         <SkeletonDetail />
+      </section>
+    );
+  }
+
+  if (!productData) {
+    return (
+      <section style={{ padding: "160px 24px 120px", maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: "#D4AF37", marginBottom: 14 }}>
+          THE ARCHIVE
+        </div>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 40, fontWeight: 700, color: "#fff", marginBottom: 14 }}>
+          This artwork could not be found
+        </h1>
+        <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.6)", lineHeight: 1.7, marginBottom: 32 }}>
+          It may have been sold, removed from the collection, or the link is out of date.
+        </p>
+        <Link
+          to="/gallery"
+          style={{
+            display: "inline-block", padding: "14px 36px",
+            background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#0e0c0a",
+            borderRadius: 999, textDecoration: "none",
+            fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", fontWeight: 600,
+          }}>
+          BROWSE THE GALLERY →
+        </Link>
       </section>
     );
   }

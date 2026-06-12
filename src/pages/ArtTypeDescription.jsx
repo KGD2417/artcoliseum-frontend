@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { Skeleton, SkeletonGrid } from "../components/ui/Skeleton";
 import { api } from "../utils/api";
 
 const MEDIUM_DATA = {
@@ -341,14 +342,19 @@ const PROSE_KEY = { oil: "paintings", sculpture: "sculptures", digital: "digital
 export default function ArtTypeDescription() {
   const { medium } = useParams();
   const navigate = useNavigate();
-  const data = MEDIUM_DATA[medium] || MEDIUM_DATA[PROSE_KEY[medium]] || MEDIUM_DATA.paintings;
+  // Editorial fallback prose exists only for the original mediums (and their
+  // PROSE_KEY aliases). New admin-created categories rely purely on DB content.
+  const data = MEDIUM_DATA[medium] || MEDIUM_DATA[PROSE_KEY[medium]] || null;
   const [activeTab, setActiveTab] = useState(0);
   const [subtypes, setSubtypes] = useState([]);
-  const [mediumLabel, setMediumLabel] = useState(null);
+  const [mediumCat, setMediumCat] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Real subtypes + artwork counts for this medium.
+  // Real category content + subtypes + artwork counts for this medium.
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setActiveTab(0);
     (async () => {
       try {
         const [cats, arts] = await Promise.all([
@@ -356,62 +362,107 @@ export default function ArtTypeDescription() {
           api.catalog.artworks({ category: medium }),
         ]);
         if (cancelled) return;
-        setMediumLabel((cats || []).find((c) => c.id === medium)?.label || null);
+        setMediumCat((cats || []).find((c) => c.id === medium) || null);
         const subs = (cats || [])
           .filter((c) => c.kind === "subtype" && c.parent_id === medium)
           .map((c) => {
             const inSub = (arts || []).filter((a) => a.subtype_id === c.id);
             return {
               slug: c.id, label: c.label, count: inSub.length,
-              img: inSub.find((a) => a.images && a.images.length)?.images?.[0] || null,
+              img: c.image_url || inSub.find((a) => a.images && a.images.length)?.images?.[0] || null,
             };
           });
         setSubtypes(subs);
-      } catch { /* keep hardcoded fallback */ }
+      } catch { /* fall back to editorial content where it exists */ }
+      finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [medium]);
 
-  const title = mediumLabel || data.title;
-  const displaySubtypes = subtypes.length ? subtypes : data.subtypes;
+  const slugTitle = (medium || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const title = mediumCat?.label || data?.title || slugTitle;
+  const heroImg = mediumCat?.image_url || data?.heroImg || null;
+  const tagline = mediumCat?.tagline || data?.label || `THE ART OF ${title.toUpperCase()}`;
+  const pioneers = mediumCat?.pioneers?.length ? mediumCat.pioneers : data?.pioneers || [];
+  // Styles come from the database only — no dummy style cards.
+  const displaySubtypes = subtypes;
 
-  const tabs = [
+  const origin = data?.origin || [];
+  const baseTabs = [
     {
       label: "About the Art",
       heading: `The Art of ${title}`,
-      body: data.origin[0],
-      img: data.heroImg,
+      body: origin[0] || "",
+      img: heroImg,
     },
     {
       label: "History & Origins",
       heading: "Ancient Beginnings",
-      body: data.origin[1] || data.origin[0],
-      img: data.heroImg,
+      body: origin[1] || origin[0] || "",
+      img: heroImg,
     },
     {
       label: "Modern Era",
       heading: "Into the Modern Era",
-      body: data.origin[2] || data.origin[1],
-      img: data.heroImg,
+      body: origin[2] || origin[1] || "",
+      img: heroImg,
     },
     {
       label: "Pioneers & Masters",
       heading: "The Great Masters",
-      body: data.pioneers.join("  ·  "),
-      img: data.heroImg,
+      body: pioneers.join("  ·  "),
+      img: heroImg,
       isPioneers: true,
     },
   ];
 
-  const current = tabs[activeTab];
+  // Admin-entered tab content (from the Categories admin panel) wins
+  // field-by-field; anything left empty keeps the editorial fallback above.
+  // Tabs with nothing to show (no text, no pioneers) are dropped entirely.
+  const dbTabs = mediumCat?.tabs || [];
+  const tabs = baseTabs
+    .map((t, i) => {
+      const o = dbTabs[i] || {};
+      return {
+        ...t,
+        label: o.label || t.label,
+        heading: o.heading || t.heading,
+        body: t.isPioneers ? t.body : o.body || t.body,
+        img: o.image_url || t.img,
+      };
+    })
+    .filter((t) => (t.isPioneers ? pioneers.length > 0 : t.body.trim().length > 0));
+
+  const current = tabs[Math.min(activeTab, Math.max(tabs.length - 1, 0))];
   const go = (dir) => setActiveTab(i => Math.max(0, Math.min(tabs.length - 1, i + dir)));
+
+  if (loading) {
+    return (
+      <div style={{ background: "#080808", minHeight: "100vh" }}>
+        <div className="art-main-container" style={{ maxWidth: 1320, margin: "0 auto", padding: "100px 56px 100px" }}>
+          <Skeleton height={340} radius={20} />
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "48px 0 36px" }}>
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} width={170} height={38} radius={999} />)}
+          </div>
+          <Skeleton height={480} radius={20} />
+          <div style={{ marginTop: 72 }}>
+            <SkeletonGrid count={3} minColWidth={260} maxColWidth={420} imageHeight={230} gap={16} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: "#080808", minHeight: "100vh" }}>
 
       {/* HERO */}
       <div className="art-hero" style={{ position: "relative", height: 440, overflow: "hidden" }}>
-        <img src={data.heroImg} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        {heroImg ? (
+          <img src={heroImg} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        ) : (
+          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#16120b,#221b10)" }} />
+        )}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(8,8,8,0.25) 0%, rgba(8,8,8,0.55) 50%, rgba(8,8,8,1) 100%)" }} />
         <div className="art-hero-padding" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 56px 48px", maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
@@ -420,7 +471,7 @@ export default function ArtTypeDescription() {
             <span style={{ color: "#D4AF37" }}>{title}</span>
           </div>
           <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.24em", color: "#D4AF37", marginBottom: 12 }}>{data.label}</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.24em", color: "#D4AF37", marginBottom: 12 }}>{tagline}</div>
             <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(52px,6vw,84px)", fontWeight: 700, color: "#fff", lineHeight: 0.95, letterSpacing: "-0.01em", margin: 0 }}>
               {title}
             </h1>
@@ -431,6 +482,7 @@ export default function ArtTypeDescription() {
       {/* TABBED SECTION */}
       <div className="art-main-container" style={{ maxWidth: 1320, margin: "0 auto", padding: "48px 56px 100px" }}>
 
+        {tabs.length > 0 && (<>
         {/* Tab pills */}
         <div className="art-tabs-row" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 36 }}>
           {tabs.map((tab, i) => (
@@ -484,19 +536,26 @@ export default function ArtTypeDescription() {
                 width: "100%", height: "100%", position: "absolute", inset: 0,
                 background: "radial-gradient(ellipse at center, rgba(212,175,55,0.06) 0%, transparent 70%)",
               }} />
-              <motion.img
-                key={current.img}
-                initial={{ scale: 1.06, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.6 }}
-                src={current.img}
-                alt=""
-                style={{
-                  width: "100%", height: "100%", objectFit: "cover",
-                  borderRadius: 12, display: "block", position: "relative", zIndex: 1,
-                  boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
-                }}
-              />
+              {current.img ? (
+                <motion.img
+                  key={current.img}
+                  initial={{ scale: 1.06, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.6 }}
+                  src={current.img}
+                  alt=""
+                  style={{
+                    width: "100%", height: "100%", objectFit: "cover",
+                    borderRadius: 12, display: "block", position: "relative", zIndex: 1,
+                    boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: "100%", height: "100%", borderRadius: 12, position: "relative", zIndex: 1,
+                  background: "linear-gradient(135deg,#16120b,#221b10)", border: "1px solid rgba(212,175,55,0.12)",
+                }} />
+              )}
               {/* Bottom label */}
               <div style={{
                 position: "absolute", bottom: 28, left: 28, zIndex: 2,
@@ -544,7 +603,7 @@ export default function ArtTypeDescription() {
                 {/* Body */}
                 {current.isPioneers ? (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
-                    {data.pioneers.map((name) => (
+                    {pioneers.map((name) => (
                       <span key={name} style={{
                         fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontStyle: "italic",
                         color: "rgba(200,191,160,0.75)",
@@ -604,6 +663,7 @@ export default function ArtTypeDescription() {
             </div>
           </motion.div>
         </AnimatePresence>
+        </>)}
 
         {/* STYLES & FORMS — separate section */}
         <div style={{ marginTop: 72 }}>
@@ -612,9 +672,14 @@ export default function ArtTypeDescription() {
             <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.24em", color: "#D4AF37" }}>STYLES & FORMS</span>
             <div style={{ flex: 1, height: 1, background: "rgba(212,175,55,0.15)" }} />
             <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontStyle: "italic", color: "rgba(200,191,160,0.4)" }}>
-              {displaySubtypes.length} Distinct Styles
+              {displaySubtypes.length > 0 ? `${displaySubtypes.length} Distinct Styles` : ""}
             </span>
           </div>
+          {displaySubtypes.length === 0 ? (
+            <div style={{ padding: "60px 24px", textAlign: "center", fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontStyle: "italic", color: "rgba(200,191,160,0.45)" }}>
+              No styles in this collection yet — check back soon.
+            </div>
+          ) : (
           <div className="art-styles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
             {displaySubtypes.map(s => (
               <div
@@ -637,7 +702,11 @@ export default function ArtTypeDescription() {
                   e.currentTarget.style.transform = "scale(1)";
                   e.currentTarget.style.boxShadow = "none";
                 }}>
-                <img src={s.img || data.heroImg} alt={s.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                {(s.img || heroImg) ? (
+                  <img src={s.img || heroImg} alt={s.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#16120b,#221b10)" }} />
+                )}
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.9) 0%, rgba(8,8,8,0.15) 60%)" }} />
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "14px 16px" }}>
                   <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{s.label}</div>
@@ -648,6 +717,7 @@ export default function ArtTypeDescription() {
               </div>
             ))}
           </div>
+          )}
         </div>
 
         {/* CTA row */}

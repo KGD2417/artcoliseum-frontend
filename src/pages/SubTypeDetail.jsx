@@ -403,6 +403,8 @@ export default function SubTypeDetail() {
           setMeta({
             label: subCat?.label || fallback?.label || titleCase(sub),
             mediumLabel: mainCat?.label || titleCase(medium),
+            image: subCat?.image_url || null,
+            description: subCat?.description || null,
           });
         }
       } catch {
@@ -451,7 +453,7 @@ export default function SubTypeDetail() {
     ? `All ${meta?.mediumLabel || titleCase(medium)}`
     : (meta?.label || titleCase(sub));
   const heroSub = fallback?.sublabel || `${meta?.mediumLabel || titleCase(medium)} collection`;
-  const heroImg = items[0]?.img || fallback?.heroImg
+  const heroImg = meta?.image || items[0]?.img || fallback?.heroImg
     || "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1600&q=80";
 
   return (
@@ -474,6 +476,11 @@ export default function SubTypeDetail() {
             <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(52px,6vw,84px)", fontWeight: 700, color: "#fff", lineHeight: 0.95, letterSpacing: "-0.01em", margin: 0 }}>
               {heroLabel}
             </h1>
+            {meta?.description && (
+              <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontStyle: "italic", color: "rgba(200,191,160,0.75)", lineHeight: 1.6, maxWidth: 560, margin: "14px 0 0" }}>
+                {meta.description}
+              </p>
+            )}
           </motion.div>
         </div>
       </div>

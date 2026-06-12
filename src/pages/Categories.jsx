@@ -9,59 +9,16 @@ import m2 from "../assets/mediums/m2.png";
 import m3 from "../assets/mediums/m3.png";
 import m4 from "../assets/mediums/m4.png";
 
-const FALLBACK_CATEGORIES = [
-  {
-    slug: "paintings",
-    name: "Paintings",
-    description: "Oil, Acrylic & Watercolor masterpieces",
-    count: "2,400+ works",
-    img: m1,
-  },
-  {
-    slug: "sculptures",
-    name: "Sculptures",
-    description: "Bronze, Marble & Mixed Media",
-    count: "840+ works",
-    img: m2,
-  },
-  {
-    slug: "photography",
-    name: "Photography",
-    description: "Fine Art & Documentary",
-    count: "1,200+ works",
-    img: m3,
-  },
-  {
-    slug: "digital",
-    name: "Digital",
-    description: "NFT & Generative Canvas",
-    count: "3,600+ works",
-    img: m4,
-  },
-  {
-    slug: "drawings",
-    name: "Drawings",
-    description: "Charcoal, Pastel & Ink",
-    count: "950+ works",
-    img: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=900&q=80&auto=format&fit=crop",
-  },
-  {
-    slug: "prints",
-    name: "Prints",
-    description: "Limited Edition Fine Art Prints",
-    count: "2,100+ works",
-    img: "https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=900&q=80&auto=format&fit=crop",
-  },
-];
-
 export default function Categories() {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
-  const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    // Placeholder card images for real categories the admin hasn't given an image yet.
     const assetBySlug = { paintings: m1, sculptures: m2, sculpture: m2, photography: m3, digital: m4, oil: m1 };
     (async () => {
       try {
@@ -71,21 +28,21 @@ export default function Categories() {
         ]);
         if (cancelled) return;
         const mains = (cats || []).filter((c) => c.kind === "main");
-        if (!mains.length) return; // keep fallback if catalog is empty
         const mapped = mains.map((c) => {
           const inCat = (arts || []).filter((a) => a.category_id === c.id);
           const withImg = inCat.find((a) => a.images && a.images.length);
           return {
             slug: c.id,
             name: c.label,
-            description: "",
+            description: c.description || "",
             count: `${inCat.length} work${inCat.length === 1 ? "" : "s"}`,
-            img: withImg?.images?.[0] || assetBySlug[c.id] || m1,
+            img: c.image_url || withImg?.images?.[0] || assetBySlug[c.id] || m1,
           };
         });
         setCategories(mapped);
       } catch (err) {
         console.error("Error fetching categories:", err);
+        if (!cancelled) setError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -165,6 +122,18 @@ export default function Categories() {
 
       {loading ? (
         <SkeletonGrid count={4} minColWidth={240} maxColWidth={300} imageHeight={300} gap={22} />
+      ) : filteredCats.length === 0 ? (
+        <div style={{
+          padding: "80px 24px", textAlign: "center",
+          fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontStyle: "italic",
+          color: "rgba(200,191,160,0.5)",
+        }}>
+          {error
+            ? "The collections couldn't be loaded — please try again in a moment."
+            : search.trim()
+              ? `No mediums match "${search.trim()}".`
+              : "No collections have been added yet."}
+        </div>
       ) : (
       <div
         style={{

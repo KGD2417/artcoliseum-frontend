@@ -9,20 +9,6 @@ import { api, adaptArtwork } from "../utils/api";
 import { useLocale } from "../context/Locale";
 import { getCompare, toggleCompare, onCompareChange, MAX_COMPARE } from "../utils/compareStore";
 
-const STYLES = [
-  { label: "Minimalism",     count: "12" },
-  { label: "Abstract",       count: "08" },
-  { label: "Impressionist",  count: "15" },
-  { label: "Digital Fusion", count: "04" },
-];
-
-const CATEGORIES = [
-  { id: "oil",       label: "OIL" },
-  { id: "digital",   label: "DIGITAL" },
-  { id: "sculpture", label: "SCULPTURE" },
-  { id: "mixed",     label: "MIXED MEDIA" },
-];
-
 const SIZES = [
   { id: "small",  label: 'SMALL ( < 24" )' },
   { id: "medium", label: 'MEDIUM ( 24" - 48" )' },
@@ -37,12 +23,14 @@ export default function Gallery() {
   const [searchParams] = useSearchParams();
   const medium = params.medium || searchParams.get("medium") || undefined;
   const sub = params.sub;
-  const [styleFilter, setStyleFilter] = useState("Abstract");
-  const [catFilter, setCatFilter]     = useState("sculpture");
-  const [sizeFilter, setSizeFilter]   = useState("medium");
+  // "" means "all" for every filter.
+  const [styleFilter, setStyleFilter] = useState("");
+  const [catFilter, setCatFilter]     = useState("");
+  const [sizeFilter, setSizeFilter]   = useState("");
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [items, setItems] = useState([]);
+  const [cats, setCats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [compareIds, setCompareIds] = useState(getCompare());
   useEffect(() => onCompareChange(() => setCompareIds(getCompare())), []);
@@ -58,8 +46,28 @@ export default function Gallery() {
     return () => { cancelled = true; };
   }, [medium]);
 
+  // Real main categories for the sidebar filter (hidden when a medium is set).
+  useEffect(() => {
+    let cancelled = false;
+    api.catalog.categories()
+      .then((c) => { if (!cancelled) setCats((c || []).filter((x) => x.kind === "main")); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Style filter options derived from the loaded works, with real counts.
+  const styleCounts = items.reduce((m, it) => {
+    const s = (it.style || "").trim();
+    if (s) m[s] = (m[s] || 0) + 1;
+    return m;
+  }, {});
+  const styles = Object.entries(styleCounts).sort((a, b) => b[1] - a[1]);
+
   const filtered = items.filter(it => {
     if (search && !`${it.title} ${it.artist}`.toLowerCase().includes(search.toLowerCase())) return false;
+    if (catFilter && it.category_id !== catFilter) return false;
+    if (styleFilter && (it.style || "").trim() !== styleFilter) return false;
+    if (sizeFilter && (it.size || "") !== sizeFilter) return false;
     return true;
   });
 
@@ -120,45 +128,49 @@ export default function Gallery() {
         {/* sidebar filters — only shown on main gallery */}
         {!sub && (
           <aside className={`gal-sidebar ${filtersOpen ? "is-open" : ""}`}>
-            <FilterSection title="STYLE">
-              {STYLES.map(s => (
-                <button
-                  key={s.label}
-                  onClick={() => setStyleFilter(s.label)}
-                  style={{
-                    display: "flex", justifyContent: "space-between", width: "100%",
-                    padding: "8px 0", background: "transparent", border: "none",
-                    cursor: "pointer", textAlign: "left",
-                    fontFamily: "'Raleway',sans-serif", fontSize: 13,
-                    color: styleFilter === s.label ? "#D4AF37" : "rgba(200,191,160,0.7)",
-                  }}>
-                  <span>{s.label}</span>
-                  <span style={{ fontSize: 11, opacity: 0.7 }}>{s.count}</span>
-                </button>
-              ))}
-            </FilterSection>
-
-            <FilterSection title="CATEGORY">
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {CATEGORIES.map(c => (
+            {styles.length > 0 && (
+              <FilterSection title="STYLE">
+                {[["", `All Styles`, items.length], ...styles.map(([label, count]) => [label, label, count])].map(([value, label, count]) => (
                   <button
-                    key={c.id}
-                    onClick={() => setCatFilter(c.id)}
+                    key={value || "__all"}
+                    onClick={() => setStyleFilter(value)}
                     style={{
-                      fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em",
-                      padding: "6px 12px", borderRadius: 999, cursor: "pointer",
-                      border: catFilter === c.id ? "1px solid #D4AF37" : "1px solid rgba(212,175,55,0.25)",
-                      background: catFilter === c.id ? "#D4AF37" : "transparent",
-                      color: catFilter === c.id ? "#111" : "rgba(200,191,160,0.7)",
-                    }}>{c.label}</button>
+                      display: "flex", justifyContent: "space-between", width: "100%",
+                      padding: "8px 0", background: "transparent", border: "none",
+                      cursor: "pointer", textAlign: "left",
+                      fontFamily: "'Raleway',sans-serif", fontSize: 13,
+                      color: styleFilter === value ? "#D4AF37" : "rgba(200,191,160,0.7)",
+                    }}>
+                    <span>{label}</span>
+                    <span style={{ fontSize: 11, opacity: 0.7 }}>{count}</span>
+                  </button>
                 ))}
-              </div>
-            </FilterSection>
+              </FilterSection>
+            )}
+
+            {!medium && cats.length > 0 && (
+              <FilterSection title="CATEGORY">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {[{ id: "", label: "ALL" }, ...cats].map(c => (
+                    <button
+                      key={c.id || "__all"}
+                      onClick={() => setCatFilter(c.id)}
+                      style={{
+                        fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em",
+                        padding: "6px 12px", borderRadius: 999, cursor: "pointer",
+                        border: catFilter === c.id ? "1px solid #D4AF37" : "1px solid rgba(212,175,55,0.25)",
+                        background: catFilter === c.id ? "#D4AF37" : "transparent",
+                        color: catFilter === c.id ? "#111" : "rgba(200,191,160,0.7)",
+                      }}>{c.label.toUpperCase()}</button>
+                  ))}
+                </div>
+              </FilterSection>
+            )}
 
             <FilterSection title="SIZE">
-              {SIZES.map(s => (
+              {[{ id: "", label: "ALL SIZES" }, ...SIZES].map(s => (
                 <label
-                  key={s.id}
+                  key={s.id || "__all"}
                   style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "8px 0", cursor: "pointer",
                     fontFamily: "'Raleway',sans-serif", fontSize: 12,
@@ -187,6 +199,18 @@ export default function Gallery() {
               color: "rgba(200,191,160,0.5)",
             }}>
               No works found{medium ? ` in ${medium}` : ""}{search ? ` for "${search}"` : ""}.
+              {(styleFilter || catFilter || sizeFilter) && (
+                <div style={{ marginTop: 16 }}>
+                  <button
+                    onClick={() => { setStyleFilter(""); setCatFilter(""); setSizeFilter(""); }}
+                    style={{
+                      padding: "10px 24px", background: "transparent",
+                      border: "1px solid rgba(212,175,55,0.35)", color: "#D4AF37",
+                      fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em",
+                      borderRadius: 999, cursor: "pointer",
+                    }}>CLEAR FILTERS</button>
+                </div>
+              )}
             </div>
           ) : (
           <div style={{
@@ -271,15 +295,9 @@ export default function Gallery() {
             margin: "60px auto 0", maxWidth: 360, textAlign: "center",
             paddingTop: 30, borderTop: "1px solid rgba(212,175,55,0.18)",
           }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "rgba(200,191,160,0.55)", marginBottom: 14 }}>
-              SHOWING 24 OF 152 MASTERPIECES
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "rgba(200,191,160,0.55)" }}>
+              SHOWING {filtered.length} OF {items.length} MASTERPIECE{items.length === 1 ? "" : "S"}
             </div>
-            <button style={{
-              padding: "12px 26px", background: "transparent",
-              border: "1px solid rgba(212,175,55,0.3)", color: "#D4AF37",
-              fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
-              borderRadius: 999, cursor: "pointer",
-            }}>LOAD MORE ARTWORKS ⌄</button>
           </div>
           )}
         </div>

@@ -11,6 +11,27 @@
 const BASE = import.meta.env.VITE_API_BASE || "/api";
 const REFRESH_KEY = "coli_refresh";
 
+// Backend origin ("" when using the dev proxy). Uploaded files are served by
+// the backend at /uploads/*, but the API returns them as relative paths — when
+// the backend lives on another host (VITE_API_BASE), relative paths would
+// resolve against the frontend origin and break. Rewrite them everywhere.
+const API_ORIGIN = /^https?:\/\//.test(BASE) ? new URL(BASE).origin : "";
+
+/** Resolve a backend-relative /uploads/... path against the backend origin. */
+export function assetUrl(u) {
+  return typeof u === "string" && u.startsWith("/uploads/") ? API_ORIGIN + u : u;
+}
+
+// Deep-rewrite /uploads/... strings in an API response (objects + arrays).
+function absolutizeUploads(value) {
+  if (typeof value === "string") return assetUrl(value);
+  if (Array.isArray(value)) return value.map(absolutizeUploads);
+  if (value && typeof value === "object") {
+    for (const k of Object.keys(value)) value[k] = absolutizeUploads(value[k]);
+  }
+  return value;
+}
+
 let accessToken = null;
 
 function setTokens({ access, refresh } = {}) {
@@ -83,7 +104,8 @@ async function request(method, path, opts = {}) {
   }
   if (res.status === 204) return null;
   const ct = res.headers.get("content-type") || "";
-  return ct.includes("application/json") ? res.json() : res.text();
+  if (!ct.includes("application/json")) return res.text();
+  return absolutizeUploads(await res.json());
 }
 
 export const api = {
@@ -476,13 +498,18 @@ export const api = {
     list() {
       return request("GET", "/categories", { auth: false });
     },
-    createMain(label) {
-      return request("POST", "/categories", { body: { label } });
+    /** payload: a label string, or { label, tagline, description, image_url, tabs, pioneers }. */
+    createMain(payload) {
+      const body = typeof payload === "string" ? { label: payload } : payload;
+      return request("POST", "/categories", { body });
     },
-    createSubtype(label, parent_id) {
+    createSubtype(label, parent_id, extra = {}) {
       return request("POST", "/categories/subtype", {
-        body: { label, parent_id },
+        body: { label, parent_id, ...extra },
       });
+    },
+    update(id, body) {
+      return request("PATCH", `/categories/${encodeURIComponent(id)}`, { body });
     },
     delete(id) {
       return request("DELETE", `/categories/${encodeURIComponent(id)}`);
