@@ -98,7 +98,8 @@
       "Bash(grep -n -i \"available now\\\\|bring it home\\\\|total\\\\|price\\\\|size\\\\|pattern\\\\|custom\\\\|base\\\\b\\\\|₹\\\\|\\\\\\\\$\\\\|addition\" src/pages/ProductDetail.jsx)",
       "Bash(xargs -0 perl -i -pe 's/\\\\bArt Coliseum\\\\b/ARRT Coliseum/g; s/\\\\bART COLISEUM\\\\b/ARRT COLISEUM/g; s/\\\\bArrt Coliseum\\\\b/ARRT Coliseum/g;')",
       "Bash(.venv/bin/python -m py_compile app/main.py app/models/community.py app/schemas/extra.py app/routers/community.py)",
-      "Bash(awk '/\\\\.home-sec \\\\{/,/\\\\}/' src/index.css)"
+      "Bash(awk '/\\\\.home-sec \\\\{/,/\\\\}/' src/index.css)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(open\\('vercel.json'\\)\\); print\\('valid JSON ✓'\\); [print\\(' ', r['source'], '→', r['destination']\\) for r in d['rewrites']]\")"
     ]
   },
   "hooks": {

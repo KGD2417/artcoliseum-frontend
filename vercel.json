@@ -10,6 +10,10 @@
       "destination": "https://artcoliseum-backend-production.up.railway.app/ws/:path*"
     },
     {
+      "source": "/uploads/:path*",
+      "destination": "https://artcoliseum-backend-production.up.railway.app/uploads/:path*"
+    },
+    {
       "source": "/((?!ar-launcher\\.html).*)",
       "destination": "/index.html"
     }
