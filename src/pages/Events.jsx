@@ -7,6 +7,14 @@ import { useAuth } from "../context/Auth";
 
 // A Google-Maps directions link for a venue location string.
 const directionsUrl = (loc) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc || "")}`;
+
+// Short timezone label for the viewer's locale, e.g. "GMT+5:30" / "EST".
+const tzLabel = (d) => {
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZoneName: "short" })
+      .formatToParts(d).find((p) => p.type === "timeZoneName")?.value || "";
+  } catch { return ""; }
+};
 import e4 from "../assets/events/e4.png";
 import e5 from "../assets/events/e5.png";
 import e6 from "../assets/events/e6.png";
@@ -107,13 +115,16 @@ const FALLBACK_UPCOMING = [
 function EventCard({ event, index, status, registered, onAction, onOpenDetail }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
+  // Carry the card's status into the detail view so the modal labels it correctly
+  // even for the demo fallback events (which don't carry a status field).
+  const openDetail = () => onOpenDetail && onOpenDetail({ ...event, status: event.status || status.toLowerCase() });
 
   return (
     <motion.div
       ref={ref}
       className="ev-page-card"
-      onClick={() => status === "ONGOING" && onOpenDetail && onOpenDetail(event)}
-      style={{ cursor: status === "ONGOING" ? "pointer" : "default", opacity: status === "PAST" ? 0.82 : 1 }}
+      onClick={openDetail}
+      style={{ cursor: "pointer", opacity: status === "PAST" ? 0.82 : 1 }}
       initial={{ opacity: 0, y: 40 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.7, delay: (index % 3) * 0.12, ease: [0.22, 1, 0.36, 1] }}>
@@ -170,7 +181,18 @@ function EventCard({ event, index, status, registered, onAction, onOpenDetail })
               className="btn-secondary ev-page-btn"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={(e) => { e.stopPropagation(); onOpenDetail && onOpenDetail(event); }}>
+              onClick={(e) => { e.stopPropagation(); openDetail(); }}>
+              VIEW DETAILS →
+            </motion.button>
+          </div>
+        )}
+        {status === "PAST" && (
+          <div className="ev-page-actions">
+            <motion.button
+              className="btn-secondary ev-page-btn"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={(e) => { e.stopPropagation(); openDetail(); }}>
               VIEW DETAILS →
             </motion.button>
           </div>
@@ -239,21 +261,22 @@ export default function Events() {
         const d2 = e ? new Date(e).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
         return d2 ? `${d1} – ${d2}` : d1;
       };
+      // Times are stored in UTC and rendered in the viewer's own timezone, with
+      // the zone shown (e.g. "2:30 PM – 8:00 PM GMT+5:30") so it's unambiguous.
       const fmtTime = (s, e) => {
         if (!s) return "";
         const t1 = new Date(s);
         const t2 = e ? new Date(e) : null;
-        const mins1 = t1.getHours() * 60 + t1.getMinutes();
-        if (mins1 === 0) return "";
-        const str1 = t1.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-        if (!t2) return str1;
-        const mins2 = t2.getHours() * 60 + t2.getMinutes();
-        if (mins2 === 0) return str1;
-        const str2 = t2.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-        return `${str1} – ${str2}`;
+        const opt = { hour: "numeric", minute: "2-digit", hour12: true };
+        const tz = tzLabel(t1);
+        const str1 = t1.toLocaleTimeString("en-US", opt);
+        if (!t2) return `${str1} ${tz}`;
+        const str2 = t2.toLocaleTimeString("en-US", opt);
+        return `${str1} – ${str2} ${tz}`;
       };
       const map = (r) => ({
         id: r.id,
+        status: r.status,
         title: r.title,
         date: fmt(r.starts_at, r.ends_at),
         time: fmtTime(r.starts_at, r.ends_at),
@@ -263,6 +286,7 @@ export default function Events() {
         curator: r.curator,
         address: r.address,
         parking: r.parking,
+        maps_url: r.maps_url,
         details: r.details,
       });
       setPast(data.filter(r => r.status === "past").map(map));
@@ -432,10 +456,10 @@ export default function Events() {
               style={{ maxWidth: 640 }}>
               <div className="reg-modal-header">
                 <button className="reg-modal-close" onClick={() => setDetailEvent(null)}>×</button>
-                <div className="reg-modal-tag">ONGOING EXHIBITION</div>
+                <div className="reg-modal-tag">{(detailEvent.status || "event").toUpperCase()} EVENT</div>
                 <h3 className="reg-modal-title">{detailEvent.title}</h3>
                 <div className="reg-modal-meta">
-                  {detailEvent.location} · {detailEvent.date}
+                  {[detailEvent.location, detailEvent.date].filter(Boolean).join(" · ")}
                 </div>
                 {detailEvent.time && (
                   <div className="reg-modal-meta" style={{ color: "rgba(212,175,55,0.85)" }}>
@@ -457,12 +481,30 @@ export default function Events() {
                   {detailEvent.desc}
                 </p>
                 <EventInfo event={detailEvent} />
+                {(detailEvent.maps_url || detailEvent.address || detailEvent.location) && (
+                  <a href={detailEvent.maps_url || directionsUrl(detailEvent.address || detailEvent.location)} target="_blank" rel="noopener noreferrer"
+                    className="btn-primary" style={{ display: "inline-block", marginTop: 16, textDecoration: "none" }}>
+                    GET DIRECTIONS →
+                  </a>
+                )}
                 {detailEvent.curator && (
                   <div style={{
                     fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em",
                     color: "#D4AF37", marginTop: 16,
                   }}>
                     Curated by <span style={{ color: "#fff" }}>{detailEvent.curator}</span>
+                  </div>
+                )}
+                {(detailEvent.status === "ongoing" || detailEvent.status === "upcoming") && (
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
+                    <button className="btn-primary" style={{ flex: 1, minWidth: 160 }}
+                      onClick={() => { const ev = detailEvent; setDetailEvent(null); open(ev, "register"); }}>
+                      {isRegistered(detailEvent) ? "REGISTERED ✓" : "REGISTER →"}
+                    </button>
+                    <button className="btn-secondary" style={{ flex: 1, minWidth: 120 }}
+                      onClick={() => { const ev = detailEvent; setDetailEvent(null); open(ev, "enquire"); }}>
+                      ENQUIRE
+                    </button>
                   </div>
                 )}
               </div>
@@ -503,8 +545,8 @@ export default function Events() {
                     </div>
                     <div style={{ marginTop: 12 }}><EventInfo event={activeEvent} /></div>
                   </div>
-                  {(activeEvent.address || activeEvent.location) && (
-                    <a href={directionsUrl(activeEvent.address || activeEvent.location)} target="_blank" rel="noopener noreferrer"
+                  {(activeEvent.maps_url || activeEvent.address || activeEvent.location) && (
+                    <a href={activeEvent.maps_url || directionsUrl(activeEvent.address || activeEvent.location)} target="_blank" rel="noopener noreferrer"
                       className="btn-primary" style={{ display: "inline-block", marginTop: 16, textDecoration: "none" }}>
                       GET DIRECTIONS →
                     </a>

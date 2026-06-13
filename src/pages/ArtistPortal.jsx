@@ -208,7 +208,7 @@ function StudioDashboard() {
       {tab === "overview" && <Overview works={works} onGo={setTab} />}
       {tab === "upload" && <ArtworkForm onPublished={() => { loadWorks(); }} />}
       {tab === "works" && <MyArtworks rows={works} reload={loadWorks} />}
-      {tab === "exhibition" && <ArtistExhibitionPanel works={works} />}
+      {tab === "exhibition" && <ArtistExhibitionPanel />}
       {tab === "profile" && <ProfilePanel />}
     </section>
   );
@@ -529,31 +529,56 @@ function EditArtwork({ artwork, onClose, onSaved }) {
 }
 
 /* ── Artist's exhibition submission panel ── */
-function ArtistExhibitionPanel({ works }) {
+function ArtistExhibitionPanel() {
   const [ex, setEx] = useState(undefined); // undefined=loading, null=none
   const [mine, setMine] = useState([]);
-  const [busy, setBusy] = useState("");
-  const load = () => {
+  const [cats, setCats] = useState([]);
+  const blankForm = { title: "", narrative: "", medium: "", category_id: "", price: "", width: "", height: "", depth: "", dim_unit: "cm" };
+  const [f, setF] = useState(blankForm);
+  const [images, setImages] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [wbusy, setWbusy] = useState("");
+
+  const loadMine = () => api.exhibitions.mine().then(setMine).catch(() => setMine([]));
+  useEffect(() => {
     api.exhibitions.current().then(setEx).catch(() => setEx(null));
-    api.exhibitions.mine().then(setMine).catch(() => setMine([]));
-  };
-  useEffect(() => { load(); }, []);
+    api.catalog.categories().then(setCats).catch(() => {});
+    loadMine();
+  }, []);
 
-  const approved = works.filter((w) => w.status === "active");
-  const isSubmitted = (id) => mine.includes(id);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const mains = cats.filter((c) => c.kind === "main");
+  const is3D = isThreeD(f.category_id, cats);
+  const composedDims = composeDims(f.width, f.height, is3D ? f.depth : "", f.dim_unit);
 
-  const toggle = async (id) => {
-    setBusy(id);
+  const submit = async () => {
+    if (!f.title.trim()) return alert("Give your piece a title.");
+    if (!(Number(f.price) > 0)) return alert("An exhibition piece needs a price greater than 0.");
+    if (images.length === 0) return alert("Upload at least one image.");
+    setBusy(true);
     try {
-      if (isSubmitted(id)) { await api.exhibitions.withdraw(id); }
-      else { await api.exhibitions.submit([id]); }
-      const m = await api.exhibitions.mine(); setMine(m);
-    } catch (e) { alert(e.message); } finally { setBusy(""); }
+      await api.exhibitions.addArtwork({
+        title: f.title.trim(), narrative: f.narrative || null, medium: f.medium || null,
+        category_id: f.category_id || null, price: Number(f.price), images,
+        width: f.width !== "" ? Number(f.width) : null,
+        height: f.height !== "" ? Number(f.height) : null,
+        depth: is3D && f.depth !== "" ? Number(f.depth) : null,
+        unit: f.dim_unit,
+      });
+      setF(blankForm); setImages([]); await loadMine();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+
+  const withdraw = async (id) => {
+    if (!window.confirm("Withdraw this piece from the exhibition?")) return;
+    setWbusy(id);
+    try { await api.exhibitions.withdraw(id); await loadMine(); }
+    catch (e) { alert(e.message); } finally { setWbusy(""); }
   };
 
   if (ex === undefined) return <div style={card}><Skeleton height={120} radius={10} /></div>;
   if (!ex || ex.status === "ended") return (
-    <div style={card}><div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.65)" }}>No exhibition is running right now. When the next one opens for registration, you'll be able to submit your approved works here.</div></div>
+    <div style={card}><div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.65)" }}>No exhibition is running right now. When the next one opens for registration, you'll be able to submit new pieces here — these are separate from your collection works.</div></div>
   );
 
   return (
@@ -564,48 +589,74 @@ function ArtistExhibitionPanel({ works }) {
 
       {ex.status === "upcoming" && (
         <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", padding: "12px 16px", borderRadius: 10, background: "rgba(212,175,55,0.06)", border: "1px dashed rgba(212,175,55,0.3)" }}>
-          Registration opens {ex.registration_starts_at ? new Date(ex.registration_starts_at).toLocaleString() : "soon"}. Check back to submit your works.
+          Registration opens {ex.registration_starts_at ? new Date(ex.registration_starts_at).toLocaleString() : "soon"}. Check back to submit your pieces.
         </div>
       )}
 
       {ex.status === "registration" && (
         <>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 4 }}>
-            SELECT WORKS TO EXHIBIT {ex.registration_ends_at && <span style={{ color: "rgba(200,191,160,0.55)" }}>· closes {new Date(ex.registration_ends_at).toLocaleDateString()}</span>}
+            SUBMIT A NEW PIECE {ex.registration_ends_at && <span style={{ color: "rgba(200,191,160,0.55)" }}>· closes {new Date(ex.registration_ends_at).toLocaleDateString()}</span>}
           </div>
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", marginBottom: 14 }}>
-            Only approved works can be exhibited. Tap to add or remove a piece from the show.
+            These are exhibition-only works — they're shown and sold inside this show and never appear in your collection.
           </p>
-          {approved.length === 0 ? (
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)" }}>You have no approved works yet — upload art and get it approved first.</div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>
-              {approved.map((w) => {
-                const on = isSubmitted(w.id);
-                return (
-                  <button key={w.id} onClick={() => toggle(w.id)} disabled={busy === w.id} style={{
-                    position: "relative", padding: 0, borderRadius: 10, overflow: "hidden", cursor: "pointer",
-                    border: on ? `2px solid ${gold}` : "1px solid rgba(212,175,55,0.2)", background: "rgba(255,255,255,0.02)",
-                  }}>
-                    <img src={w.images?.[0]} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block", opacity: on ? 1 : 0.85 }} />
-                    <div style={{ padding: "8px 10px", textAlign: "left" }}>
-                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 14, color: "#fff", lineHeight: 1.2 }}>{w.title}</div>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: on ? "#4ade80" : "rgba(200,191,160,0.5)", marginTop: 4 }}>
-                        {busy === w.id ? "…" : on ? "✓ IN THE SHOW" : "+ ADD"}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <Field l="TITLE"><input style={inputStyle} value={f.title} onChange={set("title")} /></Field>
+          <Field l="ABOUT THIS PIECE"><textarea style={{ ...inputStyle, minHeight: 70 }} value={f.narrative} onChange={set("narrative")} /></Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field l="MEDIUM (e.g. Oil on canvas)"><input style={inputStyle} value={f.medium} onChange={set("medium")} /></Field>
+            <Field l="CATEGORY (optional)">
+              <select style={inputStyle} value={f.category_id} onChange={set("category_id")}>
+                <option value="">None</option>
+                {mains.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </Field>
+          </div>
+          <Field l="PRICE (₹)"><input style={inputStyle} type="number" value={f.price} onChange={set("price")} /></Field>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", margin: "2px 0 6px" }}>
+            SIZE{is3D ? " (width × height × depth)" : " (width × height)"}{composedDims ? ` — ${composedDims}` : ""}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: is3D ? "1fr 1fr 1fr 0.8fr" : "1fr 1fr 0.8fr", gap: 12 }}>
+            <Field l="WIDTH"><input style={inputStyle} type="number" value={f.width} onChange={set("width")} /></Field>
+            <Field l="HEIGHT"><input style={inputStyle} type="number" value={f.height} onChange={set("height")} /></Field>
+            {is3D && <Field l="DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.depth} onChange={set("depth")} /></Field>}
+            <Field l="UNIT">
+              <select style={inputStyle} value={f.dim_unit} onChange={set("dim_unit")}>
+                <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+              </select>
+            </Field>
+          </div>
+          <Field l="IMAGES"><MediaUploader kind="image" multiple hint="UPLOAD IMAGES" value={images} onChange={setImages} /></Field>
+          <button style={{ ...btn, opacity: busy ? 0.7 : 1, marginTop: 4 }} disabled={busy} onClick={submit}>{busy ? "SUBMITTING…" : "+ SUBMIT TO EXHIBITION"}</button>
         </>
       )}
 
       {ex.status === "live" && (
         <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", padding: "12px 16px", borderRadius: 10, background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.3)" }}>
-          🎉 The exhibition is <strong style={{ color: "#86efac" }}>live</strong>. You have {mine.length} work{mine.length === 1 ? "" : "s"} on show.{" "}
+          🎉 The exhibition is <strong style={{ color: "#86efac" }}>live</strong>. You have {mine.length} piece{mine.length === 1 ? "" : "s"} on show.{" "}
           <Link to="/exhibition" style={{ color: gold }}>View the exhibition →</Link>
+        </div>
+      )}
+
+      {/* My submitted exhibition pieces */}
+      {mine.length > 0 && (
+        <div style={{ marginTop: 22 }}>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, margin: "0 0 14px" }}>MY EXHIBITION PIECES ({mine.length})</div>
+          {mine.map((w) => (
+            <div key={w.id} style={{ display: "flex", gap: 14, alignItems: "center", padding: "10px 12px", marginBottom: 8, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.15)" }}>
+              <img src={w.images?.[0]} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", background: "rgba(212,175,55,0.1)", flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, color: "#fff" }}>{w.title}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)" }}>{inr(w.price)}{w.base_dimensions ? ` · ${w.base_dimensions}` : ""}</div>
+              </div>
+              {ex.status === "registration" && (
+                <button onClick={() => withdraw(w.id)} disabled={wbusy === w.id}
+                  style={{ ...btn, padding: "7px 14px", background: "transparent", color: "rgba(255,140,140,0.9)", border: "1px solid rgba(255,140,140,0.4)" }}>
+                  {wbusy === w.id ? "…" : "WITHDRAW"}
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -16,6 +16,7 @@ const TABS = [
 ];
 
 const STAGES = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
+const PARKING_OPTIONS = ["Parking available (self)", "Valet available", "Parking not available"];
 
 export default function AdminDashboard() {
   const { user, role, loading } = useAuth();
@@ -543,31 +544,56 @@ function Tally() {
 }
 
 function Events() {
-  const blank = { title: "", description: "", status: "upcoming", location: "", curator: "", address: "", parking: "", details: "" };
+  const blank = { title: "", description: "", location: "", curator: "", starts_at: "", ends_at: "", address: "", parking: "", maps_url: "", details: "", image_url: "" };
   const [rows, setRows] = useState([]);
   const [f, setF] = useState(blank);
+  const [busy, setBusy] = useState(false);
   const load = () => api.events.list().then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
-  const create = async () => { if (!f.title) { alert("Event title is required"); return; } await api.events.create(f); setF(blank); load(); };
+  const create = async () => {
+    if (!f.title) { alert("Event title is required"); return; }
+    if (f.starts_at && f.ends_at && new Date(f.ends_at) < new Date(f.starts_at)) { alert("End must be after start"); return; }
+    setBusy(true);
+    // datetime-local is the admin's wall-clock time → convert to UTC so every
+    // viewer sees it correctly in their own timezone.
+    const toUtc = (v) => (v ? new Date(v).toISOString() : null);
+    try {
+      await api.events.create({
+        ...f, image_url: f.image_url || null, maps_url: f.maps_url || null,
+        starts_at: toUtc(f.starts_at), ends_at: toUtc(f.ends_at),
+      });
+      setF(blank); await load();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
   const del = async (id) => { await api.events.remove(id); load(); };
   return (
     <Panel title="Events">
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
         <input placeholder="Title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={miniInput} />
         <input placeholder="Location (venue name)" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} style={miniInput} />
         <input placeholder="Curator" value={f.curator} onChange={(e) => setF({ ...f, curator: e.target.value })} style={miniInput} />
-        <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} style={miniInput}>
-          <option value="upcoming">upcoming</option><option value="ongoing">ongoing</option><option value="past">past</option>
-        </select>
+        <div style={{ display: "flex", alignItems: "center", fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", padding: "0 4px" }}>
+          Status (upcoming / ongoing / past) is set automatically from the dates.
+        </div>
+        <div><L>STARTS (date & time)</L><input type="datetime-local" value={f.starts_at} onChange={(e) => setF({ ...f, starts_at: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box", colorScheme: "dark" }} /></div>
+        <div><L>ENDS (date & time)</L><input type="datetime-local" value={f.ends_at} onChange={(e) => setF({ ...f, ends_at: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box", colorScheme: "dark" }} /></div>
         <input placeholder="Full address" value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
-        <input placeholder="Parking information" value={f.parking} onChange={(e) => setF({ ...f, parking: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+        <select value={f.parking} onChange={(e) => setF({ ...f, parking: e.target.value })} style={miniInput}>
+          <option value="">Parking…</option>
+          {PARKING_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <input placeholder="Google Maps link (https://maps.google.com/…)" value={f.maps_url} onChange={(e) => setF({ ...f, maps_url: e.target.value })} style={miniInput} />
         <textarea placeholder="Description" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 54, resize: "vertical" }} />
         <textarea placeholder="Details / agenda (what to expect, timings, dress code…)" value={f.details} onChange={(e) => setF({ ...f, details: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 54, resize: "vertical" }} />
       </div>
-      <Btn onClick={create} primary>+ CREATE EVENT</Btn>
+      <MediaUploader kind="image" label="EVENT IMAGE" hint="UPLOAD IMAGE" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
+      <Btn onClick={create} primary disabled={busy}>{busy ? "CREATING…" : "+ CREATE EVENT"}</Btn>
       <div style={{ marginTop: 16 }}>
         {rows.map((e) => (
           <Item key={e.id}>
+            {e.image_url
+              ? <img src={e.image_url} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />
+              : <div style={{ width: 44, height: 44, borderRadius: 6, border: "1px dashed rgba(212,175,55,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(212,175,55,0.4)", flexShrink: 0 }}>◆</div>}
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{e.title}</div>
               <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{e.status} · {e.location}</div>

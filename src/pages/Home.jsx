@@ -610,14 +610,20 @@ export default function Home() {
           const d2 = e ? new Date(e).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
           return d2 ? `${d1} – ${d2}` : d1;
         };
+        // Stored in UTC → render in the viewer's timezone, with the zone shown.
+        const tzShort = (d) => {
+          try { return new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).formatToParts(d).find((p) => p.type === "timeZoneName")?.value || ""; }
+          catch { return ""; }
+        };
         const fmtTime = (s, e) => {
           if (!s) return "";
           const t1 = new Date(s);
-          if (t1.getHours() * 60 + t1.getMinutes() === 0) return "";
-          const str1 = t1.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+          const opt = { hour: "numeric", minute: "2-digit", hour12: true };
+          const tz = tzShort(t1);
+          const str1 = t1.toLocaleTimeString("en-US", opt);
           const t2 = e ? new Date(e) : null;
-          if (!t2 || t2.getHours() * 60 + t2.getMinutes() === 0) return str1;
-          return `${str1} – ${t2.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
+          if (!t2) return `${str1} ${tz}`;
+          return `${str1} – ${t2.toLocaleTimeString("en-US", opt)} ${tz}`;
         };
         // Ongoing first, then upcoming — both are registerable; past is excluded.
         const order = { ongoing: 0, upcoming: 1 };

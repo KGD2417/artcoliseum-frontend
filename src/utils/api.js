@@ -522,17 +522,16 @@ export const api = {
     current() {
       return request("GET", "/exhibitions/current", { auth: false });
     },
-    // Artist: artwork ids I've submitted to the current exhibition.
+    // Artist: my dedicated artworks submitted to the current exhibition.
     mine() {
       return request("GET", "/exhibitions/current/mine");
     },
-    submit(artworkIds) {
-      return request("POST", "/exhibitions/current/submit", {
-        body: { artwork_ids: artworkIds },
-      });
+    // Submit a NEW, exhibition-only artwork (separate from the collection).
+    addArtwork(body) {
+      return request("POST", "/exhibitions/current/artworks", { body });
     },
     withdraw(artworkId) {
-      return request("DELETE", `/exhibitions/current/submit/${encodeURIComponent(artworkId)}`);
+      return request("DELETE", `/exhibitions/current/artworks/${encodeURIComponent(artworkId)}`);
     },
     // Admin.
     list() {
