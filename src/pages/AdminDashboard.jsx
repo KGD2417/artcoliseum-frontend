@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/Auth";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
+import MediaUploader from "../components/ui/MediaUploader";
+import { isThreeD, composeDims } from "../utils/dimensions";
 import { api, realtime } from "../utils/api";
 import { email as emailRule, minLen, intRange } from "../utils/validation";
 
@@ -402,17 +404,23 @@ function Artworks() {
 function EditArtworkModal({ artwork, onClose, onSaved }) {
   const [f, setF] = useState({
     title: artwork.title || "", price: artwork.price ?? "", medium: artwork.medium || "",
-    base_dimensions: artwork.base_dimensions || "", price_per_unit: artwork.price_per_unit ?? "",
+    width: artwork.width ?? "", height: artwork.height ?? "", depth: artwork.depth ?? "", dim_unit: artwork.unit || "cm",
+    price_per_unit: artwork.price_per_unit ?? "",
     customizable: artwork.customizable !== false, ratio_locked: !!artwork.ratio_locked, in_stock: artwork.in_stock !== false,
     status: artwork.status || "active", featured: !!artwork.featured,
   });
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const is3D = isThreeD(artwork.category_id) || artwork.depth != null;
+  const composedDims = composeDims(f.width, f.height, is3D ? f.depth : "", f.dim_unit);
   const save = async () => {
     setBusy(true);
     try {
       await api.admin.updateArtwork(artwork.id, {
-        title: f.title, medium: f.medium, base_dimensions: f.base_dimensions,
+        title: f.title, medium: f.medium,
+        width: f.width !== "" ? Number(f.width) : null,
+        height: f.height !== "" ? Number(f.height) : null,
+        depth: is3D && f.depth !== "" ? Number(f.depth) : null,
         customizable: f.customizable, ratio_locked: f.customizable && f.ratio_locked,
         in_stock: f.in_stock, status: f.status, featured: f.featured,
         price: f.price !== "" ? Number(f.price) : null,
@@ -427,7 +435,15 @@ function EditArtworkModal({ artwork, onClose, onSaved }) {
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, marginBottom: 16 }}>EDIT · {artwork.title}</div>
         <L>Title</L><input style={miniInput} value={f.title} onChange={set("title")} />
         <L>Medium</L><input style={miniInput} value={f.medium} onChange={set("medium")} />
-        <L>Base dimensions</L><input style={miniInput} value={f.base_dimensions} onChange={set("base_dimensions")} />
+        <L>Artwork size{is3D ? " (W × H × D)" : " (W × H)"}{composedDims ? ` — ${composedDims}` : ""}</L>
+        <div style={{ display: "grid", gridTemplateColumns: is3D ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+          <input placeholder="W" style={{ ...miniInput, marginBottom: 0 }} type="number" value={f.width} onChange={set("width")} />
+          <input placeholder="H" style={{ ...miniInput, marginBottom: 0 }} type="number" value={f.height} onChange={set("height")} />
+          {is3D && <input placeholder="D" style={{ ...miniInput, marginBottom: 0 }} type="number" value={f.depth} onChange={set("depth")} />}
+          <select style={{ ...miniInput, marginBottom: 0 }} value={f.dim_unit} onChange={set("dim_unit")}>
+            <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+          </select>
+        </div>
         <label style={ckLabel}><input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} /> Customizable</label>
         {f.customizable && <label style={ckLabel}><input type="checkbox" checked={f.ratio_locked} onChange={(e) => setF({ ...f, ratio_locked: e.target.checked })} style={{ accentColor: gold }} /> Lock width : height ratio</label>}
         {f.customizable
@@ -875,11 +891,6 @@ function AddArtist({ onCreated }) {
   const [f, setF] = useState(blank);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
-  const upload = async (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    try { const { url } = await api.uploads.file(file, "image"); setF((v) => ({ ...v, image_url: url })); }
-    catch (err) { alert(err.message); }
-  };
   const submit = async () => {
     if (!f.email || !f.password || !f.name) { alert("Email, password and name are required"); return; }
     if (emailRule(f.email)) { alert("Enter a valid email"); return; }
@@ -914,12 +925,8 @@ function AddArtist({ onCreated }) {
           <option value="other">Other</option>
         </select>
         <input placeholder="Bio" value={f.bio} onChange={set("bio")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 10, gridColumn: "1 / -1" }}>
-          <label style={{ ...miniInput, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <input type="file" accept="image/*" onChange={upload} style={{ display: "none" }} />
-            UPLOAD PHOTO
-          </label>
-          {f.image_url && <img src={f.image_url} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />}
+        <div style={{ gridColumn: "1 / -1" }}>
+          <MediaUploader kind="image" label="ARTIST PHOTO" hint="UPLOAD PHOTO" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
         </div>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -931,7 +938,7 @@ function AddArtist({ onCreated }) {
 }
 
 function AddArtworkForArtist({ tick }) {
-  const blank = { artist_id: "", title: "", price: "", price_per_unit: "", medium: "", category_id: "", base_dimensions: "", image_url: "", customizable: false, ratio_locked: false, featured: false, narrative: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "" };
+  const blank = { artist_id: "", title: "", price: "", price_per_unit: "", medium: "", category_id: "", width: "", height: "", depth: "", dim_unit: "cm", image_url: "", customizable: false, ratio_locked: false, featured: false, narrative: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "" };
   const [artists, setArtists] = useState([]);
   const [cats, setCats] = useState([]);
   const [f, setF] = useState(blank);
@@ -941,11 +948,8 @@ function AddArtworkForArtist({ tick }) {
     api.catalog.artists().then(setArtists).catch(() => {});
     api.catalog.categories().then((c) => setCats(c.filter((x) => x.kind === "main"))).catch(() => {});
   }, [tick]);
-  const upload = async (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    try { const { url } = await api.uploads.file(file, "image"); setF((v) => ({ ...v, image_url: url })); }
-    catch (err) { alert(err.message); }
-  };
+  const is3D = isThreeD(f.category_id, cats);
+  const composedDims = composeDims(f.width, f.height, is3D ? f.depth : "", f.dim_unit);
   const submit = async () => {
     if (!f.artist_id || !f.title || !f.category_id) { alert("Artist, title and category are required"); return; }
     if (!f.customizable && (!f.price || Number(f.price) <= 0)) { alert("Predefined (fixed-price) artworks need a price greater than 0"); return; }
@@ -954,7 +958,11 @@ function AddArtworkForArtist({ tick }) {
     try {
       await api.admin.createArtwork({
         title: f.title, narrative: f.narrative || null, medium: f.medium || null,
-        category_id: f.category_id, base_dimensions: f.base_dimensions || null,
+        category_id: f.category_id,
+        width: !f.customizable && f.width !== "" ? Number(f.width) : null,
+        height: !f.customizable && f.height !== "" ? Number(f.height) : null,
+        depth: !f.customizable && is3D && f.depth !== "" ? Number(f.depth) : null,
+        base_dimensions: f.customizable ? null : (composedDims || null),
         customizable: f.customizable, ratio_locked: f.customizable && f.ratio_locked,
         price: f.price ? Number(f.price) : 0,
         unit: f.customizable ? f.unit : null,
@@ -963,8 +971,8 @@ function AddArtworkForArtist({ tick }) {
         max_width: f.customizable && f.max_width !== "" ? Number(f.max_width) : null,
         min_height: f.customizable && f.min_height !== "" ? Number(f.min_height) : null,
         max_height: f.customizable && f.max_height !== "" ? Number(f.max_height) : null,
-        min_depth: f.customizable && f.category_id === "sculpture" && f.min_depth !== "" ? Number(f.min_depth) : null,
-        max_depth: f.customizable && f.category_id === "sculpture" && f.max_depth !== "" ? Number(f.max_depth) : null,
+        min_depth: f.customizable && is3D && f.min_depth !== "" ? Number(f.min_depth) : null,
+        max_depth: f.customizable && is3D && f.max_depth !== "" ? Number(f.max_depth) : null,
         featured: f.featured, images: f.image_url ? [f.image_url] : [], artist_id: f.artist_id,
       });
       setDone(`Added "${f.title}".`);
@@ -987,8 +995,23 @@ function AddArtworkForArtist({ tick }) {
         </select>
         <input placeholder="Title" value={f.title} onChange={set("title")} style={miniInput} />
         <input placeholder="Medium (e.g. Oil on canvas)" value={f.medium} onChange={set("medium")} style={miniInput} />
-        <input placeholder="Dimensions (e.g. 80 × 60 cm)" value={f.base_dimensions} onChange={set("base_dimensions")} style={miniInput} />
         <input placeholder="Price (₹)" value={f.price} onChange={set("price")} style={miniInput} disabled={f.customizable} />
+        <div />
+        {!f.customizable && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.6)", marginBottom: 6 }}>
+              ARTWORK SIZE{is3D ? " (W × H × D)" : " (W × H)"}{composedDims ? ` — ${composedDims}` : ""}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: is3D ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: 8 }}>
+              <input placeholder="Width" value={f.width} onChange={set("width")} style={miniInput} />
+              <input placeholder="Height" value={f.height} onChange={set("height")} style={miniInput} />
+              {is3D && <input placeholder="Depth / Length" value={f.depth} onChange={set("depth")} style={miniInput} />}
+              <select value={f.dim_unit} onChange={set("dim_unit")} style={miniInput}>
+                <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+              </select>
+            </div>
+          </div>
+        )}
         <input placeholder="Narrative / description" value={f.narrative} onChange={set("narrative")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
         {f.customizable && (
           <div style={{ gridColumn: "1 / -1" }}>
@@ -1007,7 +1030,7 @@ function AddArtworkForArtist({ tick }) {
               <select value={f.unit} onChange={set("unit")} style={miniInput}>
                 <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
               </select>
-              {f.category_id === "sculpture" && (
+              {is3D && (
                 <>
                   <input placeholder="Min Depth" value={f.min_depth} onChange={set("min_depth")} style={miniInput} />
                   <input placeholder="Max Depth" value={f.max_depth} onChange={set("max_depth")} style={miniInput} />
@@ -1016,12 +1039,10 @@ function AddArtworkForArtist({ tick }) {
             </div>
           </div>
         )}
+        <div style={{ gridColumn: "1 / -1" }}>
+          <MediaUploader kind="image" label="ARTWORK IMAGE" hint="UPLOAD IMAGE" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16, gridColumn: "1 / -1", flexWrap: "wrap" }}>
-          <label style={{ ...miniInput, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <input type="file" accept="image/*" onChange={upload} style={{ display: "none" }} />
-            UPLOAD IMAGE
-          </label>
-          {f.image_url && <img src={f.image_url} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover" }} />}
           <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
             <input type="checkbox" checked={f.customizable} onChange={(e) => setF((v) => ({ ...v, customizable: e.target.checked }))} style={{ accentColor: gold }} />
             Customizable (priced per unit)

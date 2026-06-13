@@ -4,6 +4,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/Auth";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
+import MediaUploader from "../components/ui/MediaUploader";
+import { isThreeD, composeDims } from "../utils/dimensions";
 import { api } from "../utils/api";
 
 const gold = "#D4AF37";
@@ -15,32 +17,6 @@ const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 
 function Field({ l, children }) {
   return <div><span style={label}>{l}</span>{children}</div>;
-}
-
-/** Upload one or more files; calls onDone(urls[]). */
-function Uploader({ kind = "image", multiple = false, onDone, hint }) {
-  const [busy, setBusy] = useState(false);
-  const [names, setNames] = useState([]);
-  const handle = async (e) => {
-    const files = [...e.target.files];
-    if (!files.length) return;
-    setBusy(true);
-    try {
-      const urls = [];
-      for (const f of files) { const r = await api.uploads.file(f, kind); urls.push(r.url); }
-      setNames(files.map(f => f.name));
-      onDone(urls);
-    } catch (err) { alert(err.message); } finally { setBusy(false); }
-  };
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ display: "inline-block", padding: "9px 16px", border: `1px dashed ${gold}`, borderRadius: 8, cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: gold }}>
-        {busy ? "UPLOADING…" : hint || "UPLOAD"}
-        <input type="file" accept={kind === "video" ? "video/*" : kind === "model" ? ".glb,.gltf" : "image/*"} multiple={multiple} style={{ display: "none" }} onChange={handle} />
-      </label>
-      {names.length > 0 && <span style={{ marginLeft: 12, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)" }}>{names.join(", ")}</span>}
-    </div>
-  );
 }
 
 export default function ArtistPortal() {
@@ -191,7 +167,7 @@ function KycForm({ onApplied }) {
       </div>
       <Field l="WHAT KIND OF ARTIST ARE YOU?"><input style={inputStyle} value={f.art_type} onChange={set("art_type")} placeholder="e.g. Oil painter, Sculptor" /></Field>
       <Field l="ABOUT YOU"><textarea style={{ ...inputStyle, minHeight: 90 }} value={f.about} onChange={set("about")} /></Field>
-      <Field l="PROFILE PHOTO (OPTIONAL)"><Uploader kind="image" hint="UPLOAD PHOTO" onDone={(u) => setAvatar(u[0])} /></Field>
+      <Field l="PROFILE PHOTO (OPTIONAL)"><MediaUploader kind="image" hint="UPLOAD PHOTO" value={avatar} onChange={setAvatar} /></Field>
       <button style={{ ...btn, opacity: busy ? 0.7 : 1 }} disabled={busy} onClick={submit}>{busy ? "SUBMITTING…" : "APPLY AS ARTIST"}</button>
     </div>
   );
@@ -276,7 +252,7 @@ function Overview({ works, onGo }) {
 
 function ArtworkForm({ onPublished }) {
   const [cats, setCats] = useState([]);
-  const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, ratio_locked: false, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
+  const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", width: "", height: "", depth: "", dim_unit: "cm", customizable: true, ratio_locked: false, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
   const [images, setImages] = useState([]);
   const [videos, setVideos] = useState([]);
   const [model3d, setModel3d] = useState(null);
@@ -291,6 +267,9 @@ function ArtworkForm({ onPublished }) {
   const mains = cats.filter((c) => c.kind === "main");
   const subtypes = cats.filter((c) => c.kind === "subtype" && (!f.category_id || c.parent_id === f.category_id));
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  // Sculpture / 3-D works get a third dimension (depth / length).
+  const is3D = isThreeD(f.category_id, cats);
+  const composedDims = composeDims(f.width, f.height, is3D ? f.depth : "", f.dim_unit);
 
   const addStyle = async () => {
     if (!newStyle || !f.category_id) return alert("Pick a main medium first, then name the style.");
@@ -307,7 +286,12 @@ function ArtworkForm({ onPublished }) {
     try {
       await api.artist.createArtwork({
         title: f.title, narrative: f.narrative, medium: f.medium, category_id: f.category_id,
-        subtype_id: f.subtype_id || null, base_dimensions: f.base_dimensions,
+        subtype_id: f.subtype_id || null,
+        // Structured size (fixed works); base_dimensions string for display.
+        width: !f.customizable && f.width !== "" ? Number(f.width) : null,
+        height: !f.customizable && f.height !== "" ? Number(f.height) : null,
+        depth: !f.customizable && is3D && f.depth !== "" ? Number(f.depth) : null,
+        base_dimensions: f.customizable ? null : (composedDims || null),
         customizable: f.customizable, ratio_locked: f.customizable && f.ratio_locked,
         price_per_unit: f.customizable && f.price_per_unit ? Number(f.price_per_unit) : null,
         unit: f.customizable ? f.unit : null,
@@ -315,13 +299,13 @@ function ArtworkForm({ onPublished }) {
         max_width: f.customizable && f.max_width !== "" ? Number(f.max_width) : null,
         min_height: f.customizable && f.min_height !== "" ? Number(f.min_height) : null,
         max_height: f.customizable && f.max_height !== "" ? Number(f.max_height) : null,
-        min_depth: f.customizable && f.category_id === "sculpture" && f.min_depth !== "" ? Number(f.min_depth) : null,
-        max_depth: f.customizable && f.category_id === "sculpture" && f.max_depth !== "" ? Number(f.max_depth) : null,
+        min_depth: f.customizable && is3D && f.min_depth !== "" ? Number(f.min_depth) : null,
+        max_depth: f.customizable && is3D && f.max_depth !== "" ? Number(f.max_depth) : null,
         predefined_sizes: f.customizable ? [] : predefined,
         images, videos, model_3d_url: model3d, price: f.price ? Number(f.price) : 0,
       });
       setDone(true);
-      setF({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
+      setF({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", width: "", height: "", depth: "", dim_unit: "cm", customizable: true, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
       setImages([]); setVideos([]); setModel3d(null); setPredefined([]);
       onPublished && onPublished();
     } catch (e) { alert(e.message); } finally { setBusy(false); }
@@ -355,7 +339,6 @@ function ArtworkForm({ onPublished }) {
         <button onClick={addStyle} style={{ ...btn, padding: "11px 18px", whiteSpace: "nowrap" }}>+ STYLE</button>
       </div>
       <Field l="MEDIUM (TEXT, e.g. Oil on Canvas)"><input style={inputStyle} value={f.medium} onChange={set("medium")} /></Field>
-      <Field l="BASE DIMENSIONS"><input style={inputStyle} value={f.base_dimensions} onChange={set("base_dimensions")} placeholder="e.g. 90 × 60 cm" /></Field>
 
       <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
         <input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} />
@@ -386,20 +369,36 @@ function ArtworkForm({ onPublished }) {
             <Field l="MAX WIDTH"><input style={inputStyle} type="number" value={f.max_width} onChange={set("max_width")} /></Field>
             <Field l="MIN HEIGHT"><input style={inputStyle} type="number" value={f.min_height} onChange={set("min_height")} /></Field>
             <Field l="MAX HEIGHT"><input style={inputStyle} type="number" value={f.max_height} onChange={set("max_height")} /></Field>
-            {f.category_id === "sculpture" && <>
-              <Field l="MIN DEPTH"><input style={inputStyle} type="number" value={f.min_depth} onChange={set("min_depth")} /></Field>
-              <Field l="MAX DEPTH"><input style={inputStyle} type="number" value={f.max_depth} onChange={set("max_depth")} /></Field>
+            {is3D && <>
+              <Field l="MIN DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.min_depth} onChange={set("min_depth")} /></Field>
+              <Field l="MAX DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.max_depth} onChange={set("max_depth")} /></Field>
             </>}
           </div>
         </>
       ) : (
-        <PredefinedSizes sizes={predefined} setSizes={setPredefined} />
+        <>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", margin: "4px 0 8px" }}>
+            ARTWORK SIZE{is3D ? " (width × height × depth)" : " (width × height)"}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: is3D ? "1fr 1fr 1fr 0.8fr" : "1fr 1fr 0.8fr", gap: 12 }}>
+            <Field l="WIDTH"><input style={inputStyle} type="number" value={f.width} onChange={set("width")} /></Field>
+            <Field l="HEIGHT"><input style={inputStyle} type="number" value={f.height} onChange={set("height")} /></Field>
+            {is3D && <Field l="DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.depth} onChange={set("depth")} /></Field>}
+            <Field l="UNIT">
+              <select style={inputStyle} value={f.dim_unit} onChange={set("dim_unit")}>
+                <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+              </select>
+            </Field>
+          </div>
+          {composedDims && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 12 }}>Shown as: <span style={{ color: gold }}>{composedDims}</span></div>}
+          <PredefinedSizes sizes={predefined} setSizes={setPredefined} />
+        </>
       )}
 
       <Field l="STARTING / DISPLAY PRICE"><input style={inputStyle} type="number" value={f.price} onChange={set("price")} /></Field>
-      <Field l="IMAGES"><Uploader kind="image" multiple hint="UPLOAD IMAGES" onDone={setImages} /></Field>
-      <Field l="VIDEOS (OPTIONAL)"><Uploader kind="video" multiple hint="UPLOAD VIDEOS" onDone={setVideos} /></Field>
-      <Field l="3D MODEL — GLB (FOR SCULPTURE/MURAL)"><Uploader kind="model" hint="UPLOAD 3D MODEL" onDone={(u) => setModel3d(u[0])} /></Field>
+      <Field l="IMAGES"><MediaUploader kind="image" multiple hint="UPLOAD IMAGES" value={images} onChange={setImages} /></Field>
+      <Field l="VIDEOS (OPTIONAL)"><MediaUploader kind="video" multiple hint="UPLOAD VIDEOS" value={videos} onChange={setVideos} /></Field>
+      <Field l="3D MODEL — GLB (FOR SCULPTURE/MURAL)"><MediaUploader kind="model" hint="UPLOAD 3D MODEL" value={model3d} onChange={setModel3d} /></Field>
 
       <button style={{ ...btn, opacity: busy ? 0.7 : 1, marginTop: 8 }} disabled={busy} onClick={submit}>{busy ? "SUBMITTING…" : "SUBMIT FOR APPROVAL"}</button>
     </div>
@@ -469,16 +468,23 @@ function MyArtworks({ rows, reload }) {
 function EditArtwork({ artwork, onClose, onSaved }) {
   const [f, setF] = useState({
     title: artwork.title || "", price: artwork.price || "", medium: artwork.medium || "",
-    base_dimensions: artwork.base_dimensions || "", price_per_unit: artwork.price_per_unit || "",
+    width: artwork.width ?? "", height: artwork.height ?? "", depth: artwork.depth ?? "",
+    dim_unit: artwork.unit || "cm",
+    price_per_unit: artwork.price_per_unit || "",
     customizable: artwork.customizable !== false, in_stock: artwork.in_stock !== false,
   });
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const is3D = isThreeD(artwork.category_id) || artwork.depth != null;
+  const composedDims = composeDims(f.width, f.height, is3D ? f.depth : "", f.dim_unit);
   const save = async () => {
     setBusy(true);
     try {
       await api.artist.updateArtwork(artwork.id, {
-        title: f.title, medium: f.medium, base_dimensions: f.base_dimensions,
+        title: f.title, medium: f.medium,
+        width: f.width !== "" ? Number(f.width) : null,
+        height: f.height !== "" ? Number(f.height) : null,
+        depth: is3D && f.depth !== "" ? Number(f.depth) : null,
         customizable: f.customizable, in_stock: f.in_stock,
         price: f.price !== "" ? Number(f.price) : null,
         price_per_unit: f.customizable && f.price_per_unit !== "" ? Number(f.price_per_unit) : null,
@@ -492,7 +498,18 @@ function EditArtwork({ artwork, onClose, onSaved }) {
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, marginBottom: 16 }}>EDIT ARTWORK</div>
         <Field l="TITLE"><input style={inputStyle} value={f.title} onChange={set("title")} /></Field>
         <Field l="MEDIUM"><input style={inputStyle} value={f.medium} onChange={set("medium")} /></Field>
-        <Field l="BASE DIMENSIONS"><input style={inputStyle} value={f.base_dimensions} onChange={set("base_dimensions")} /></Field>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", margin: "2px 0 6px" }}>ARTWORK SIZE</div>
+        <div style={{ display: "grid", gridTemplateColumns: is3D ? "1fr 1fr 1fr 0.8fr" : "1fr 1fr 0.8fr", gap: 10 }}>
+          <Field l="WIDTH"><input style={inputStyle} type="number" value={f.width} onChange={set("width")} /></Field>
+          <Field l="HEIGHT"><input style={inputStyle} type="number" value={f.height} onChange={set("height")} /></Field>
+          {is3D && <Field l="DEPTH/LEN"><input style={inputStyle} type="number" value={f.depth} onChange={set("depth")} /></Field>}
+          <Field l="UNIT">
+            <select style={inputStyle} value={f.dim_unit} onChange={set("dim_unit")}>
+              <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+            </select>
+          </Field>
+        </div>
+        {composedDims && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 12 }}>Shown as: <span style={{ color: gold }}>{composedDims}</span></div>}
         <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
           <input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} /> Customizable (priced per unit)
         </label>
@@ -622,7 +639,7 @@ function ProfilePanel() {
         {f.image_url
           ? <img src={f.image_url} alt="" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(212,175,55,0.3)" }} />
           : <div style={{ width: 72, height: 72, borderRadius: "50%", border: "1px dashed rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(212,175,55,0.4)" }}>✦</div>}
-        <Uploader kind="image" hint="CHANGE PHOTO" onDone={(u) => setF((v) => ({ ...v, image_url: u[0] }))} />
+        <MediaUploader kind="image" preview={false} hint="CHANGE PHOTO" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
       </div>
       <Field l="DISPLAY NAME"><input style={inputStyle} value={f.name} onChange={set("name")} /></Field>
       <Field l="BIO"><textarea style={{ ...inputStyle, minHeight: 100 }} value={f.bio} onChange={set("bio")} /></Field>

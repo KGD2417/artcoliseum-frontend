@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { api } from "../utils/api";
+import { useAuth } from "../context/Auth";
 import SafeImage from "../components/SafeImage";
 import ColiseumCarousel from "../components/ColiseumCarousel";
 import { CircularTestimonials } from "../components/ui/CircularTestimonials";
@@ -496,7 +497,7 @@ function AnimatedPreservation({ navigate }) {
 }
 
 /* ═══════════════ 3D TILT EVENT CARD ════════════════════════════════ */
-function TiltCard({ event, index, onRegister }) {
+function TiltCard({ event, index, onRegister, registered }) {
   const cardRef = useRef(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const inView = useInView(cardRef, { once: true, margin: "-60px" });
@@ -536,13 +537,15 @@ function TiltCard({ event, index, onRegister }) {
           <div className="event-card-title">{event.title}</div>
           <div className="event-card-loc">{event.location}</div>
           <div className="event-card-desc">{event.desc}</div>
-          {event.tag === "UPCOMING" && (
+          {(event.tag === "UPCOMING" || event.tag === "ONGOING") && (
             <motion.button
               className="event-register-btn"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={(e) => { e.stopPropagation(); onRegister(); }}>
-              REGISTER NOW →
+              whileHover={{ scale: registered ? 1 : 1.04 }}
+              whileTap={{ scale: registered ? 1 : 0.97 }}
+              disabled={registered}
+              style={registered ? { opacity: 0.85, cursor: "default" } : undefined}
+              onClick={(e) => { e.stopPropagation(); if (!registered) onRegister(); }}>
+              {registered ? "REGISTERED ✓" : "REGISTER NOW →"}
             </motion.button>
           )}
         </div>
@@ -556,6 +559,7 @@ function TiltCard({ event, index, onRegister }) {
 ═══════════════════════════════════════════════════════════════════ */
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [heroGallery,   setHeroGallery]   = useState(FALLBACK_HERO_GALLERY);
   const [carouselItems, setCarouselItems] = useState(FALLBACK_CAROUSEL);
   const [eventsData,    setEventsData]    = useState(EVENTS_DATA);
@@ -563,6 +567,17 @@ export default function Home() {
   const [registerEvent, setRegisterEvent] = useState(null);
   const [regForm, setRegForm]             = useState({ name: "", email: "", phone: "", message: "" });
   const [regDone, setRegDone]             = useState(false);
+  const [regBusy, setRegBusy]             = useState(false);
+  const [regProfile, setRegProfile]       = useState({ name: "", email: "", phone: "" });
+  const [registeredIds, setRegisteredIds] = useState(() => new Set());
+
+  // Logged-in collectors: prefill the registration form and load which events
+  // they've already registered for (mirrors the Events page).
+  useEffect(() => {
+    if (!user) return;
+    api.auth.me().then((m) => setRegProfile({ name: m?.full_name || "", email: m?.user?.email || user.email || "", phone: m?.phone || "" })).catch(() => {});
+    api.events.myRegistrations().then((rows) => setRegisteredIds(new Set((rows || []).map((r) => r.id)))).catch(() => {});
+  }, [user]);
 
   // Featured paintings (hero + "Art of Seasons") come from the database.
   // Falls back to the static gallery only if the API is unreachable.
@@ -595,13 +610,26 @@ export default function Home() {
           const d2 = e ? new Date(e).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
           return d2 ? `${d1} – ${d2}` : d1;
         };
+        const fmtTime = (s, e) => {
+          if (!s) return "";
+          const t1 = new Date(s);
+          if (t1.getHours() * 60 + t1.getMinutes() === 0) return "";
+          const str1 = t1.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+          const t2 = e ? new Date(e) : null;
+          if (!t2 || t2.getHours() * 60 + t2.getMinutes() === 0) return str1;
+          return `${str1} – ${t2.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
+        };
+        // Ongoing first, then upcoming — both are registerable; past is excluded.
+        const order = { ongoing: 0, upcoming: 1 };
         const mapped = data
           .filter((r) => r.status !== "past")
+          .sort((a, b) => (order[a.status] ?? 2) - (order[b.status] ?? 2))
           .slice(0, 3)
           .map((r) => ({
+            id: r.id,
             title: r.title,
             date: fmtDate(r.starts_at, r.ends_at),
-            time: "",
+            time: fmtTime(r.starts_at, r.ends_at),
             location: r.location || "",
             desc: r.description || "",
             img: r.image_url || e1,
@@ -613,8 +641,28 @@ export default function Home() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleRegSubmit = (e) => {
+  // Open the registration modal, prefilling from the collector's profile.
+  const openRegister = (ev) => {
+    setRegisterEvent(ev);
+    setRegDone(false);
+    setRegForm({ name: regProfile.name, email: regProfile.email, phone: regProfile.phone, message: "" });
+  };
+
+  const handleRegSubmit = async (e) => {
     e.preventDefault();
+    if (regBusy) return;
+    // Real backend events carry an id — persist the registration. Demo fallback
+    // events (no id) just show the confirmation.
+    if (registerEvent?.id) {
+      setRegBusy(true);
+      try {
+        await api.events.register(registerEvent.id, {
+          name: regForm.name, email: regForm.email, phone: regForm.phone, message: regForm.message,
+        });
+        setRegisteredIds((prev) => new Set(prev).add(registerEvent.id));
+      } catch (err) { alert(err.message); setRegBusy(false); return; }
+      setRegBusy(false);
+    }
     setRegDone(true);
     setTimeout(() => {
       setRegisterEvent(null);
@@ -853,7 +901,8 @@ export default function Home() {
               key={ev.title}
               event={ev}
               index={i}
-              onRegister={() => setRegisterEvent(ev)}
+              registered={!!ev.id && registeredIds.has(ev.id)}
+              onRegister={() => openRegister(ev)}
             />
           ))}
         </div>
@@ -1134,16 +1183,24 @@ export default function Home() {
                     <div className="reg-modal-tag">EVENT REGISTRATION</div>
                     <h3 className="reg-modal-title">{registerEvent.title}</h3>
                     <div className="reg-modal-meta">{registerEvent.location} · {registerEvent.date}</div>
+                    {registerEvent.time && (
+                      <div className="reg-modal-meta" style={{ color: "rgba(212,175,55,0.85)" }}>{registerEvent.time}</div>
+                    )}
                   </div>
                   <form className="reg-form" onSubmit={handleRegSubmit}>
+                    {user && (
+                      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(212,175,55,0.8)", marginBottom: 4 }}>
+                        Prefilled from your account — edit if needed.
+                      </div>
+                    )}
                     <div className="reg-form-row">
                       <input className="reg-input" required placeholder="Full Name" value={regForm.name} onChange={(e) => setRegForm(f => ({ ...f, name: e.target.value }))} />
                       <input className="reg-input" required type="email" placeholder="Email Address" value={regForm.email} onChange={(e) => setRegForm(f => ({ ...f, email: e.target.value }))} />
                     </div>
                     <input className="reg-input" placeholder="Phone Number" value={regForm.phone} onChange={(e) => setRegForm(f => ({ ...f, phone: e.target.value }))} />
                     <textarea className="reg-input reg-textarea" placeholder="Message (optional)" rows={3} value={regForm.message} onChange={(e) => setRegForm(f => ({ ...f, message: e.target.value }))} />
-                    <motion.button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 8 }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      CONFIRM REGISTRATION →
+                    <motion.button type="submit" className="btn-primary" style={{ width: "100%", marginTop: 8, opacity: regBusy ? 0.7 : 1 }} disabled={regBusy} whileHover={{ scale: regBusy ? 1 : 1.02 }} whileTap={{ scale: regBusy ? 1 : 0.98 }}>
+                      {regBusy ? "REGISTERING…" : "CONFIRM REGISTRATION →"}
                     </motion.button>
                   </form>
                 </>

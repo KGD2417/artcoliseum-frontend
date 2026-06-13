@@ -2149,8 +2149,7 @@ input[type="email"] {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(212, 175, 55, 0.2);
-  transition: all 0.3s;
-  overflow: hidden;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
   margin-right: 8px;
 }
 .nav-search:focus-within {
@@ -2170,7 +2169,7 @@ input[type="email"] {
   padding-left: 8px;
 }
 .nav-search-sm .nav-search-input {
-  width: 110px;
+  width: 150px;
   font-size: 11px;
 }
 .nav-search-sm {
@@ -2189,14 +2188,16 @@ input[type="email"] {
 .nav-search-results {
   position: absolute;
   top: calc(100% + 10px);
-  left: 0;
   right: 0;
-  background: rgba(8, 6, 4, 0.96);
+  left: auto;
+  width: 360px;
+  max-width: min(360px, calc(100vw - 32px));
+  background: rgba(8, 6, 4, 0.97);
   backdrop-filter: blur(24px);
   border: 1px solid rgba(212, 175, 55, 0.25);
   border-radius: 10px;
   padding: 8px 0;
-  max-height: 360px;
+  max-height: 70vh;
   overflow-y: auto;
   z-index: 1100;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
@@ -2209,8 +2210,18 @@ input[type="email"] {
   cursor: pointer;
   transition: background 0.2s;
 }
-.nav-search-row:hover {
-  background: rgba(212, 175, 55, 0.08);
+.nav-search-row:hover,
+.nav-search-row.is-active {
+  background: rgba(212, 175, 55, 0.12);
+}
+.nav-search-hint {
+  padding: 9px 14px 4px;
+  font-family: "Cinzel", serif;
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  color: rgba(200, 191, 160, 0.4);
+  border-top: 1px solid rgba(212, 175, 55, 0.12);
+  margin-top: 6px;
 }
 .nav-search-row-thumb {
   width: 36px;

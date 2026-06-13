@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { Skeleton, SkeletonGrid } from "../components/ui/Skeleton";
+import MediaUploader from "../components/ui/MediaUploader";
 import { api } from "../utils/api";
 import { useAuth } from "../context/Auth";
 
@@ -149,15 +150,6 @@ function EntryForm({ comp, onSubmitted }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
-  const upload = async (e, kind, multi) => {
-    const files = [...e.target.files]; if (!files.length) return;
-    try {
-      const urls = [];
-      for (const f of files) { const r = await api.uploads.file(f, kind); urls.push(r.url); }
-      if (kind === "video") setVideo(urls[0]); else setImages(multi ? urls : [urls[0]]);
-    } catch (err) { alert(err.message); }
-  };
-
   const submit = async () => {
     if (comp.status !== "open") return alert("This competition is not accepting entries right now.");
     if (!agreed) return alert("Please read and agree to the rules first.");
@@ -183,17 +175,11 @@ function EntryForm({ comp, onSubmitted }) {
       <input style={inputStyle} value={entry.title} onChange={(e) => setEntry({ ...entry, title: e.target.value })} />
       <span style={label}>NARRATIVE — WHAT IT MEANS</span>
       <textarea style={{ ...inputStyle, minHeight: 80 }} value={entry.description} onChange={(e) => setEntry({ ...entry, description: e.target.value })} />
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
-        <label style={{ ...btn, padding: "10px 18px", background: "transparent", color: gold, border: `1px dashed ${gold}`, cursor: "pointer" }}>
-          {images.length ? `${images.length} IMAGE(S)` : "UPLOAD IMAGES"}
-          <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => upload(e, "image", true)} />
-        </label>
-        <label style={{ ...btn, padding: "10px 18px", background: "transparent", color: gold, border: `1px dashed ${gold}`, cursor: "pointer" }}>
-          {video ? "VIDEO ADDED" : "UPLOAD VIDEO (OPTIONAL)"}
-          <input type="file" accept="video/*" style={{ display: "none" }} onChange={(e) => upload(e, "video", false)} />
-        </label>
-      </div>
-      <button style={{ ...btn, opacity: (busy || !agreed) ? 0.5 : 1, cursor: (busy || !agreed) ? "not-allowed" : "pointer" }} disabled={busy || !agreed} onClick={submit}>{busy ? "SUBMITTING…" : "SUBMIT ENTRY"}</button>
+      <span style={label}>IMAGES (AT LEAST ONE)</span>
+      <MediaUploader kind="image" multiple hint="UPLOAD IMAGES" value={images} onChange={setImages} />
+      <span style={label}>VIDEO (OPTIONAL)</span>
+      <MediaUploader kind="video" hint="UPLOAD VIDEO" value={video} onChange={setVideo} />
+      <button style={{ ...btn, marginTop: 4, opacity: (busy || !agreed) ? 0.5 : 1, cursor: (busy || !agreed) ? "not-allowed" : "pointer" }} disabled={busy || !agreed} onClick={submit}>{busy ? "SUBMITTING…" : "SUBMIT ENTRY"}</button>
     </div>
   );
 }

@@ -6,11 +6,6 @@ import { useLocale, LANGS } from "../context/Locale";
 import { useAuth } from "../context/Auth";
 import { api } from "../utils/api";
 import { CheckIcon, SearchIcon, MessageIcon } from "./Icons";
-import i1 from "../assets/i1.png";
-import i3 from "../assets/i3.png";
-import i4 from "../assets/i4.png";
-import i5 from "../assets/i5.png";
-import i6 from "../assets/i6.png";
 
 const LINKS = [
   { label: "COLLECTION", to: "/categories" },
@@ -39,174 +34,63 @@ const ALL_LINKS = [
   { label: "HELP DESK", to: "/help" },
 ];
 
-/* ── universal search index ── */
+/* ── page shortcuts for search (artworks, artists & mediums come live from the API) ── */
 const SEARCH_INDEX = [
-  {
-    type: "ARTWORK",
-    title: "Solstice in Obsidian",
-    sub: "Julian Voss",
-    to: "/product/default",
-    img: i4,
-  },
-  {
-    type: "ARTWORK",
-    title: "Echoes of Silence",
-    sub: "Elara Vance",
-    to: "/product/default",
-    img: i1,
-  },
-  {
-    type: "ARTWORK",
-    title: "Fragmented Memory",
-    sub: "Soren Klein",
-    to: "/product/default",
-    img: i6,
-  },
-  {
-    type: "ARTWORK",
-    title: "Architectural Echo",
-    sub: "Elena Vance",
-    to: "/product/default",
-    img: i3,
-  },
-  {
-    type: "ARTWORK",
-    title: "Cosmic Flow",
-    sub: "Hideo Tanaka",
-    to: "/product/default",
-    img: i6,
-  },
-  {
-    type: "ARTWORK",
-    title: "Whispers of Silence",
-    sub: "Lena Bach",
-    to: "/product/default",
-    img: i5,
-  },
-  {
-    type: "ARTWORK",
-    title: "The Golden Tree",
-    sub: "Chen Wei",
-    to: "/product/default",
-    img: i4,
-  },
-  {
-    type: "ARTIST",
-    title: "Elena Vance",
-    sub: "Florence, Italy",
-    to: "/artists/elena-vance",
-  },
-  {
-    type: "ARTIST",
-    title: "Elena Rossi",
-    sub: "Milan, Italy",
-    to: "/artists/elena-rossi",
-  },
-  {
-    type: "ARTIST",
-    title: "Hideo Tanaka",
-    sub: "Kyoto, Japan",
-    to: "/artists/hideo-tanaka",
-  },
-  {
-    type: "ARTIST",
-    title: "Aria Voss",
-    sub: "Berlin, Germany",
-    to: "/artists/aria-voss",
-  },
-  {
-    type: "ARTIST",
-    title: "Chen Wei",
-    sub: "Shanghai, China",
-    to: "/artists/chen-wei",
-  },
-  {
-    type: "ARTIST",
-    title: "Lena Bach",
-    sub: "Zurich, Switzerland",
-    to: "/artists/lena-bach",
-  },
-  {
-    type: "MEDIUM",
-    title: "Paintings",
-    sub: "Oil, Acrylic & Watercolor",
-    to: "/categories/paintings",
-  },
-  {
-    type: "MEDIUM",
-    title: "Sculptures",
-    sub: "Bronze, Marble & Mixed",
-    to: "/categories/sculptures",
-  },
-  {
-    type: "MEDIUM",
-    title: "Photography",
-    sub: "Fine Art & Documentary",
-    to: "/categories/photography",
-  },
-  {
-    type: "MEDIUM",
-    title: "Digital",
-    sub: "NFT & Generative Canvas",
-    to: "/categories/digital",
-  },
-  {
-    type: "PAGE",
-    title: "Become an Artist",
-    sub: "Artist portal",
-    to: "/become-artist",
-  },
+  { type: "PAGE", title: "Collection", sub: "Browse by medium", to: "/categories" },
+  { type: "PAGE", title: "Artists", sub: "Meet our artists", to: "/artists" },
+  { type: "PAGE", title: "Events", sub: "Exhibitions & experiences", to: "/events" },
+  { type: "PAGE", title: "Exhibition", sub: "The online exhibition", to: "/exhibition" },
+  { type: "PAGE", title: "Competition", sub: "Juried art competition", to: "/competition" },
+  { type: "PAGE", title: "Become an Artist", sub: "Artist portal", to: "/become-artist" },
   { type: "PAGE", title: "Cart", sub: "Your acquisitions", to: "/cart" },
   { type: "PAGE", title: "Help Desk", sub: "Concierge support", to: "/help" },
   { type: "PAGE", title: "Privacy Policy", sub: "Legal", to: "/privacy" },
-  {
-    type: "PAGE",
-    title: "Refund Policy",
-    sub: "Buyer protection",
-    to: "/refund",
-  },
+  { type: "PAGE", title: "Refund Policy", sub: "Buyer protection", to: "/refund" },
   { type: "PAGE", title: "Profile", sub: "Collector profile", to: "/profile" },
   { type: "PAGE", title: "About Art Coliseum", sub: "Our story", to: "/about" },
   { type: "PAGE", title: "Contact", sub: "Get in touch", to: "/contact" },
-  {
-    type: "PAGE",
-    title: "Community",
-    sub: "Artists & collectors hub",
-    to: "/community",
-  },
-  {
-    type: "PAGE",
-    title: "Chat Rooms",
-    sub: "Art discussion rooms",
-    to: "/chat",
-  },
-  {
-    type: "PAGE",
-    title: "Estimate Calculator",
-    sub: "Get artwork price estimate",
-    to: "/estimate",
-  },
+  { type: "PAGE", title: "Community", sub: "Artists & collectors hub", to: "/community" },
+  { type: "PAGE", title: "Chat Rooms", sub: "Art discussion rooms", to: "/chat" },
+  { type: "PAGE", title: "Estimate Calculator", sub: "Get artwork price estimate", to: "/estimate" },
 ];
 
 /**
- * Live site search: real artworks + artists from the catalog API, merged with the
- * static page/medium shortcuts. Debounced; falls back to static-only if offline.
+ * Live site search: real artworks, artists and mediums from the catalog API,
+ * merged with the static page shortcuts. Debounced; falls back gracefully if
+ * the API is unreachable. `loading` lets the UI show a searching state.
  */
 function useSiteSearch(q, limit = 8) {
   const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [cats, setCats] = useState([]);
+
+  // Categories (mediums) load once and power the medium shortcuts.
+  useEffect(() => {
+    api.catalog.categories().then((c) => setCats(c || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const term = q.trim();
-    if (!term) { setResults([]); return; }
+    if (!term) { setResults([]); setLoading(false); return; }
     const lc = term.toLowerCase();
 
-    // Static page/medium shortcuts (Cart, Profile, Become an Artist, mediums…).
-    const staticHits = SEARCH_INDEX.filter(
-      (r) => (r.type === "PAGE" || r.type === "MEDIUM") &&
-        `${r.title} ${r.sub}`.toLowerCase().includes(lc),
+    // Real mediums from the catalog (so the links always resolve).
+    const mediumHits = (cats || [])
+      .filter((c) => c.kind === "main" && `${c.label} ${c.id} ${c.description || ""}`.toLowerCase().includes(lc))
+      .slice(0, 4)
+      .map((c) => ({
+        type: "MEDIUM", title: c.label,
+        sub: c.description || "Browse the collection",
+        to: `/categories/${c.id}`, img: c.image_url || null,
+      }));
+
+    // Static page shortcuts (Cart, Profile, Become an Artist, Help…).
+    const pageHits = SEARCH_INDEX.filter(
+      (r) => r.type === "PAGE" && `${r.title} ${r.sub}`.toLowerCase().includes(lc),
     );
 
     let cancelled = false;
+    setLoading(true);
     const t = setTimeout(async () => {
       let live = [];
       try {
@@ -214,7 +98,7 @@ function useSiteSearch(q, limit = 8) {
           api.catalog.artworks({ q: term }),
           api.catalog.artists(),
         ]);
-        const artHits = (arts || []).slice(0, 5).map((a) => ({
+        const artHits = (arts || []).slice(0, 6).map((a) => ({
           type: "ARTWORK",
           title: a.title,
           sub: (a.artist_name || "").toUpperCase(),
@@ -227,28 +111,30 @@ function useSiteSearch(q, limit = 8) {
           .map((ar) => ({
             type: "ARTIST",
             title: ar.name,
-            sub: ar.location || "Art Coliseum Artist",
+            sub: ar.location || ar.art_type || "Art Coliseum Artist",
             to: `/artists/${ar.id}`,
             img: ar.image_url || null,
           }));
         live = [...artHits, ...artistHits];
-      } catch { /* API down → show static shortcuts only */ }
-      if (!cancelled) setResults([...live, ...staticHits].slice(0, limit));
-    }, 220);
+      } catch { /* API down → show medium/page shortcuts only */ }
+      if (!cancelled) { setResults([...live, ...mediumHits, ...pageHits].slice(0, limit)); setLoading(false); }
+    }, 180);
 
     return () => { cancelled = true; clearTimeout(t); };
-  }, [q, limit]);
+  }, [q, limit, cats]);
 
-  return results;
+  return { results, loading };
 }
 
 function NavSearch() {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
   const ref = useRef(null);
+  const inputRef = useRef(null);
 
-  const results = useSiteSearch(q, 8);
+  const { results, loading } = useSiteSearch(q, 8);
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -258,10 +144,22 @@ function NavSearch() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
+  // Keep the highlighted row valid as results change.
+  useEffect(() => { setActive(0); }, [results]);
+
   const go = (r) => {
+    if (!r) return;
     navigate(r.to);
     setQ("");
     setOpen(false);
+    inputRef.current?.blur();
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setOpen(true); setActive((i) => Math.min(i + 1, results.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
+    else if (e.key === "Enter") { e.preventDefault(); go(results[active] || results[0]); }
+    else if (e.key === "Escape") { setOpen(false); }
   };
 
   const grouped = useMemo(() => {
@@ -270,30 +168,23 @@ function NavSearch() {
     return g;
   }, [results]);
 
+  // Walk groups in the same order as `results` so keyboard indices line up.
+  let flatIdx = -1;
+
   return (
-    <div
-      ref={ref}
-      className="nav-search nav-search-sm"
-      onClick={() => setOpen(true)}>
-      <span className="nav-search-icon">
-        <SearchIcon size={12} />
-      </span>
+    <div ref={ref} className="nav-search nav-search-sm" onClick={() => { setOpen(true); inputRef.current?.focus(); }}>
+      <span className="nav-search-icon"><SearchIcon size={12} /></span>
       <input
+        ref={inputRef}
         className="nav-search-input"
-        placeholder="Search…"
+        placeholder="Search art, artists…"
         value={q}
-        onChange={(e) => {
-          setQ(e.target.value);
-          setOpen(true);
-        }}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && results[0]) go(results[0]);
-          if (e.key === "Escape") setOpen(false);
-        }}
+        onKeyDown={onKeyDown}
       />
       <AnimatePresence>
-        {open && q && (
+        {open && q.trim() && (
           <motion.div
             className="nav-search-results"
             initial={{ opacity: 0, y: -6 }}
@@ -301,31 +192,35 @@ function NavSearch() {
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18 }}>
             {results.length === 0 ? (
-              <div className="nav-search-empty">No matches for "{q}"</div>
+              <div className="nav-search-empty">{loading ? "Searching…" : `No matches for "${q.trim()}"`}</div>
             ) : (
-              Object.entries(grouped).map(([type, rows]) => (
-                <div key={type}>
-                  <div className="nav-search-section-title">{type}</div>
-                  {rows.map((r, i) => (
-                    <div
-                      key={`${type}-${i}`}
-                      className="nav-search-row"
-                      onClick={() => go(r)}>
-                      <div className="nav-search-row-thumb">
-                        {r.img ? (
-                          <img src={r.img} alt="" />
-                        ) : (
-                          r.title.slice(0, 1)
-                        )}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div className="nav-search-row-title">{r.title}</div>
-                        <div className="nav-search-row-sub">{r.sub}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))
+              <>
+                {Object.entries(grouped).map(([type, rows]) => (
+                  <div key={type}>
+                    <div className="nav-search-section-title">{type}</div>
+                    {rows.map((r) => {
+                      flatIdx++;
+                      const idx = flatIdx;
+                      return (
+                        <div
+                          key={r.to + r.title}
+                          className={`nav-search-row ${active === idx ? "is-active" : ""}`}
+                          onMouseEnter={() => setActive(idx)}
+                          onClick={() => go(r)}>
+                          <div className="nav-search-row-thumb">
+                            {r.img ? <img src={r.img} alt="" /> : r.title.slice(0, 1)}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="nav-search-row-title">{r.title}</div>
+                            <div className="nav-search-row-sub">{r.sub}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+                <div className="nav-search-hint">↑ ↓ TO NAVIGATE · ↵ TO OPEN</div>
+              </>
             )}
           </motion.div>
         )}
@@ -487,7 +382,7 @@ function LangButton({ compact }) {
 function MobileSearch({ onSelect }) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const results = useSiteSearch(q, 6);
+  const { results } = useSiteSearch(q, 6);
 
   return (
     <div style={{ marginTop: 18, marginBottom: 8 }}>

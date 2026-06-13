@@ -89,13 +89,22 @@ export default function Cart() {
                   key={item.id} layout initial={{ opacity: 1 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.3 }}
                   style={{ padding: 20, marginBottom: 14, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8 }}>
                   <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
-                    <SafeImage src={item.image} alt={item.title}
-                      style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
+                    <Link to={`/product/${item.artwork_id}`} style={{ flexShrink: 0, display: "block" }}>
+                      <SafeImage src={item.image} alt={item.title}
+                        style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 4, cursor: "pointer" }} />
+                    </Link>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)" }}>{(item.artist_name || "").toUpperCase()}</div>
-                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 600, color: "#fff", marginTop: 4 }}>{item.title}</div>
-                      <button onClick={() => remove(item.id)} disabled={busy}
-                        style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginTop: 10, padding: 0 }}>REMOVE</button>
+                      <Link to={`/product/${item.artwork_id}`} style={{ textDecoration: "none" }}>
+                        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 600, color: "#fff", marginTop: 4, cursor: "pointer" }}>{item.title}</div>
+                      </Link>
+                      <ItemSelection item={item} />
+                      <div style={{ display: "flex", gap: 14, marginTop: 10 }}>
+                        <Link to={`/product/${item.artwork_id}`}
+                          style={{ textDecoration: "none", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "rgba(200,191,160,0.7)" }}>VIEW / EDIT</Link>
+                        <button onClick={() => remove(item.id)} disabled={busy}
+                          style={{ background: "transparent", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", padding: 0 }}>REMOVE</button>
+                      </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#D4AF37" }}>
@@ -175,6 +184,42 @@ export default function Cart() {
 
       <style>{`@media (max-width: 900px){.cart-grid{grid-template-columns:1fr!important}}`}</style>
     </section>
+  );
+}
+
+// Shows what the buyer configured for this line: a predefined size, or the
+// custom dimensions + options chosen for a made-to-order work.
+function ItemSelection({ item }) {
+  const chips = [];
+  if (item.size_label) chips.push(["Size", item.size_label]);
+  if (item.custom_width && item.custom_height) {
+    const u = item.custom_unit || "cm";
+    const dims = [item.custom_width, item.custom_height, item.custom_depth].filter(Boolean).join(" × ");
+    chips.push(["Dimensions", `${dims} ${u}`]);
+  }
+  const opts = item.options || {};
+  for (const [k, v] of Object.entries(opts)) {
+    if (v && v !== "No frame" && v !== "As created") chips.push([k[0].toUpperCase() + k.slice(1), v]);
+  }
+  if (chips.length === 0) {
+    return (
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)", marginTop: 6 }}>
+        {item.customizable ? "Made to order" : "Standard size"}
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+      {chips.map(([k, v]) => (
+        <span key={k + v} style={{
+          fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(220,210,190,0.85)",
+          background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.22)",
+          borderRadius: 999, padding: "3px 10px",
+        }}>
+          <span style={{ color: "rgba(200,191,160,0.55)" }}>{k}:</span> {v}
+        </span>
+      ))}
+    </div>
   );
 }
 
