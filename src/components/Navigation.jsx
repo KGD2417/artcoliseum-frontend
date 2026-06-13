@@ -14,10 +14,11 @@ import i6 from "../assets/i6.png";
 
 const LINKS = [
   { label: "COLLECTION", to: "/categories" },
-  { label: "COMMUNITY", to: "/community" },
   { label: "EVENTS", to: "/events" },
   { label: "EXHIBITION", to: "/exhibition" },
   { label: "ARTISTS", to: "/artists" },
+  { label: "COMPETITION", to: "/competition" },
+  { label: "COMMUNITY", to: "/community" },
 ];
 
 const SETU_LINKS = [

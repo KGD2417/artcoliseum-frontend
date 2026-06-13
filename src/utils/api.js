@@ -296,6 +296,12 @@ export const api = {
     status() {
       return request("GET", "/artists/me/status");
     },
+    profile() {
+      return request("GET", "/artists/me/profile");
+    },
+    updateProfile(body) {
+      return request("PATCH", "/artists/me/profile", { body });
+    },
     createArtwork(body) {
       return request("POST", "/artworks", { body });
     },
@@ -483,6 +489,9 @@ export const api = {
     verifyArtist(userId) {
       return request("POST", `/admin/artists/${userId}/verify`);
     },
+    rejectArtist(userId) {
+      return request("POST", `/admin/artists/${userId}/reject`);
+    },
     setRole(userId, role) {
       return request("PATCH", `/admin/profiles/${userId}/role`, {
         body: { role },
@@ -491,6 +500,61 @@ export const api = {
     // Create an artwork on behalf of a specific artist (admin only).
     createArtwork(body) {
       return request("POST", "/artworks", { body });
+    },
+    // Artwork approval queue.
+    pendingArtworks() {
+      return request("GET", "/artworks/pending");
+    },
+    approveArtwork(id) {
+      return request("PATCH", `/artworks/${encodeURIComponent(id)}`, {
+        body: { status: "active" },
+      });
+    },
+    rejectArtwork(id, reason) {
+      return request("PATCH", `/artworks/${encodeURIComponent(id)}`, {
+        body: { status: "rejected", rejection_reason: reason || "" },
+      });
+    },
+  },
+
+  exhibitions: {
+    // Public: the single running exhibition (or null), with live artworks when live.
+    current() {
+      return request("GET", "/exhibitions/current", { auth: false });
+    },
+    // Artist: artwork ids I've submitted to the current exhibition.
+    mine() {
+      return request("GET", "/exhibitions/current/mine");
+    },
+    submit(artworkIds) {
+      return request("POST", "/exhibitions/current/submit", {
+        body: { artwork_ids: artworkIds },
+      });
+    },
+    withdraw(artworkId) {
+      return request("DELETE", `/exhibitions/current/submit/${encodeURIComponent(artworkId)}`);
+    },
+    // Admin.
+    list() {
+      return request("GET", "/exhibitions");
+    },
+    create(body) {
+      return request("POST", "/exhibitions", { body });
+    },
+    update(id, body) {
+      return request("PATCH", `/exhibitions/${id}`, { body });
+    },
+    open(id) {
+      return request("POST", `/exhibitions/${id}/open`);
+    },
+    goLive(id) {
+      return request("POST", `/exhibitions/${id}/go-live`);
+    },
+    end(id) {
+      return request("POST", `/exhibitions/${id}/end`);
+    },
+    submissions(id) {
+      return request("GET", `/exhibitions/${id}/submissions`);
     },
   },
 

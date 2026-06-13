@@ -103,7 +103,11 @@
       "mcp__code-review-graph__query_graph_tool",
       "Bash(python3.11 -c ' *)",
       "Bash(DATABASE_URL=postgresql://x:x@localhost/x JWT_SECRET=test python3.11 -c ' *)",
-      "Bash(python3.11 -m py_compile app/routers/categories.py app/models/catalog.py app/schemas/catalog.py app/schemas/extra.py app/main.py)"
+      "Bash(python3.11 -m py_compile app/routers/categories.py app/models/catalog.py app/schemas/catalog.py app/schemas/extra.py app/main.py)",
+      "Bash(python3.11 -m py_compile app/models/exhibition.py app/models/catalog.py app/models/__init__.py app/schemas/exhibition.py app/schemas/catalog.py app/routers/exhibitions.py app/routers/artworks.py app/routers/artists.py app/routers/admin.py app/main.py)",
+      "Bash(python3.11 -m py_compile app/main.py app/routers/exhibitions.py app/routers/artworks.py app/routers/artists.py app/routers/admin.py app/models/exhibition.py app/models/catalog.py app/schemas/exhibition.py app/schemas/catalog.py app/schemas/extra.py)",
+      "Bash(npx eslint *)",
+      "Bash(python3.11 -m py_compile app/main.py app/routers/*.py app/models/*.py app/schemas/*.py)"
     ]
   },
   "hooks": {

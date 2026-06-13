@@ -8,8 +8,9 @@ import { email as emailRule, minLen, intRange } from "../utils/validation";
 const gold = "#D4AF37";
 const TABS = [
   ["overview", "Overview"], ["tally", "Price & Tally"], ["enquiries", "Enquiries"], ["orders", "Orders"],
-  ["artworks", "Artworks"], ["categories", "Categories"], ["communities", "Communities"], ["events", "Events"],
-  ["artists", "Artists & Competition"], ["contact", "Contact"], ["support", "Support"], ["messages", "Messages"],
+  ["artworks", "Artworks"], ["categories", "Categories"], ["exhibitions", "Exhibitions"], ["events", "Events"],
+  ["artists", "Artists"], ["competition", "Competition"], ["communities", "Communities"],
+  ["contact", "Contact"], ["support", "Support"], ["messages", "Messages"],
 ];
 
 const STAGES = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
       <div className="admin-grid" style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 20 }}>
         <aside style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, background: "rgba(255,255,255,0.02)", padding: 12, height: "fit-content" }}>
           {TABS.map(([id, lbl]) => {
-            const badge = { orders: stats.pending_orders, support: stats.open_tickets, contact: stats.contact_messages, artists: stats.pending_artists }[id] || 0;
+            const badge = { orders: stats.pending_orders, support: stats.open_tickets, contact: stats.contact_messages, artists: (stats.pending_artists || 0) + (stats.pending_artworks || 0) }[id] || 0;
             return (
               <button key={id} onClick={() => setTab(id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "10px 14px", marginBottom: 4, border: "none", background: tab === id ? "rgba(212,175,55,0.10)" : "transparent", color: tab === id ? gold : "rgba(200,191,160,0.7)", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.12em", borderRadius: 8, cursor: "pointer" }}>
                 <span>{lbl.toUpperCase()}</span>
@@ -71,9 +72,11 @@ export default function AdminDashboard() {
           {tab === "orders" && <Orders />}
           {tab === "artworks" && <Artworks />}
           {tab === "categories" && <Categories />}
+          {tab === "exhibitions" && <Exhibitions />}
           {tab === "communities" && <CommunityAdmin />}
           {tab === "events" && <Events />}
           {tab === "artists" && <Artists />}
+          {tab === "competition" && <Competition />}
           {tab === "contact" && <ContactList />}
           {tab === "support" && <Support />}
           {tab === "messages" && <Panel title="Messages"><Link to="/admin/inbox" className="btn-gold-main" style={{ textDecoration: "none", padding: "12px 24px", fontSize: 12 }}>OPEN INBOX →</Link></Panel>}
@@ -563,12 +566,89 @@ function Events() {
 
 function Artists() {
   const [kyc, setKyc] = useState([]);
-  const [comps, setComps] = useState([]);
-  const [entries, setEntries] = useState({});
   const [tick, setTick] = useState(0);
-  const load = () => { api.admin.artists().then(setKyc).catch(() => {}); api.competitions.list().then(setComps).catch(() => {}); };
+  const load = () => { api.admin.artists().then(setKyc).catch(() => {}); };
   useEffect(() => { load(); }, []);
   const verify = async (uid) => { await api.admin.verifyArtist(uid); load(); };
+  const reject = async (uid) => {
+    if (!window.confirm("Decline this artist application? They go back to a normal user.")) return;
+    await api.admin.rejectArtist(uid); load();
+  };
+
+  // Applicants awaiting a decision float to the top.
+  const pending = kyc.filter((a) => a.status === "pending" || a.status === "unverified");
+  const decided = kyc.filter((a) => a.status === "verified" || a.status === "rejected");
+
+  const statusColor = (s) => s === "verified" ? "#4ade80" : s === "rejected" ? "#f87171" : gold;
+
+  return (
+    <Panel title="Artists">
+      <AddArtist onCreated={() => { load(); setTick((t) => t + 1); }} />
+      <AddArtworkForArtist tick={tick} />
+
+      <ArtworkApprovalQueue />
+
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>
+        ARTIST APPLICATIONS {pending.length > 0 && <span style={{ color: "#fbbf24" }}>· {pending.length} AWAITING REVIEW</span>}
+      </div>
+      {kyc.length === 0 && <Empty>No applications.</Empty>}
+      {[...pending, ...decided].map((a) => (
+        <Item key={a.user_id}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.name} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {a.art_type} · {a.location}</span></div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
+              {a.email} · <span style={{ color: statusColor(a.status), fontWeight: 600 }}>{a.status.toUpperCase()}</span>
+            </div>
+          </div>
+          {a.status !== "verified" && <Btn onClick={() => verify(a.user_id)} primary>APPROVE</Btn>}
+          {a.status !== "rejected" && a.status !== "verified" && <Btn onClick={() => reject(a.user_id)} ghost>DECLINE</Btn>}
+        </Item>
+      ))}
+    </Panel>
+  );
+}
+
+// Approve / reject newly-submitted artworks before they go public.
+function ArtworkApprovalQueue() {
+  const [rows, setRows] = useState([]);
+  const [busy, setBusy] = useState("");
+  const load = () => api.admin.pendingArtworks().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const approve = async (id) => { setBusy(id); try { await api.admin.approveArtwork(id); await load(); } finally { setBusy(""); } };
+  const reject = async (id) => {
+    const reason = window.prompt("Reason for rejection (shown to the artist) — optional:", "");
+    if (reason === null) return;
+    setBusy(id); try { await api.admin.rejectArtwork(id, reason); await load(); } finally { setBusy(""); }
+  };
+  return (
+    <div style={{ border: "1px solid rgba(251,191,36,0.3)", borderRadius: 10, padding: 16, marginBottom: 18, background: "rgba(251,191,36,0.04)" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "#fbbf24", marginBottom: 12 }}>
+        ARTWORK APPROVAL QUEUE {rows.length > 0 && `· ${rows.length} PENDING`}
+      </div>
+      {rows.length === 0 ? (
+        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)" }}>Nothing waiting — all caught up.</div>
+      ) : rows.map((a) => (
+        <Item key={a.id}>
+          <img src={a.images?.[0]} alt="" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 6, background: "rgba(212,175,55,0.1)" }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.title}</div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
+              {a.artist_name || "—"} · {a.category_id || "—"}{a.subtype_id ? ` / ${a.subtype_id}` : ""} · {a.customizable ? "customizable" : inr(a.price)}
+            </div>
+          </div>
+          <Btn onClick={() => approve(a.id)} primary disabled={busy === a.id}>{busy === a.id ? "…" : "APPROVE"}</Btn>
+          <Btn onClick={() => reject(a.id)} ghost disabled={busy === a.id}>REJECT</Btn>
+        </Item>
+      ))}
+    </div>
+  );
+}
+
+function Competition() {
+  const [comps, setComps] = useState([]);
+  const [entries, setEntries] = useState({});
+  const load = () => { api.competitions.list().then(setComps).catch(() => {}); };
+  useEffect(() => { load(); }, []);
   const loadEntries = async (cid) => { const es = await api.competitions.entries(cid); setEntries((p) => ({ ...p, [cid]: es })); };
   const goLive = async (cid) => { await api.competitions.goLive(cid); load(); };
   const closeComp = async (cid) => {
@@ -576,25 +656,15 @@ function Artists() {
     await api.competitions.close(cid); load(); loadEntries(cid);
   };
   return (
-    <Panel title="Artists & Competition">
-      <AddArtist onCreated={() => { load(); setTick((t) => t + 1); }} />
+    <Panel title="Competition">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", lineHeight: 1.6, marginBottom: 16 }}>
+        Competitions are an optional, juried event — separate from artist onboarding. Add jury logins, create a
+        competition, take it live on the day, then close it to crown a winner.
+      </div>
       <AddJury />
-      <AddArtworkForArtist tick={tick} />
-
-      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>ARTIST APPLICATIONS (KYC)</div>
-      {kyc.length === 0 && <Empty>No applications.</Empty>}
-      {kyc.map((a) => (
-        <Item key={a.user_id}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.name} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {a.art_type} · {a.location}</span></div>
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{a.email} · {a.status}</div>
-          </div>
-          {a.status !== "verified" && <Btn onClick={() => verify(a.user_id)} primary>VERIFY</Btn>}
-        </Item>
-      ))}
-
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>COMPETITIONS</div>
       <CreateCompetition onCreated={load} />
+      {comps.length === 0 && <Empty>No competitions yet.</Empty>}
       {comps.map((c) => (
         <div key={c.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.14)", borderRadius: 10, marginBottom: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -624,6 +694,110 @@ function Artists() {
               </div>
             </Item>
           ))}
+        </div>
+      ))}
+    </Panel>
+  );
+}
+
+// ═══════════════ EXHIBITIONS ═══════════════════════════════════════
+function Exhibitions() {
+  const [rows, setRows] = useState([]);
+  const [subs, setSubs] = useState({});
+  const [busy, setBusy] = useState("");
+  const blank = { title: "", theme: "", description: "", hero_image_url: "", registration_starts_at: "", registration_ends_at: "" };
+  const [f, setF] = useState(blank);
+  const load = () => api.exhibitions.list().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+
+  const running = rows.find((e) => e.status !== "ended");
+  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+
+  const create = async () => {
+    if (!f.title.trim()) { alert("Exhibition title is required"); return; }
+    setBusy("create");
+    try {
+      await api.exhibitions.create({
+        title: f.title.trim(), theme: f.theme || null, description: f.description || null,
+        hero_image_url: f.hero_image_url || null,
+        registration_starts_at: f.registration_starts_at || null,
+        registration_ends_at: f.registration_ends_at || null,
+      });
+      setF(blank); await load();
+    } catch (e) { alert(e.message); } finally { setBusy(""); }
+  };
+  const act = async (id, fn) => { setBusy(id); try { await fn(id); await load(); } catch (e) { alert(e.message); } finally { setBusy(""); } };
+  const viewSubs = async (id) => { const s = await api.exhibitions.submissions(id); setSubs((p) => ({ ...p, [id]: s })); };
+
+  const phaseColor = (s) => ({ live: "#4ade80", registration: "#fbbf24", upcoming: gold, ended: "rgba(200,191,160,0.5)" }[s] || gold);
+
+  return (
+    <Panel title="Exhibitions">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", lineHeight: 1.6, marginBottom: 16 }}>
+        Run one online exhibition at a time. Open registration so approved artists can submit their approved works,
+        then take it live as a curated online gallery. End it to start another.
+      </div>
+
+      {/* Create */}
+      <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: 16, marginBottom: 18, background: "rgba(212,175,55,0.03)", opacity: running ? 0.5 : 1, pointerEvents: running ? "none" : "auto" }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 12 }}>
+          NEW EXHIBITION {running && "· (end the current one first)"}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <input placeholder="Title" value={f.title} onChange={set("title")} style={miniInput} />
+          <input placeholder="Theme (e.g. Light & Shadow)" value={f.theme} onChange={set("theme")} style={miniInput} />
+          <textarea placeholder="Description" value={f.description} onChange={set("description")} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 54, resize: "vertical" }} />
+          <div style={{ gridColumn: "1 / -1" }}>
+            <ImageField label="Hero image" value={f.hero_image_url} onChange={(url) => setF((v) => ({ ...v, hero_image_url: url }))} />
+          </div>
+          <div>
+            <L>Registration opens</L>
+            <input type="datetime-local" value={f.registration_starts_at} onChange={set("registration_starts_at")} style={{ ...miniInput, width: "100%", boxSizing: "border-box", colorScheme: "dark" }} />
+          </div>
+          <div>
+            <L>Registration closes (then it goes live)</L>
+            <input type="datetime-local" value={f.registration_ends_at} onChange={set("registration_ends_at")} style={{ ...miniInput, width: "100%", boxSizing: "border-box", colorScheme: "dark" }} />
+          </div>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Btn onClick={create} primary disabled={busy === "create" || !!running}>{busy === "create" ? "CREATING…" : "+ CREATE EXHIBITION"}</Btn>
+        </div>
+      </div>
+
+      {/* List */}
+      {rows.length === 0 && <Empty>No exhibitions yet.</Empty>}
+      {rows.map((e) => (
+        <div key={e.id} style={{ padding: 16, border: "1px solid rgba(212,175,55,0.16)", borderRadius: 10, marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            {e.hero_image_url && <img src={e.hero_image_url} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8 }} />}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>
+                {e.title} <span style={{ fontSize: 11, color: phaseColor(e.status) }}>· {e.status.toUpperCase()}</span>
+              </div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", marginTop: 2 }}>
+                {e.theme ? `${e.theme} · ` : ""}{e.submission_count} submission{e.submission_count === 1 ? "" : "s"}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+            {e.status === "draft" && <Btn onClick={() => act(e.id, api.exhibitions.open)} primary disabled={busy === e.id}>OPEN REGISTRATION</Btn>}
+            {(e.status === "registration" || e.status === "upcoming") && <Btn onClick={() => act(e.id, api.exhibitions.goLive)} primary disabled={busy === e.id}>GO LIVE NOW</Btn>}
+            {e.status !== "ended" && <Btn onClick={() => { if (window.confirm("End this exhibition?")) act(e.id, api.exhibitions.end); }} ghost disabled={busy === e.id}>END</Btn>}
+            <Btn onClick={() => viewSubs(e.id)}>VIEW SUBMISSIONS</Btn>
+          </div>
+          {(subs[e.id] || []).length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              {subs[e.id].map((s) => (
+                <Item key={s.id}>
+                  <img src={s.image} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4, background: "rgba(212,175,55,0.1)" }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 14, color: "#fff" }}>{s.title} <span style={{ fontSize: 10, color: "rgba(200,191,160,0.5)" }}>· {s.artist_name || "Artist"}</span></div>
+                  </div>
+                  <span style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: s.status === "active" ? "#4ade80" : "#fbbf24" }}>{(s.status || "").toUpperCase()}</span>
+                </Item>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </Panel>

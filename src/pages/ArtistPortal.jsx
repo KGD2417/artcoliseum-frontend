@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { intRange, minLen } from "../utils/validation";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/Auth";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
@@ -11,6 +11,7 @@ const card = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212
 const label = { fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "rgba(212,175,55,0.7)", marginBottom: 6, display: "block" };
 const inputStyle = { width: "100%", boxSizing: "border-box", padding: "12px 15px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 8, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 16, outline: "none", marginBottom: 14 };
 const btn = { padding: "15px 28px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: "0.18em", fontWeight: 700, cursor: "pointer" };
+const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 
 function Field({ l, children }) {
   return <div><span style={label}>{l}</span>{children}</div>;
@@ -46,13 +47,11 @@ export default function ArtistPortal() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState(null); // { artist_status, role }
-  const [competitions, setCompetitions] = useState([]);
 
   useEffect(() => {
     if (loading) return;
     if (!user) { navigate("/signin"); return; }
     api.artist.status().then(setStatus).catch(() => setStatus({ artist_status: "none", role: "user" }));
-    api.competitions.list().then(setCompetitions).catch(() => setCompetitions([]));
   }, [user, loading]);
 
   if (loading || !status) return (
@@ -65,50 +64,51 @@ export default function ArtistPortal() {
   );
 
   const st = status.artist_status;
+  const isVerified = st === "verified";
+  const isWaiting = st === "pending" || st === "unverified";
+  const isRejected = st === "rejected";
+
+  if (isVerified) return <StudioDashboard />;
+
   return (
     <section style={{ padding: "110px 24px 80px", maxWidth: 880, margin: "0 auto" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: gold }}>ARTIST DASHBOARD</div>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: gold }}>ARTIST STUDIO</div>
         <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 44, fontWeight: 700, color: "#fff", marginTop: 6 }}>
-          {st === "verified" ? "Your Studio" : st === "unverified" ? "Earn Your Place" : "Become an Artist"}
+          {isWaiting ? "Application Received" : isRejected ? "Application Update" : "Become an Artist"}
         </h1>
       </motion.div>
 
-      <Stepper status={st} />
+      <ApplyStepper status={st} />
 
       <div style={{ marginTop: 26 }}>
-        {st === "none" && <KycForm onApplied={(s) => setStatus(s)} />}
-        {st === "unverified" && (
+        {(st === "none" || isRejected) && (
           <>
-            <CompetitionPanel competitions={competitions} />
-            <LockedNote>Win a competition (or get verified by our team) to unlock artwork submission and your studio.</LockedNote>
+            {isRejected && (
+              <div style={{ marginBottom: 16, padding: "14px 18px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.3)", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#fca5a5" }}>
+                Your previous application wasn't approved. You're welcome to refine your details and apply again.
+              </div>
+            )}
+            <KycForm onApplied={(s) => setStatus(s)} />
           </>
         )}
-        {st === "verified" && (
-          <>
-            <SectionHead>Submit New Artwork</SectionHead>
-            <ArtworkForm />
-            <SectionHead>My Artworks</SectionHead>
-            <MyArtworks />
-          </>
-        )}
+        {isWaiting && <AwaitingApproval />}
       </div>
     </section>
   );
 }
 
-const STEPS = [
+const APPLY_STEPS = [
   { key: "apply", label: "Apply", sub: "Tell us about your practice" },
-  { key: "compete", label: "Compete", sub: "Enter a curated competition" },
-  { key: "studio", label: "Studio", sub: "Publish & manage your work" },
+  { key: "review", label: "Under Review", sub: "Our team approves your studio" },
+  { key: "studio", label: "Your Studio", sub: "Publish & sell your work" },
 ];
 
-function Stepper({ status }) {
-  // none → step 0 active; unverified → step 1 active; verified → step 2 active (all unlocked)
-  const activeIdx = status === "verified" ? 2 : status === "unverified" ? 1 : 0;
+function ApplyStepper({ status }) {
+  const activeIdx = status === "verified" ? 2 : (status === "pending" || status === "unverified") ? 1 : 0;
   return (
     <div style={{ display: "flex", gap: 12 }}>
-      {STEPS.map((s, i) => {
+      {APPLY_STEPS.map((s, i) => {
         const state = i < activeIdx ? "done" : i === activeIdx ? "active" : "locked";
         const color = state === "done" ? "#4ade80" : state === "active" ? gold : "rgba(200,191,160,0.35)";
         return (
@@ -119,7 +119,7 @@ function Stepper({ status }) {
               <div style={{ width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
                 background: state === "locked" ? "rgba(212,175,55,0.12)" : color, color: state === "locked" ? "rgba(200,191,160,0.5)" : "#111",
                 fontSize: 11, fontWeight: 700 }}>
-                {state === "done" ? "✓" : state === "locked" ? "🔒" : i + 1}
+                {state === "done" ? "✓" : i + 1}
               </div>
               <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.12em", color }}>{s.label.toUpperCase()}</div>
             </div>
@@ -131,14 +131,15 @@ function Stepper({ status }) {
   );
 }
 
-function SectionHead({ children }) {
-  return <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold, margin: "32px 0 14px" }}>{children}</div>;
-}
-function LockedNote({ children }) {
+function AwaitingApproval() {
   return (
-    <div style={{ marginTop: 16, padding: "14px 18px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(212,175,55,0.3)",
-      fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", display: "flex", alignItems: "center", gap: 10 }}>
-      <span>🔒</span>{children}
+    <div style={{ ...card, textAlign: "center", padding: "48px 32px" }}>
+      <div style={{ fontSize: 40, marginBottom: 10 }}>⏳</div>
+      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#fff", marginBottom: 10 }}>Thanks — your application is in review</div>
+      <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto" }}>
+        An Art Coliseum curator will review your details shortly. Once you're approved, your studio unlocks here and
+        you can start uploading work for sale. We'll keep this page updated — check back soon.
+      </p>
     </div>
   );
 }
@@ -172,8 +173,8 @@ function KycForm({ onApplied }) {
   return (
     <div style={card}>
       <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, marginBottom: 20 }}>
-        Tell us about yourself. Once you apply you become an <strong style={{ color: gold }}>unverified artist</strong> and may enter our monthly
-        competition. Win it — judged by an external jury — to unlock your seller profile.
+        Tell us about yourself and your practice. Once you apply, an Art Coliseum curator reviews your details.
+        After you're <strong style={{ color: gold }}>approved</strong>, your studio unlocks and you can publish work for sale.
       </p>
       <Field l="FULL NAME"><input style={inputStyle} value={f.name} onChange={set("name")} /></Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
@@ -196,129 +197,84 @@ function KycForm({ onApplied }) {
   );
 }
 
-function CompetitionPanel({ competitions }) {
-  const comp = competitions.find((c) => ["open", "live", "judging"].includes(c.status)) || competitions[0];
-  const [entry, setEntry] = useState({ title: "", description: "" });
-  const [images, setImages] = useState([]);
-  const [video, setVideo] = useState(null);
-  const [mine, setMine] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [agreed, setAgreed] = useState(false);
+/* ═══════════════ STUDIO DASHBOARD (approved artists) ═══════════════ */
+const STUDIO_TABS = [
+  ["overview", "Overview"], ["upload", "Upload Artwork"], ["works", "My Artworks"],
+  ["exhibition", "Exhibition"], ["profile", "Profile"],
+];
 
-  useEffect(() => { api.competitions.myEntries().then(setMine).catch(() => setMine([])); }, []);
-
-  const submit = async () => {
-    if (!comp || comp.status !== "open") return alert("This competition is not accepting entries right now.");
-    if (!agreed) return alert("Please read and agree to the rules & regulations first.");
-    if (!entry.title.trim()) return alert("Give your artwork a title.");
-    if (!entry.description.trim()) return alert("Add a short narrative describing your artwork.");
-    if (images.length === 0) return alert("Upload at least one image of your artwork.");
-    setBusy(true);
-    try {
-      await api.competitions.submitEntry(comp.id, { ...entry, image_urls: images, video_url: video });
-      const m = await api.competitions.myEntries();
-      setMine(m);
-      setEntry({ title: "", description: "" }); setImages([]); setVideo(null);
-      alert("Entry submitted! It will appear in the live gallery on the competition day.");
-    } catch (e) { alert(e.message); } finally { setBusy(false); }
-  };
+function StudioDashboard() {
+  const [tab, setTab] = useState("overview");
+  const [works, setWorks] = useState([]);
+  const loadWorks = () => api.artist.myArtworks().then(setWorks).catch(() => setWorks([]));
+  useEffect(() => { loadWorks(); }, []);
 
   return (
-    <>
-      <div style={card}>
-        {comp ? (
-          <>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: "#fff" }}>{comp.title}</div>
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, margin: "8px 0 14px" }}>{comp.description}</div>
-            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 18 }}>
-              {comp.event_date && (
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: gold }}>
-                  DAY · {new Date(comp.event_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                </span>
-              )}
-              {comp.min_artists > 0 && (
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: (comp.entry_count || 0) >= comp.min_artists ? "#4ade80" : "rgba(200,191,160,0.6)" }}>
-                  ARTISTS · {comp.entry_count || 0} / {comp.min_artists}
-                </span>
-              )}
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: gold }}>{comp.status.toUpperCase()}</span>
-            </div>
-            {comp.status === "open" ? (
-              <>
-                <CompetitionRules />
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "4px 0 18px", cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0", lineHeight: 1.5 }}>
-                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ accentColor: gold, marginTop: 3 }} />
-                  I have read and agree to the competition rules &amp; regulations above.
-                </label>
-                <Field l="ARTWORK TITLE"><input style={inputStyle} value={entry.title} onChange={(e) => setEntry({ ...entry, title: e.target.value })} /></Field>
-                <Field l="NARRATIVE — WHAT IT MEANS"><textarea style={{ ...inputStyle, minHeight: 80 }} value={entry.description} onChange={(e) => setEntry({ ...entry, description: e.target.value })} /></Field>
-                <Field l="IMAGES (AT LEAST ONE)"><Uploader kind="image" multiple hint="UPLOAD IMAGES" onDone={setImages} /></Field>
-                <Field l="VIDEO (OPTIONAL)"><Uploader kind="video" hint="UPLOAD VIDEO" onDone={(u) => setVideo(u[0])} /></Field>
-                <button style={{ ...btn, opacity: (busy || !agreed) ? 0.5 : 1, cursor: (busy || !agreed) ? "not-allowed" : "pointer" }} disabled={busy || !agreed} onClick={submit}>{busy ? "SUBMITTING…" : "SUBMIT ENTRY"}</button>
-              </>
-            ) : (
-              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.7)", padding: "12px 16px", borderRadius: 10, background: "rgba(212,175,55,0.06)", border: "1px dashed rgba(212,175,55,0.3)" }}>
-                {comp.status === "live" || comp.status === "judging"
-                  ? "🎉 The competition is live — open the gallery from the top bar to see all entries being judged."
-                  : "Entries are closed for this competition."}
-              </div>
-            )}
-          </>
-        ) : (
-          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.6)" }}>No competition is open right now. Check back soon.</div>
-        )}
+    <section style={{ padding: "110px 24px 80px", maxWidth: 1100, margin: "0 auto" }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ marginBottom: 22 }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", color: gold }}>ARTIST STUDIO</div>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 44, fontWeight: 700, color: "#fff", marginTop: 6 }}>Your Studio</h1>
+      </motion.div>
+
+      {/* Tab pills */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 26 }}>
+        {STUDIO_TABS.map(([id, lbl]) => (
+          <button key={id} onClick={() => setTab(id)} style={{
+            padding: "10px 18px", borderRadius: 999, cursor: "pointer",
+            fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em",
+            background: tab === id ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "transparent",
+            color: tab === id ? "#111" : "rgba(200,191,160,0.7)",
+            border: tab === id ? "none" : "1px solid rgba(212,175,55,0.25)",
+          }}>{lbl.toUpperCase()}</button>
+        ))}
       </div>
-      {mine.length > 0 && (
-        <div style={card}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: gold, marginBottom: 14 }}>YOUR ENTRIES</div>
-          {mine.map((m) => (
-            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(212,175,55,0.1)" }}>
-              <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#f0e8d8" }}>{m.title}</span>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: m.status === "winner" ? "#4ade80" : gold }}>{m.status.toUpperCase()}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
+
+      {tab === "overview" && <Overview works={works} onGo={setTab} />}
+      {tab === "upload" && <ArtworkForm onPublished={() => { loadWorks(); }} />}
+      {tab === "works" && <MyArtworks rows={works} reload={loadWorks} />}
+      {tab === "exhibition" && <ArtistExhibitionPanel works={works} />}
+      {tab === "profile" && <ProfilePanel />}
+    </section>
   );
 }
 
-const COMPETITION_RULES = [
-  ["Eligibility", "Open only to unverified (competing) artists. Verified sellers and Art Coliseum staff may not enter."],
-  ["Original work", "Each entry must be your own original, unpublished artwork. Plagiarised or AI-generated-only work is disqualified."],
-  ["One entry", "One entry per artist per competition. The most recent submission stands."],
-  ["Submission", "Provide a title, a short narrative and at least one clear, high-resolution image (video optional)."],
-  ["Judging", "An external jury rates each entry 1–5 on the competition day. The highest average score wins."],
-  ["Prize", "The winner is promoted to a verified Art Coliseum artist and may list and sell their work."],
-  ["Conduct", "Entries must be appropriate for public display. The jury's decision is final."],
-];
-
-function CompetitionRules() {
-  const [open, setOpen] = useState(true);
+function Overview({ works, onGo }) {
+  const count = (s) => works.filter((w) => w.status === s).length;
+  const cards = [
+    ["Total works", works.length, "rgba(240,232,216,1)"],
+    ["Awaiting approval", count("pending"), "#fbbf24"],
+    ["Live / approved", count("active"), "#4ade80"],
+    ["Sold", count("sold"), gold],
+  ];
+  const rejected = count("rejected");
   return (
-    <div style={{ border: "1px solid rgba(212,175,55,0.22)", borderRadius: 12, padding: "16px 18px", marginBottom: 16, background: "rgba(212,175,55,0.04)" }}>
-      <button onClick={() => setOpen((v) => !v)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
-        <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: gold }}>RULES &amp; REGULATIONS</span>
-        <span style={{ color: gold, fontSize: 18 }}>{open ? "−" : "+"}</span>
-      </button>
-      {open && (
-        <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-          {COMPETITION_RULES.map(([h, body]) => (
-            <div key={h} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: gold, marginTop: 7, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.12em", color: "#e8e0d0" }}>{h.toUpperCase()}</div>
-                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.72)", lineHeight: 1.6, marginTop: 2 }}>{body}</div>
-              </div>
-            </div>
-          ))}
+    <div style={card}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 14, marginBottom: 20 }}>
+        {cards.map(([l, v, c]) => (
+          <div key={l} style={{ padding: 18, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, fontWeight: 700, color: c }}>{v}</div>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(200,191,160,0.7)", marginTop: 4 }}>{l.toUpperCase()}</div>
+          </div>
+        ))}
+      </div>
+      {rejected > 0 && (
+        <div style={{ marginBottom: 16, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#fca5a5" }}>
+          {rejected} work{rejected === 1 ? "" : "s"} need attention — see <button onClick={() => onGo("works")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", textDecoration: "underline", padding: 0, fontFamily: "inherit", fontSize: "inherit" }}>My Artworks</button>.
         </div>
       )}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <button style={{ ...btn, padding: "12px 22px" }} onClick={() => onGo("upload")}>+ UPLOAD ARTWORK</button>
+        <button style={{ ...btn, padding: "12px 22px", background: "transparent", color: gold, border: `1px solid ${gold}` }} onClick={() => onGo("exhibition")}>EXHIBITION</button>
+      </div>
+      <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.55)", lineHeight: 1.7, marginTop: 18 }}>
+        Every artwork you upload is reviewed by our team before it appears in the public gallery. You'll see its status
+        update here — <span style={{ color: "#fbbf24" }}>Pending</span> → <span style={{ color: "#4ade80" }}>Approved</span>.
+      </p>
     </div>
   );
 }
 
-function ArtworkForm() {
+function ArtworkForm({ onPublished }) {
   const [cats, setCats] = useState([]);
   const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, ratio_locked: false, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
   const [images, setImages] = useState([]);
@@ -327,6 +283,7 @@ function ArtworkForm() {
   const [predefined, setPredefined] = useState([]);
   const [newStyle, setNewStyle] = useState("");
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
   const loadCats = () => api.catalog.categories().then(setCats).catch(() => setCats([]));
   useEffect(() => { loadCats(); }, []);
@@ -345,6 +302,7 @@ function ArtworkForm() {
     if (!f.title || !f.category_id) return alert("Title and main medium are required.");
     if (f.customizable && !(Number(f.price_per_unit) > 0)) return alert("Customizable artworks need a price per unit greater than 0.");
     if (!f.customizable && !(Number(f.price) > 0)) return alert("Fixed-price artworks need a price greater than 0.");
+    if (images.length === 0) return alert("Upload at least one image of your artwork.");
     setBusy(true);
     try {
       await api.artist.createArtwork({
@@ -362,14 +320,20 @@ function ArtworkForm() {
         predefined_sizes: f.customizable ? [] : predefined,
         images, videos, model_3d_url: model3d, price: f.price ? Number(f.price) : 0,
       });
-      alert(`"${f.title}" has been added to the collection!`);
+      setDone(true);
       setF({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", base_dimensions: "", customizable: true, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
       setImages([]); setVideos([]); setModel3d(null); setPredefined([]);
+      onPublished && onPublished();
     } catch (e) { alert(e.message); } finally { setBusy(false); }
   };
 
   return (
     <div style={card}>
+      {done && (
+        <div style={{ marginBottom: 18, padding: "14px 18px", borderRadius: 10, background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.3)", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#86efac" }}>
+          ✓ Submitted for review. Your artwork is now <strong>pending admin approval</strong> — it appears in the public gallery once approved. Track it under <strong>My Artworks</strong>.
+        </div>
+      )}
       <Field l="ARTWORK NAME"><input style={inputStyle} value={f.title} onChange={set("title")} /></Field>
       <Field l="NARRATIVE — WHAT IT MEANS"><textarea style={{ ...inputStyle, minHeight: 90 }} value={f.narrative} onChange={set("narrative")} /></Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -437,7 +401,7 @@ function ArtworkForm() {
       <Field l="VIDEOS (OPTIONAL)"><Uploader kind="video" multiple hint="UPLOAD VIDEOS" onDone={setVideos} /></Field>
       <Field l="3D MODEL — GLB (FOR SCULPTURE/MURAL)"><Uploader kind="model" hint="UPLOAD 3D MODEL" onDone={(u) => setModel3d(u[0])} /></Field>
 
-      <button style={{ ...btn, opacity: busy ? 0.7 : 1, marginTop: 8 }} disabled={busy} onClick={submit}>{busy ? "PUBLISHING…" : "PUBLISH ARTWORK"}</button>
+      <button style={{ ...btn, opacity: busy ? 0.7 : 1, marginTop: 8 }} disabled={busy} onClick={submit}>{busy ? "SUBMITTING…" : "SUBMIT FOR APPROVAL"}</button>
     </div>
   );
 }
@@ -461,33 +425,43 @@ function PredefinedSizes({ sizes, setSizes }) {
   );
 }
 
-const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
+const STATUS_BADGE = {
+  pending: { label: "PENDING APPROVAL", color: "#fbbf24", bg: "rgba(251,191,36,0.12)" },
+  active: { label: "APPROVED · LIVE", color: "#4ade80", bg: "rgba(74,222,128,0.12)" },
+  rejected: { label: "REJECTED", color: "#f87171", bg: "rgba(248,113,113,0.12)" },
+  sold: { label: "SOLD", color: gold, bg: "rgba(212,175,55,0.12)" },
+  draft: { label: "DRAFT", color: "rgba(200,191,160,0.7)", bg: "rgba(255,255,255,0.04)" },
+};
 
-// Verified artist's own works — list, quick-edit and delete (own works only).
-function MyArtworks() {
-  const [rows, setRows] = useState([]);
+// Verified artist's own works — list with status, quick-edit and delete.
+function MyArtworks({ rows, reload }) {
   const [editing, setEditing] = useState(null);
-  const load = () => api.artist.myArtworks().then(setRows).catch(() => setRows([]));
-  useEffect(() => { load(); }, []);
-  const del = async (id) => { if (confirm("Delete this artwork permanently?")) { await api.artist.deleteArtwork(id); load(); } };
+  const del = async (id) => { if (confirm("Delete this artwork permanently?")) { await api.artist.deleteArtwork(id); reload(); } };
 
-  if (rows.length === 0) return <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)" }}>You haven't published any artworks yet.</div>;
+  if (!rows || rows.length === 0) return <div style={card}><div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)" }}>You haven't uploaded any artworks yet.</div></div>;
   return (
-    <div>
-      {rows.map((a) => (
-        <div key={a.id} style={{ display: "flex", gap: 16, alignItems: "center", padding: "12px 14px", marginBottom: 10, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.15)" }}>
-          <img src={(a.images && a.images[0]) || ""} alt="" style={{ width: 54, height: 54, borderRadius: 6, objectFit: "cover", background: "rgba(212,175,55,0.1)", flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{a.title}</div>
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)" }}>
-              {a.customizable ? "Customizable" : inr(a.price)} · {a.category_id || "—"}{a.subtype_id ? ` / ${a.subtype_id}` : ""} · {a.status}
+    <div style={card}>
+      {rows.map((a) => {
+        const badge = STATUS_BADGE[a.status] || STATUS_BADGE.draft;
+        return (
+          <div key={a.id} style={{ display: "flex", gap: 16, alignItems: "center", padding: "12px 14px", marginBottom: 10, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.15)" }}>
+            <img src={(a.images && a.images[0]) || ""} alt="" style={{ width: 54, height: 54, borderRadius: 6, objectFit: "cover", background: "rgba(212,175,55,0.1)", flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#fff" }}>{a.title}</div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)" }}>
+                {a.customizable ? "Customizable" : inr(a.price)} · {a.category_id || "—"}{a.subtype_id ? ` / ${a.subtype_id}` : ""}
+              </div>
+              <span style={{ display: "inline-block", marginTop: 5, padding: "2px 9px", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: badge.color, background: badge.bg }}>{badge.label}</span>
+              {a.status === "rejected" && a.rejection_reason && (
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#fca5a5", marginTop: 4 }}>Reason: {a.rejection_reason}</div>
+              )}
             </div>
+            <button onClick={() => setEditing(a)} style={{ ...btn, padding: "8px 16px", background: "transparent", color: gold, border: `1px solid ${gold}` }}>EDIT</button>
+            <button onClick={() => del(a.id)} style={{ ...btn, padding: "8px 16px", background: "transparent", color: "rgba(255,140,140,0.9)", border: "1px solid rgba(255,140,140,0.4)" }}>DELETE</button>
           </div>
-          <button onClick={() => setEditing(a)} style={{ ...btn, padding: "8px 16px", background: "transparent", color: gold, border: `1px solid ${gold}` }}>EDIT</button>
-          <button onClick={() => del(a.id)} style={{ ...btn, padding: "8px 16px", background: "transparent", color: "rgba(255,140,140,0.9)", border: "1px solid rgba(255,140,140,0.4)" }}>DELETE</button>
-        </div>
-      ))}
-      {editing && <EditArtwork artwork={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
+        );
+      })}
+      {editing && <EditArtwork artwork={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload(); }} />}
     </div>
   );
 }
@@ -533,6 +507,139 @@ function EditArtwork({ artwork, onClose, onSaved }) {
           <button style={{ ...btn, background: "transparent", color: "rgba(200,191,160,0.7)", border: "1px solid rgba(212,175,55,0.25)" }} onClick={onClose}>CANCEL</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Artist's exhibition submission panel ── */
+function ArtistExhibitionPanel({ works }) {
+  const [ex, setEx] = useState(undefined); // undefined=loading, null=none
+  const [mine, setMine] = useState([]);
+  const [busy, setBusy] = useState("");
+  const load = () => {
+    api.exhibitions.current().then(setEx).catch(() => setEx(null));
+    api.exhibitions.mine().then(setMine).catch(() => setMine([]));
+  };
+  useEffect(() => { load(); }, []);
+
+  const approved = works.filter((w) => w.status === "active");
+  const isSubmitted = (id) => mine.includes(id);
+
+  const toggle = async (id) => {
+    setBusy(id);
+    try {
+      if (isSubmitted(id)) { await api.exhibitions.withdraw(id); }
+      else { await api.exhibitions.submit([id]); }
+      const m = await api.exhibitions.mine(); setMine(m);
+    } catch (e) { alert(e.message); } finally { setBusy(""); }
+  };
+
+  if (ex === undefined) return <div style={card}><Skeleton height={120} radius={10} /></div>;
+  if (!ex || ex.status === "ended") return (
+    <div style={card}><div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "rgba(200,191,160,0.65)" }}>No exhibition is running right now. When the next one opens for registration, you'll be able to submit your approved works here.</div></div>
+  );
+
+  return (
+    <div style={card}>
+      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: "#fff" }}>{ex.title}</div>
+      {ex.theme && <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: gold, marginTop: 4 }}>{ex.theme.toUpperCase()}</div>}
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", lineHeight: 1.7, margin: "10px 0 16px" }}>{ex.description}</div>
+
+      {ex.status === "upcoming" && (
+        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", padding: "12px 16px", borderRadius: 10, background: "rgba(212,175,55,0.06)", border: "1px dashed rgba(212,175,55,0.3)" }}>
+          Registration opens {ex.registration_starts_at ? new Date(ex.registration_starts_at).toLocaleString() : "soon"}. Check back to submit your works.
+        </div>
+      )}
+
+      {ex.status === "registration" && (
+        <>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 4 }}>
+            SELECT WORKS TO EXHIBIT {ex.registration_ends_at && <span style={{ color: "rgba(200,191,160,0.55)" }}>· closes {new Date(ex.registration_ends_at).toLocaleDateString()}</span>}
+          </div>
+          <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", marginBottom: 14 }}>
+            Only approved works can be exhibited. Tap to add or remove a piece from the show.
+          </p>
+          {approved.length === 0 ? (
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)" }}>You have no approved works yet — upload art and get it approved first.</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>
+              {approved.map((w) => {
+                const on = isSubmitted(w.id);
+                return (
+                  <button key={w.id} onClick={() => toggle(w.id)} disabled={busy === w.id} style={{
+                    position: "relative", padding: 0, borderRadius: 10, overflow: "hidden", cursor: "pointer",
+                    border: on ? `2px solid ${gold}` : "1px solid rgba(212,175,55,0.2)", background: "rgba(255,255,255,0.02)",
+                  }}>
+                    <img src={w.images?.[0]} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block", opacity: on ? 1 : 0.85 }} />
+                    <div style={{ padding: "8px 10px", textAlign: "left" }}>
+                      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 14, color: "#fff", lineHeight: 1.2 }}>{w.title}</div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", color: on ? "#4ade80" : "rgba(200,191,160,0.5)", marginTop: 4 }}>
+                        {busy === w.id ? "…" : on ? "✓ IN THE SHOW" : "+ ADD"}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {ex.status === "live" && (
+        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", padding: "12px 16px", borderRadius: 10, background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.3)" }}>
+          🎉 The exhibition is <strong style={{ color: "#86efac" }}>live</strong>. You have {mine.length} work{mine.length === 1 ? "" : "s"} on show.{" "}
+          <Link to="/exhibition" style={{ color: gold }}>View the exhibition →</Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Artist profile editor ── */
+function ProfilePanel() {
+  const [f, setF] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    api.artist.profile().then((p) => setF({
+      name: p.name || "", bio: p.bio || "", image_url: p.image_url || "",
+      location: p.location || "", art_type: p.art_type || "", age: p.age || "", gender: p.gender || "",
+    })).catch(() => setF({ name: "", bio: "", image_url: "", location: "", art_type: "", age: "", gender: "" }));
+  }, []);
+  if (!f) return <div style={card}><Skeleton height={200} radius={10} /></div>;
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const save = async () => {
+    setBusy(true); setSaved(false);
+    try {
+      await api.artist.updateProfile({ ...f, age: f.age ? Number(f.age) : null });
+      setSaved(true);
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  return (
+    <div style={card}>
+      {saved && <div style={{ marginBottom: 16, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#86efac" }}>✓ Profile saved.</div>}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18 }}>
+        {f.image_url
+          ? <img src={f.image_url} alt="" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(212,175,55,0.3)" }} />
+          : <div style={{ width: 72, height: 72, borderRadius: "50%", border: "1px dashed rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(212,175,55,0.4)" }}>✦</div>}
+        <Uploader kind="image" hint="CHANGE PHOTO" onDone={(u) => setF((v) => ({ ...v, image_url: u[0] }))} />
+      </div>
+      <Field l="DISPLAY NAME"><input style={inputStyle} value={f.name} onChange={set("name")} /></Field>
+      <Field l="BIO"><textarea style={{ ...inputStyle, minHeight: 100 }} value={f.bio} onChange={set("bio")} /></Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        <Field l="ART TYPE"><input style={inputStyle} value={f.art_type} onChange={set("art_type")} placeholder="e.g. Oil painter" /></Field>
+        <Field l="LOCATION"><input style={inputStyle} value={f.location} onChange={set("location")} /></Field>
+        <Field l="AGE"><input style={inputStyle} type="number" value={f.age} onChange={set("age")} /></Field>
+      </div>
+      <Field l="GENDER (FOR DEFAULT AVATAR)">
+        <select style={inputStyle} value={f.gender} onChange={set("gender")}>
+          <option value="">Prefer not to say</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+      </Field>
+      <button style={{ ...btn, opacity: busy ? 0.7 : 1 }} disabled={busy} onClick={save}>{busy ? "SAVING…" : "SAVE PROFILE"}</button>
     </div>
   );
 }

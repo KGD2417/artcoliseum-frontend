@@ -28,6 +28,7 @@ import ChatRooms from './pages/ChatRooms';
 import Estimate from './pages/Estimate';
 import ComingSoon from './pages/ComingSoon';
 import Exhibition from './pages/Exhibition';
+import Competition from './pages/Competition';
 import Compare from './pages/Compare';
 
 function App() {
@@ -62,6 +63,7 @@ function App() {
         <Route path="chat" element={<ChatRooms />} />
         <Route path="estimate" element={<Estimate />} />
         <Route path="exhibition" element={<Exhibition />} />
+        <Route path="competition" element={<Competition />} />
         <Route path="saman-setu" element={<ComingSoon page="saman-setu" />} />
         <Route path="swad-setu" element={<ComingSoon page="swad-setu" />} />
         <Route path="sarjaan-setu" element={<ComingSoon page="sarjaan-setu" />} />
