@@ -789,6 +789,10 @@ function Artists() {
     if (reason === null) return;  // cancelled
     await api.admin.rejectArtist(uid, reason.trim()); load();
   };
+  const remove = async (a) => {
+    if (!window.confirm(`Permanently remove ${a.name}?\n\nThis deletes their artworks, public profile and login account. This cannot be undone.`)) return;
+    await api.admin.deleteArtist(a.user_id); load(); setTick((t) => t + 1);
+  };
 
   // Applicants awaiting a decision float to the top.
   const pending = kyc.filter((a) => a.status === "pending" || a.status === "unverified");
@@ -823,6 +827,7 @@ function Artists() {
           <Btn onClick={() => setViewing(a)}>VIEW</Btn>
           {a.status !== "verified" && <Btn onClick={() => verify(a.user_id)} primary>APPROVE</Btn>}
           {a.status !== "rejected" && a.status !== "verified" && <Btn onClick={() => reject(a.user_id)} ghost>DECLINE</Btn>}
+          <Btn onClick={() => remove(a)} danger>REMOVE</Btn>
         </Item>
       ))}
       {viewing && <DetailModal title={viewing.name} data={viewing} onClose={() => setViewing(null)} />}
@@ -1730,14 +1735,14 @@ function CommunitiesManager() {
   );
 }
 
-function Btn({ children, onClick, primary, ghost, disabled }) {
+function Btn({ children, onClick, primary, ghost, danger, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled} style={{
       padding: "8px 14px", borderRadius: 999, cursor: disabled ? "default" : "pointer", whiteSpace: "nowrap",
       fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em",
       background: primary ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "transparent",
-      color: primary ? "#111" : ghost ? "rgba(200,191,160,0.7)" : gold,
-      border: primary ? "none" : `1px solid rgba(212,175,55,${ghost ? 0.2 : 0.4})`, opacity: disabled ? 0.4 : 1,
+      color: primary ? "#111" : danger ? "#f87171" : ghost ? "rgba(200,191,160,0.7)" : gold,
+      border: primary ? "none" : `1px solid ${danger ? "rgba(248,113,113,0.4)" : `rgba(212,175,55,${ghost ? 0.2 : 0.4})`}`, opacity: disabled ? 0.4 : 1,
     }}>{children}</button>
   );
 }

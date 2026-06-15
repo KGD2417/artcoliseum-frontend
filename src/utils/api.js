@@ -549,6 +549,11 @@ export const api = {
         body: { reason: reason || "" },
       });
     },
+    // Permanently remove an artist: their artworks, catalog profile, KYC record
+    // and login account. Order history is preserved.
+    deleteArtist(userId) {
+      return request("DELETE", `/admin/artists/${userId}`);
+    },
     setRole(userId, role) {
       return request("PATCH", `/admin/profiles/${userId}/role`, {
         body: { role },
