@@ -1244,7 +1244,7 @@ export default function Home() {
             <h2
               style={{
                 fontFamily: "'Cormorant Garamond',serif",
-                fontSize: "clamp(36px,4.5vw,64px)",
+                fontSize: "clamp(28px, 2.7vw, 38px)",
                 fontWeight: 400,
                 color: "#fff",
                 lineHeight: 1.15,
