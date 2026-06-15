@@ -12,6 +12,7 @@ const TABS = [
   ["overview", "Overview"], ["tally", "Price & Tally"], ["enquiries", "Enquiries"], ["orders", "Orders"],
   ["artworks", "Artworks"], ["categories", "Categories"], ["exhibitions", "Exhibitions"], ["events", "Events"],
   ["artists", "Artists"], ["competition", "Competition"], ["communities", "Communities"],
+  ["news", "News"], ["testimonials", "Testimonials"],
   ["contact", "Contact"], ["support", "Support"], ["messages", "Messages"],
 ];
 
@@ -80,6 +81,8 @@ export default function AdminDashboard() {
           {tab === "events" && <Events />}
           {tab === "artists" && <Artists />}
           {tab === "competition" && <Competition />}
+          {tab === "news" && <News />}
+          {tab === "testimonials" && <Testimonials />}
           {tab === "contact" && <ContactList />}
           {tab === "support" && <Support />}
           {tab === "messages" && <Panel title="Messages"><Link to="/admin/inbox" className="btn-gold-main" style={{ textDecoration: "none", padding: "12px 24px", fontSize: 12 }}>OPEN INBOX →</Link></Panel>}
@@ -323,6 +326,7 @@ function Orders() {
   const [rows, setRows] = useState([]);
   const [deliv, setDeliv] = useState({});  // orderId -> delivery
   const [otp, setOtp] = useState({});
+  const [viewing, setViewing] = useState(null);
   const load = () => api.orders.all().then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
   const loadDelivery = async (orderId) => {
@@ -346,7 +350,10 @@ function Orders() {
                 <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, color: "#fff" }}>{(o.items || []).map(i => i.title).join(", ") || "Order"} · {inr(o.total)}</div>
                 <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{o.full_name} · {o.status.toUpperCase()}</div>
               </div>
-              {!d && o.status !== "pending" && <Btn onClick={() => loadDelivery(o.id)}>MANAGE DELIVERY</Btn>}
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <Btn onClick={() => setViewing(o)}>VIEW</Btn>
+                {!d && o.status !== "pending" && <Btn onClick={() => loadDelivery(o.id)}>MANAGE DELIVERY</Btn>}
+              </div>
             </div>
             {d && (
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(212,175,55,0.1)" }}>
@@ -367,6 +374,7 @@ function Orders() {
           </div>
         );
       })}
+      {viewing && <DetailModal title={`Order #${viewing.id.slice(0, 8).toUpperCase()}`} data={viewing} onClose={() => setViewing(null)} />}
     </Panel>
   );
 }
@@ -375,6 +383,7 @@ function Artworks() {
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const load = () => api.catalog.artworks().then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
   const del = async (id) => { if (confirm("Delete this artwork?")) { await api.admin.deleteArtwork(id); load(); } };
@@ -392,11 +401,13 @@ function Artworks() {
               {a.artist_name} · {a.customizable ? "customizable" : inr(a.price)} · {a.category_id || "—"} · {a.status}
             </div>
           </div>
+          <Btn onClick={() => setViewing(a)}>VIEW</Btn>
           <Btn onClick={() => setEditing(a)}>EDIT</Btn>
           <Btn onClick={() => feature(a)} primary={a.featured}>{a.featured ? "FEATURED" : "FEATURE"}</Btn>
           <Btn onClick={() => del(a.id)} ghost>DELETE</Btn>
         </Item>
       ))}
+      {viewing && <DetailModal title={viewing.title} data={viewing} onClose={() => setViewing(null)} />}
       {editing && <EditArtworkModal artwork={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
     </Panel>
   );
@@ -606,15 +617,177 @@ function Events() {
   );
 }
 
+function News() {
+  const blank = { title: "", summary: "", image_url: "", link_url: "", published: true, sort_order: 0 };
+  const [rows, setRows] = useState([]);
+  const [f, setF] = useState(blank);
+  const [editingId, setEditingId] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const load = () => api.news.all().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+
+  const reset = () => { setF(blank); setEditingId(null); };
+
+  const save = async () => {
+    if (!f.title.trim()) { alert("Title is required"); return; }
+    setBusy(true);
+    const payload = { ...f, sort_order: Number(f.sort_order) || 0 };
+    try {
+      if (editingId) await api.news.update(editingId, payload);
+      else await api.news.create(payload);
+      reset(); await load();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+
+  const edit = (n) => {
+    setEditingId(n.id);
+    setF({
+      title: n.title || "", summary: n.summary || "", image_url: n.image_url || "",
+      link_url: n.link_url || "", published: n.published !== false, sort_order: n.sort_order || 0,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const togglePublish = async (n) => { await api.news.update(n.id, { published: !n.published }); load(); };
+  const del = async (n) => { if (!window.confirm(`Delete the news item "${n.title}"?`)) return; await api.news.remove(n.id); if (editingId === n.id) reset(); load(); };
+
+  return (
+    <Panel title="News">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 14 }}>
+        These appear in the “Latest News” section on the home page. Unpublished items are hidden from visitors. Lower order numbers show first, then newest.
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+        <input placeholder="Headline / title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+        <input placeholder="Link (optional — e.g. /events or https://…)" value={f.link_url} onChange={(e) => setF({ ...f, link_url: e.target.value })} style={miniInput} />
+        <div><L>DISPLAY ORDER</L><input type="number" value={f.sort_order} onChange={(e) => setF({ ...f, sort_order: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box" }} /></div>
+        <textarea placeholder="Summary / details" value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 70, resize: "vertical" }} />
+      </div>
+      <MediaUploader kind="image" label="NEWS IMAGE" hint="UPLOAD IMAGE" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
+      <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.75)", margin: "12px 0" }}>
+        <input type="checkbox" checked={f.published} onChange={(e) => setF({ ...f, published: e.target.checked })} style={{ accentColor: gold }} />
+        Published (visible on the home page)
+      </label>
+      <div style={{ display: "flex", gap: 8 }}>
+        <Btn onClick={save} primary disabled={busy}>{busy ? "SAVING…" : editingId ? "SAVE CHANGES" : "+ ADD NEWS"}</Btn>
+        {editingId && <Btn onClick={reset} ghost>CANCEL</Btn>}
+      </div>
+      <div style={{ marginTop: 16 }}>
+        {rows.length === 0 && <Empty>No news yet.</Empty>}
+        {rows.map((n) => (
+          <Item key={n.id}>
+            {n.image_url
+              ? <img src={n.image_url} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />
+              : <div style={{ width: 44, height: 44, borderRadius: 6, border: "1px dashed rgba(212,175,55,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(212,175,55,0.4)", flexShrink: 0 }}>◆</div>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>
+                {n.title} {!n.published && <span style={{ fontSize: 10, color: "#f87171", fontFamily: "'Raleway',sans-serif" }}>· HIDDEN</span>}
+              </div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {n.summary || n.link_url || ""}
+              </div>
+            </div>
+            <Btn onClick={() => togglePublish(n)} ghost>{n.published ? "HIDE" : "PUBLISH"}</Btn>
+            <Btn onClick={() => edit(n)}>EDIT</Btn>
+            <Btn onClick={() => del(n)} ghost>DELETE</Btn>
+          </Item>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function Testimonials() {
+  const blank = { name: "", designation: "", tag: "", quote: "", image_url: "", published: true, sort_order: 0 };
+  const [rows, setRows] = useState([]);
+  const [f, setF] = useState(blank);
+  const [editingId, setEditingId] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const load = () => api.testimonials.all().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+
+  const reset = () => { setF(blank); setEditingId(null); };
+
+  const save = async () => {
+    if (!f.name.trim() || !f.quote.trim()) { alert("Name and quote are required"); return; }
+    setBusy(true);
+    const payload = { ...f, sort_order: Number(f.sort_order) || 0 };
+    try {
+      if (editingId) await api.testimonials.update(editingId, payload);
+      else await api.testimonials.create(payload);
+      reset(); await load();
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+
+  const edit = (t) => {
+    setEditingId(t.id);
+    setF({
+      name: t.name || "", designation: t.designation || "", tag: t.tag || "",
+      quote: t.quote || "", image_url: t.image_url || "",
+      published: t.published !== false, sort_order: t.sort_order || 0,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const togglePublish = async (t) => { await api.testimonials.update(t.id, { published: !t.published }); load(); };
+  const del = async (t) => { if (!window.confirm(`Delete the testimonial from ${t.name}?`)) return; await api.testimonials.remove(t.id); if (editingId === t.id) reset(); load(); };
+
+  return (
+    <Panel title="Testimonials">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 14 }}>
+        These appear in the “What Collectors Say” section on the home page. Unpublished entries are hidden from visitors. Lower order numbers show first.
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+        <input placeholder="Author name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={miniInput} />
+        <input placeholder="Designation (e.g. Private Collector · London)" value={f.designation} onChange={(e) => setF({ ...f, designation: e.target.value })} style={miniInput} />
+        <input placeholder="Tag (e.g. COLLECTOR)" value={f.tag} onChange={(e) => setF({ ...f, tag: e.target.value })} style={miniInput} />
+        <div><L>DISPLAY ORDER</L><input type="number" value={f.sort_order} onChange={(e) => setF({ ...f, sort_order: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box" }} /></div>
+        <textarea placeholder="Quote / testimonial text" value={f.quote} onChange={(e) => setF({ ...f, quote: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 80, resize: "vertical" }} />
+      </div>
+      <MediaUploader kind="image" label="AUTHOR / ARTWORK IMAGE" hint="UPLOAD IMAGE" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
+      <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.75)", margin: "12px 0" }}>
+        <input type="checkbox" checked={f.published} onChange={(e) => setF({ ...f, published: e.target.checked })} style={{ accentColor: gold }} />
+        Published (visible on the home page)
+      </label>
+      <div style={{ display: "flex", gap: 8 }}>
+        <Btn onClick={save} primary disabled={busy}>{busy ? "SAVING…" : editingId ? "SAVE CHANGES" : "+ ADD TESTIMONIAL"}</Btn>
+        {editingId && <Btn onClick={reset} ghost>CANCEL</Btn>}
+      </div>
+      <div style={{ marginTop: 16 }}>
+        {rows.length === 0 && <Empty>No testimonials yet.</Empty>}
+        {rows.map((t) => (
+          <Item key={t.id}>
+            {t.image_url
+              ? <img src={t.image_url} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />
+              : <div style={{ width: 44, height: 44, borderRadius: 6, border: "1px dashed rgba(212,175,55,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(212,175,55,0.4)", flexShrink: 0 }}>“”</div>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>
+                {t.name} {!t.published && <span style={{ fontSize: 10, color: "#f87171", fontFamily: "'Raleway',sans-serif" }}>· HIDDEN</span>}
+              </div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {t.designation || t.tag || ""}{t.quote ? ` — “${t.quote.slice(0, 60)}${t.quote.length > 60 ? "…" : ""}”` : ""}
+              </div>
+            </div>
+            <Btn onClick={() => togglePublish(t)} ghost>{t.published ? "HIDE" : "PUBLISH"}</Btn>
+            <Btn onClick={() => edit(t)}>EDIT</Btn>
+            <Btn onClick={() => del(t)} ghost>DELETE</Btn>
+          </Item>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
 function Artists() {
   const [kyc, setKyc] = useState([]);
   const [tick, setTick] = useState(0);
+  const [viewing, setViewing] = useState(null);
   const load = () => { api.admin.artists().then(setKyc).catch(() => {}); };
   useEffect(() => { load(); }, []);
   const verify = async (uid) => { await api.admin.verifyArtist(uid); load(); };
   const reject = async (uid) => {
-    if (!window.confirm("Decline this artist application? They go back to a normal user.")) return;
-    await api.admin.rejectArtist(uid); load();
+    const reason = window.prompt("Reason for declining (shown to the applicant so they can reapply):", "");
+    if (reason === null) return;  // cancelled
+    await api.admin.rejectArtist(uid, reason.trim()); load();
   };
 
   // Applicants awaiting a decision float to the top.
@@ -641,11 +814,18 @@ function Artists() {
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
               {a.email} · <span style={{ color: statusColor(a.status), fontWeight: 600 }}>{a.status.toUpperCase()}</span>
             </div>
+            {a.status === "rejected" && a.rejection_reason && (
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#fca5a5", marginTop: 4 }}>
+                Reason: {a.rejection_reason}
+              </div>
+            )}
           </div>
+          <Btn onClick={() => setViewing(a)}>VIEW</Btn>
           {a.status !== "verified" && <Btn onClick={() => verify(a.user_id)} primary>APPROVE</Btn>}
           {a.status !== "rejected" && a.status !== "verified" && <Btn onClick={() => reject(a.user_id)} ghost>DECLINE</Btn>}
         </Item>
       ))}
+      {viewing && <DetailModal title={viewing.name} data={viewing} onClose={() => setViewing(null)} />}
     </Panel>
   );
 }
@@ -1101,11 +1281,29 @@ function ContactList() {
       {rows.length === 0 && <Empty>No messages.</Empty>}
       {rows.map((m) => (
         <div key={m.id} style={{ padding: 14, border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8, marginBottom: 8 }}>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{m.name} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {m.email}</span></div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{m.name} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {m.email}{m.phone ? ` · ${m.phone}` : ""}</span></div>
           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.7)", marginTop: 4 }}>{m.subject ? <strong>{m.subject}: </strong> : null}{m.message}</div>
+          <Attachments images={m.images} videos={m.videos} />
         </div>
       ))}
     </Panel>
+  );
+}
+
+// Thumbnails for any photos/videos a sender attached for context.
+function Attachments({ images = [], videos = [] }) {
+  if ((!images || !images.length) && (!videos || !videos.length)) return null;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+      {(images || []).map((src, i) => (
+        <a key={`i${i}`} href={src} target="_blank" rel="noreferrer">
+          <img src={src} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(212,175,55,0.25)" }} />
+        </a>
+      ))}
+      {(videos || []).map((src, i) => (
+        <video key={`v${i}`} src={src} controls style={{ width: 110, height: 64, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(212,175,55,0.25)", background: "#000" }} />
+      ))}
+    </div>
   );
 }
 
@@ -1120,8 +1318,9 @@ function Support() {
       {rows.map((t) => (
         <Item key={t.id}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{t.subject || "Ticket"} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {t.email}</span></div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{t.subject || "Ticket"} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {t.email}{t.phone ? ` · ${t.phone}` : ""}</span></div>
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.65)", marginTop: 3 }}>{t.message}</div>
+            <Attachments images={t.images} videos={t.videos} />
           </div>
           <select value={t.status} onChange={(e) => setStatus(t.id, e.target.value)} style={miniInput}>
             <option value="open">open</option><option value="in_progress">in_progress</option><option value="resolved">resolved</option><option value="closed">closed</option>
@@ -1131,6 +1330,61 @@ function Support() {
     </Panel>
   );
 }
+
+/* Generic read-only detail preview — renders every field of a row (text, money,
+   dates, images & videos) so the admin can inspect the full record, not just
+   the list summary. Reusable across any admin list. */
+const dmIsImg = (s) => typeof s === "string" && (/\.(png|jpe?g|gif|webp|avif|svg)(\?|$)/i.test(s) || s.startsWith("/uploads/") || s.startsWith("data:image"));
+const dmIsVid = (s) => typeof s === "string" && /\.(mp4|webm|mov|m4v)(\?|$)/i.test(s);
+
+function DetailValue({ v }) {
+  if (v == null || v === "") return <span style={{ color: "rgba(200,191,160,0.4)" }}>—</span>;
+  if (typeof v === "boolean") return <>{v ? "Yes" : "No"}</>;
+  if (Array.isArray(v)) {
+    if (v.length === 0) return <span style={{ color: "rgba(200,191,160,0.4)" }}>—</span>;
+    if (v.every((x) => dmIsImg(x) || dmIsVid(x))) {
+      return (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {v.map((x, i) => dmIsVid(x)
+            ? <video key={i} src={x} controls style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 6, background: "#000" }} />
+            : <a key={i} href={x} target="_blank" rel="noreferrer"><img src={x} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 6, border: "1px solid rgba(212,175,55,0.25)" }} /></a>)}
+        </div>
+      );
+    }
+    if (v.every((x) => x == null || typeof x !== "object")) return <>{v.filter((x) => x != null && x !== "").join(", ") || "—"}</>;
+    return <pre style={dmPre}>{JSON.stringify(v, null, 2)}</pre>;
+  }
+  if (typeof v === "object") return <pre style={dmPre}>{JSON.stringify(v, null, 2)}</pre>;
+  if (dmIsImg(v)) return <a href={v} target="_blank" rel="noreferrer"><img src={v} alt="" style={{ maxWidth: 180, borderRadius: 8, border: "1px solid rgba(212,175,55,0.25)" }} /></a>;
+  if (dmIsVid(v)) return <video src={v} controls style={{ maxWidth: 240, borderRadius: 8, background: "#000" }} />;
+  return <>{String(v)}</>;
+}
+
+function DetailModal({ title, data, onClose }) {
+  if (!data) return null;
+  const entries = Object.entries(data).filter(([k]) => !k.startsWith("_"));
+  return (
+    <div onClick={onClose} style={dmOverlay}>
+      <div onClick={(e) => e.stopPropagation()} style={dmBox}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold }}>{(title || "Details").toUpperCase()}</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(200,191,160,0.5)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {entries.map(([k, v]) => (
+            <div key={k} style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 12, alignItems: "start" }}>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em", color: "rgba(212,175,55,0.7)", paddingTop: 2 }}>{k.replace(/_/g, " ").toUpperCase()}</div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0", wordBreak: "break-word", lineHeight: 1.6 }}><DetailValue v={v} /></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+const dmOverlay = { position: "fixed", inset: 0, zIndex: 7000, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 };
+const dmBox = { background: "#15120c", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 14, padding: 24, width: "100%", maxWidth: 560, maxHeight: "85vh", overflowY: "auto" };
+const dmPre = { margin: 0, fontFamily: "monospace", fontSize: 11, color: "rgba(200,191,160,0.8)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(212,175,55,0.12)", borderRadius: 6, padding: "8px 10px", whiteSpace: "pre-wrap", wordBreak: "break-word" };
 
 /* ── shared bits ── */
 function Panel({ title, children }) {

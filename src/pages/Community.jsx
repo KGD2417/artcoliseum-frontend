@@ -3,6 +3,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton, SkeletonText } from "../components/ui/Skeleton";
 import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
+import { useLocale } from "../context/Locale";
+
+// Relative "time left" for an auction deadline. Returns null when no deadline.
+function timeLeft(iso) {
+  if (!iso) return null;
+  const ms = new Date(iso) - Date.now();
+  if (ms <= 0) return "Ended";
+  const d = Math.floor(ms / 86400000);
+  const h = Math.floor((ms % 86400000) / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  if (d > 0) return `${d}d ${h}h left`;
+  if (h > 0) return `${h}h ${m}m left`;
+  return `${Math.max(1, m)}m left`;
+}
+
+// datetime-local input value (local wall-clock) from a stored ISO/UTC string.
+function toLocalInput(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
+}
 
 const COMMUNITIES = [
   { id: "all",          name: "All Communities", desc: "Browse everything",                               color: "#D4AF37" },
@@ -46,6 +68,19 @@ function mapPost(p) {
     likes: p.likes || 0, liked: !!p.liked,
     comments: (p.comments || []).length, commentsList: p.comments || [],
     userId: p.user_id,
+    // auction state
+    isAuction: !!p.is_auction,
+    startingBid: p.starting_bid,
+    minIncrement: p.min_increment,
+    auctionEndsAt: p.auction_ends_at,
+    auctionClosed: !!p.auction_closed,
+    auctionEnded: !!p.auction_ended,
+    winnerUserId: p.winner_user_id,
+    winnerName: p.winner_name,
+    currentBid: p.current_bid,
+    bidCount: p.bid_count || 0,
+    topBidderId: p.top_bidder_id,
+    bids: p.bids || [],
   };
 }
 
@@ -212,13 +247,43 @@ function CommunitySidebarRow({ community, joined, notifLevel, onJoin, onNotif, a
 }
 
 // ─── Post card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, onLike, onDelete, onEdit, onChat, isOwn }) {
+function PostCard({ post, onLike, onDelete, onEdit, onChat, onBid, onCloseAuction, isOwn, meId }) {
+  const { formatPrice } = useLocale();
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState(post.commentsList);
   const [menuOpen, setMenuOpen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [bidding, setBidding] = useState(false);
+  const [bidAmount, setBidAmount] = useState("");
+  const [showBids, setShowBids] = useState(false);
   const isListing = post.type === "listing";
+  const isAuction = isListing && post.isAuction;
+  const ended = post.auctionEnded;
+  const inc = Number(post.minIncrement || 0);
+  // Smallest acceptable next bid: top + increment (or +1 when no increment), else the starting bid.
+  const minNext = post.currentBid != null
+    ? Number(post.currentBid) + (inc > 0 ? inc : 1)
+    : Number(post.startingBid || 0);
+  const iWon = isAuction && ended && post.winnerUserId && meId && post.winnerUserId === meId;
+
+  const submitBid = () => {
+    const amt = Number(bidAmount);
+    if (!amt || amt < minNext) { alert(`Your bid must be at least ${formatPrice(minNext)}.`); return; }
+    onBid(post.id, amt);
+    setBidding(false);
+  };
+
+  // After an auction ends, connect the two parties to arrange payment & shipment.
+  const openHandoff = () => {
+    const ctx = { title: post.title, amount: post.currentBid };
+    if (isOwn) {
+      onChat({ name: post.winnerName || "Winning bidder", userId: post.winnerUserId,
+        avatar: initialsOf(post.winnerName), avatarColor: colorFor(post.winnerName), context: ctx });
+    } else {
+      onChat({ name: post.author, userId: post.userId, avatar: post.avatar, avatarColor: post.avatarColor, context: ctx });
+    }
+  };
 
   const submitComment = async () => {
     const t = commentText.trim();
@@ -340,13 +405,137 @@ function PostCard({ post, onLike, onDelete, onEdit, onChat, isOwn }) {
                 {post.location}
               </span>
             )}
-            <span style={{ display: "flex", alignItems: "center", gap: 4, color: "rgba(184,115,51,0.65)", fontFamily: "'Raleway',sans-serif", fontSize: 9, letterSpacing: "0.07em", fontWeight: 600 }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              ENQUIRE FOR PRICE
-            </span>
+            {!isAuction && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4, color: "rgba(184,115,51,0.65)", fontFamily: "'Raleway',sans-serif", fontSize: 9, letterSpacing: "0.07em", fontWeight: 600 }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                ENQUIRE FOR PRICE
+              </span>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* ── Auction panel ── */}
+      {isAuction && (
+        <div style={{ margin: "12px 18px 0", padding: 14, borderRadius: 12, border: `1px solid ${ended ? "rgba(212,175,55,0.3)" : "rgba(184,115,51,0.3)"}`, background: ended ? "rgba(212,175,55,0.05)" : "rgba(184,115,51,0.06)" }}>
+          {/* Top row: current bid + status */}
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.16em", color: ended ? "#D4AF37" : "#B87333", marginBottom: 4 }}>
+                {ended ? "WINNING BID" : post.currentBid != null ? "CURRENT BID" : "STARTING BID"}
+              </div>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#f0e8d8", lineHeight: 1 }}>
+                {formatPrice(post.currentBid != null ? post.currentBid : post.startingBid || 0)}
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.5)" }}>
+                {post.bidCount} {post.bidCount === 1 ? "bid" : "bids"}
+              </div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, fontWeight: 700, marginTop: 3, color: ended ? "#D4AF37" : "#4caf7d" }}>
+                {ended ? "AUCTION ENDED" : (timeLeft(post.auctionEndsAt) || "OPEN")}
+              </div>
+            </div>
+          </div>
+
+          {/* Ended → winner + handoff to private chat */}
+          {ended ? (
+            <div style={{ marginTop: 12, borderTop: "1px solid rgba(212,175,55,0.12)", paddingTop: 12 }}>
+              {post.winnerUserId ? (
+                <>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "rgba(200,191,160,0.85)" }}>
+                    Won by <span style={{ color: "#D4AF37", fontWeight: 700 }}>{iWon ? "you" : post.winnerName}</span>
+                    {" "}at {formatPrice(post.currentBid)}.
+                  </div>
+                  {(isOwn || iWon) && (
+                    <>
+                      <button onClick={openHandoff}
+                        style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 7, background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#0e0c0a", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.1em", fontWeight: 700, padding: "9px 16px", borderRadius: 999 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        {isOwn ? "MESSAGE WINNER — ARRANGE DELIVERY" : "MESSAGE SELLER — ARRANGE DELIVERY"}
+                      </button>
+                      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)", marginTop: 7, lineHeight: 1.5 }}>
+                        Payment and shipment are arranged privately between buyer and seller in chat.
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "rgba(200,191,160,0.6)" }}>
+                  Auction ended with no bids.
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Open → bid / close actions */
+            <div style={{ marginTop: 12, borderTop: "1px solid rgba(184,115,51,0.14)", paddingTop: 12 }}>
+              {isOwn ? (
+                <button onClick={() => onCloseAuction(post.id)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.4)", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.1em", fontWeight: 700, padding: "9px 16px", borderRadius: 999 }}>
+                  END AUCTION NOW {post.currentBid != null ? "— AWARD HIGHEST" : ""}
+                </button>
+              ) : bidding ? (
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    type="number" min={minNext} value={bidAmount} autoFocus
+                    onChange={e => setBidAmount(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && submitBid()}
+                    style={{ width: 130, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(184,115,51,0.4)", borderRadius: 999, padding: "9px 14px", color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" }}
+                  />
+                  <button onClick={submitBid}
+                    style={{ background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#0e0c0a", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.1em", fontWeight: 700, padding: "9px 16px", borderRadius: 999 }}>
+                    CONFIRM BID
+                  </button>
+                  <button onClick={() => setBidding(false)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(200,191,160,0.45)", fontFamily: "'Raleway',sans-serif", fontSize: 11 }}>
+                    Cancel
+                  </button>
+                  <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.45)", width: "100%" }}>
+                    Minimum bid: {formatPrice(minNext)}
+                  </span>
+                </div>
+              ) : (
+                <button onClick={() => { setBidAmount(String(minNext)); setBidding(true); }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "linear-gradient(135deg,#B87333,#d18a44)", color: "#0e0c0a", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.1em", fontWeight: 700, padding: "9px 18px", borderRadius: 999 }}>
+                  PLACE BID — FROM {formatPrice(minNext)}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Bid history */}
+          {post.bidCount > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <button onClick={() => setShowBids(v => !v)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(200,191,160,0.5)", fontFamily: "'Raleway',sans-serif", fontSize: 10, letterSpacing: "0.05em", padding: 0 }}>
+                {showBids ? "▾ Hide" : "▸ View"} bid history ({post.bidCount})
+              </button>
+              <AnimatePresence>
+                {showBids && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                    style={{ overflow: "hidden" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                      {post.bids.map((b, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: i === 0 ? "rgba(212,175,55,0.08)" : "rgba(255,255,255,0.02)" }}>
+                          <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: i === 0 ? "#D4AF37" : "rgba(200,191,160,0.6)" }}>
+                            {b.user_id === meId ? "You" : b.bidder}{i === 0 ? " · top bid" : ""}
+                          </span>
+                          <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, fontWeight: 700, color: i === 0 ? "#f0e8d8" : "rgba(200,191,160,0.7)" }}>
+                            {formatPrice(b.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       )}
 
@@ -408,7 +597,7 @@ function PostCard({ post, onLike, onDelete, onEdit, onChat, isOwn }) {
         </button>
 
         {/* Marketplace actions */}
-        {isListing && (
+        {isListing && !(isAuction && ended) && (
           <>
             <div style={{ flex: 1 }} />
             <button
@@ -478,6 +667,10 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
   const [listingTitle, setListingTitle] = useState(editingPost?.title || "");
   const [condition, setCondition] = useState(editingPost?.condition || "Excellent");
   const [location, setLocation] = useState(editingPost?.location || "");
+  const [isAuction, setIsAuction] = useState(editingPost?.isAuction || false);
+  const [startingBid, setStartingBid] = useState(editingPost?.startingBid ?? "");
+  const [minIncrement, setMinIncrement] = useState(editingPost?.minIncrement ?? "");
+  const [auctionEndsAt, setAuctionEndsAt] = useState(toLocalInput(editingPost?.auctionEndsAt));
 
   const isMarketplace = community === "marketplace";
 
@@ -503,14 +696,23 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
   const removeVideo = i => setVideos(prev => prev.filter((_, idx) => idx !== i));
 
   const hasContent = text.trim() || images.length > 0 || videos.length > 0;
-  const canPost = isMarketplace ? (hasContent && listingTitle.trim()) : hasContent;
+  const auctionValid = !isAuction || Number(startingBid) > 0;
+  const canPost = isMarketplace ? (hasContent && listingTitle.trim() && auctionValid) : hasContent;
 
   const handlePost = () => {
     if (!canPost) return;
     onPost({
       text, images, videos, community,
       type: isMarketplace ? "listing" : "discussion",
-      ...(isMarketplace ? { title: listingTitle, condition, location } : {}),
+      ...(isMarketplace ? {
+        title: listingTitle, condition, location,
+        is_auction: isAuction,
+        ...(isAuction ? {
+          starting_bid: Number(startingBid) || 0,
+          min_increment: Number(minIncrement) || 0,
+          auction_ends_at: auctionEndsAt ? new Date(auctionEndsAt).toISOString() : null,
+        } : {}),
+      } : {}),
     });
     onClose();
   };
@@ -579,6 +781,36 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
                 <input value={location} onChange={e => setLocation(e.target.value)} placeholder="City, Country" style={{ ...inputStyle, fontSize: 13 }} />
               </div>
             </div>
+
+            {/* Auction toggle */}
+            <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, cursor: "pointer" }}>
+              <input type="checkbox" checked={isAuction} onChange={e => setIsAuction(e.target.checked)} style={{ accentColor: "#B87333", width: 15, height: 15 }} />
+              <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#e8e0d0", fontWeight: 600 }}>
+                Sell by auction — highest bid wins
+              </span>
+            </label>
+
+            {isAuction && (
+              <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 9, color: "rgba(200,191,160,0.38)", marginBottom: 6, letterSpacing: "0.08em" }}>STARTING BID (₹) *</div>
+                  <input type="number" min="0" value={startingBid} onChange={e => setStartingBid(e.target.value)} placeholder="e.g. 10000" style={{ ...inputStyle, fontFamily: "'Raleway',sans-serif", fontSize: 13 }} />
+                </div>
+                <div>
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 9, color: "rgba(200,191,160,0.38)", marginBottom: 6, letterSpacing: "0.08em" }}>MIN. INCREMENT (₹)</div>
+                  <input type="number" min="0" value={minIncrement} onChange={e => setMinIncrement(e.target.value)} placeholder="e.g. 500" style={{ ...inputStyle, fontFamily: "'Raleway',sans-serif", fontSize: 13 }} />
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 9, color: "rgba(200,191,160,0.38)", marginBottom: 6, letterSpacing: "0.08em" }}>ENDS AT (optional — leave blank to close manually)</div>
+                  <input type="datetime-local" value={auctionEndsAt} onChange={e => setAuctionEndsAt(e.target.value)} style={{ ...inputStyle, fontFamily: "'Raleway',sans-serif", fontSize: 13, colorScheme: "dark" }} />
+                </div>
+                {Number(startingBid) <= 0 && (
+                  <div style={{ gridColumn: "1 / -1", fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(220,140,80,0.8)" }}>
+                    Set a starting bid to enable the auction.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -661,8 +893,12 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
 // ─── Direct chat (real peer thread over the backend) ─────────────────────────────
 function DirectChat({ user, onClose }) {
   const { user: me } = useAuth();
+  const { formatPrice } = useLocale();
+  const ctx = user.context;
+  // When opened from a won auction, prefill a starter message about the piece.
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() =>
+    ctx ? `Hi! This is regarding "${ctx.title}" (winning bid ${formatPrice(ctx.amount)}). Let's arrange payment and shipment.` : "");
   const bottomRef = useRef(null);
   const peerKey = me && user.userId ? `peer:${[me.id, user.userId].sort().join(":")}` : null;
 
@@ -715,6 +951,18 @@ function DirectChat({ user, onClose }) {
             onMouseEnter={e => e.currentTarget.style.color = "#D4AF37"}
             onMouseLeave={e => e.currentTarget.style.color = "rgba(200,191,160,0.4)"}>×</button>
         </div>
+
+        {/* Auction handoff context */}
+        {ctx && (
+          <div style={{ padding: "9px 16px", background: "rgba(212,175,55,0.08)", borderBottom: "1px solid rgba(212,175,55,0.12)", display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+            </svg>
+            <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.75)" }}>
+              <strong style={{ color: "#D4AF37" }}>{ctx.title}</strong> · won at {formatPrice(ctx.amount)}
+            </span>
+          </div>
+        )}
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 8px", maxHeight: 300, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -830,9 +1078,21 @@ export default function Community() {
     setEditingPost(null);
   };
 
+  const handleBid = async (id, amount) => {
+    if (!user) { alert("Please sign in to place a bid."); return; }
+    try { const updated = await api.community.bid(id, amount); setPosts(prev => prev.map(p => p.id === id ? mapPost(updated) : p)); }
+    catch (e) { alert(e.message); }
+  };
+
+  const handleCloseAuction = async (id) => {
+    if (!window.confirm("End this auction now and award the highest bidder? This cannot be undone.")) return;
+    try { const updated = await api.community.closeAuction(id); setPosts(prev => prev.map(p => p.id === id ? mapPost(updated) : p)); }
+    catch (e) { alert(e.message); }
+  };
+
   const openChat = (target) => {
     if (!user) { alert("Please sign in to send messages."); return; }
-    if (target.userId === user.id) return;
+    if (!target.userId || target.userId === user.id) return;
     setChatUser(target);
   };
 
@@ -947,7 +1207,9 @@ export default function Community() {
                 key={post.id} post={post}
                 onLike={handleLike} onDelete={handleDelete}
                 onEdit={handleEdit} onChat={openChat}
+                onBid={handleBid} onCloseAuction={handleCloseAuction}
                 isOwn={!!user && post.userId === user.id}
+                meId={user?.id}
               />
             )) : (
               <motion.div

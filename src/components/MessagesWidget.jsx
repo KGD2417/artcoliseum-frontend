@@ -14,7 +14,7 @@ import { useAuth } from "../context/Auth";
  */
 const gold = "#D4AF37";
 
-function titleFor(key, titles = {}) {
+function titleFor(key, titles = {}, names = {}, meId = null) {
   if (!key) return "Conversation";
   // Enquiries are "you ↔ the Art Coliseum team about an artwork" — show the
   // artwork's real title once resolved, not the raw id slug.
@@ -22,7 +22,18 @@ function titleFor(key, titles = {}) {
     const id = key.slice(8);
     return titles[id] || "Art Coliseum Team";
   }
-  if (key.startsWith("peer:")) return "Direct message";
+  // Direct messages: show the other person's name, not a generic label.
+  if (key.startsWith("peer:")) {
+    const ids = key.split(":").slice(1, 3);
+    const meStr = meId != null ? String(meId) : null;
+    if (meStr && ids.includes(meStr)) {
+      const other = ids.find((x) => x !== meStr);
+      return names[other] || "Direct message";
+    }
+    // Admin / non-participant view: show both names when known.
+    const labels = ids.map((x) => names[x]).filter(Boolean);
+    return labels.length ? labels.join(" ↔ ") : "Direct message";
+  }
   if (key.startsWith("artist:")) return "Artist Studio";
   if (key.startsWith("curator:")) return "Art Coliseum Curator";
   if (key.startsWith("support:")) return "Support Team";
@@ -50,9 +61,12 @@ export default function MessagesWidget() {
   const [unread, setUnread] = useState(0);
   const [sending, setSending] = useState(false);
   const [titles, setTitles] = useState({}); // artworkId -> title, for enquiry tab names
+  const [names, setNames] = useState({});   // userId -> display name, for DM thread titles
   const scrollRef = useRef(null);
   const titlesRef = useRef({});
   titlesRef.current = titles;
+  const namesRef = useRef({});
+  namesRef.current = names;
 
   // Keep latest UI state readable inside the (stable) WS handler.
   const stateRef = useRef({ open, view, active });
@@ -94,6 +108,22 @@ export default function MessagesWidget() {
         catch { fetched[id] = null; }
       }));
       setTitles((prev) => ({ ...prev, ...fetched }));
+    }
+
+    // Resolve participant names for direct-message threads (cached per id).
+    const peerIds = new Set();
+    for (const c of list) {
+      if (c.key.startsWith("peer:")) {
+        for (const id of c.key.split(":").slice(1, 3)) {
+          if (id && !(id in namesRef.current)) peerIds.add(id);
+        }
+      }
+    }
+    if (peerIds.size) {
+      try {
+        const map = await api.chat.names([...peerIds]);
+        setNames((prev) => ({ ...prev, ...map }));
+      } catch { /* ignore */ }
     }
   }, [user, isAdmin]);
 
@@ -170,7 +200,7 @@ export default function MessagesWidget() {
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: "#f0e8d8", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {view === "thread" ? titleFor(active?.key, titles) : "Your Messages"}
+                  {view === "thread" ? titleFor(active?.key, titles, names, user?.id) : "Your Messages"}
                 </div>
                 <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.7)", marginTop: 2 }}>
                   {view === "thread" ? "ART COLISEUM" : isAdmin ? "ALL CONVERSATIONS" : "CURATORS & SUPPORT"}
@@ -192,11 +222,11 @@ export default function MessagesWidget() {
                   <button key={`${c.key}__${c.userId}`} onClick={() => openThread(c)}
                     style={{ display: "flex", gap: 12, alignItems: "center", width: "100%", textAlign: "left", padding: "14px 16px", background: "transparent", border: "none", borderBottom: "1px solid rgba(212,175,55,0.08)", cursor: "pointer" }}>
                     <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#D4AF37,#a8892a)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 11, color: "#080808", fontWeight: 700 }}>
-                      {(titleFor(c.key, titles)[0] || "C").toUpperCase()}
+                      {(titleFor(c.key, titles, names, user?.id)[0] || "C").toUpperCase()}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                        <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600, color: "#f0e8d8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titleFor(c.key, titles)}</span>
+                        <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600, color: "#f0e8d8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titleFor(c.key, titles, names, user?.id)}</span>
                         <span style={{ fontSize: 10, color: "rgba(200,191,160,0.4)", flexShrink: 0 }}>{timeAgo(c.created_at)}</span>
                       </div>
                       <div style={{ fontSize: 12, color: "rgba(200,191,160,0.55)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>

@@ -2,9 +2,9 @@ import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 
 const LINKS = [
-  { label: "Artists", to: "/artists" },
   { label: "Collection", to: "/categories" },
   { label: "Events", to: "/events" },
+  { label: "Artists", to: "/artists" },
   { label: "Community", to: "/community" },
   { label: "Privacy", to: "/privacy" },
   { label: "Help", to: "/help" },

@@ -176,6 +176,11 @@ export const api = {
     peers() {
       return request("GET", "/chat/peers");
     },
+    // Resolve user IDs → display names (used to label DM threads by person).
+    names(ids) {
+      const qs = Array.isArray(ids) ? ids.join(",") : ids;
+      return request("GET", `/chat/names?ids=${encodeURIComponent(qs)}`);
+    },
   },
 
   uploads: {
@@ -282,6 +287,46 @@ export const api = {
       return request("GET", `/reviews/artwork/${encodeURIComponent(id)}`, {
         auth: false,
       });
+    },
+  },
+
+  // Admin-authored collector testimonials shown on the home page.
+  testimonials: {
+    // Public: published testimonials only.
+    list() {
+      return request("GET", "/testimonials", { auth: false });
+    },
+    // Admin: every testimonial, including unpublished.
+    all() {
+      return request("GET", "/testimonials/all");
+    },
+    create(body) {
+      return request("POST", "/testimonials", { body });
+    },
+    update(id, body) {
+      return request("PATCH", `/testimonials/${encodeURIComponent(id)}`, { body });
+    },
+    remove(id) {
+      return request("DELETE", `/testimonials/${encodeURIComponent(id)}`);
+    },
+  },
+
+  // Admin-authored home-page news / announcements.
+  news: {
+    list() {
+      return request("GET", "/news", { auth: false });
+    },
+    all() {
+      return request("GET", "/news/all");
+    },
+    create(body) {
+      return request("POST", "/news", { body });
+    },
+    update(id, body) {
+      return request("PATCH", `/news/${encodeURIComponent(id)}`, { body });
+    },
+    remove(id) {
+      return request("DELETE", `/news/${encodeURIComponent(id)}`);
     },
   },
 
@@ -392,6 +437,16 @@ export const api = {
     like(id) {
       return request("POST", `/community/posts/${id}/like`);
     },
+    // Auction bidding on marketplace listings.
+    bids(id) {
+      return request("GET", `/community/posts/${id}/bids`, { auth: false });
+    },
+    bid(id, amount) {
+      return request("POST", `/community/posts/${id}/bids`, { body: { amount } });
+    },
+    closeAuction(id) {
+      return request("POST", `/community/posts/${id}/close`);
+    },
     updatePost(id, body) {
       return request("PATCH", `/community/posts/${id}`, { body });
     },
@@ -489,8 +544,10 @@ export const api = {
     verifyArtist(userId) {
       return request("POST", `/admin/artists/${userId}/verify`);
     },
-    rejectArtist(userId) {
-      return request("POST", `/admin/artists/${userId}/reject`);
+    rejectArtist(userId, reason) {
+      return request("POST", `/admin/artists/${userId}/reject`, {
+        body: { reason: reason || "" },
+      });
     },
     setRole(userId, role) {
       return request("PATCH", `/admin/profiles/${userId}/role`, {

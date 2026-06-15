@@ -581,23 +581,20 @@ export default function ArtTypeDescription() {
             }}>
               {/* Centered content block */}
               <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                {/* Section label */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                  <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, color: "rgba(212,175,55,0.5)", fontStyle: "italic" }}>
+                {/* Section number */}
+                <div style={{ marginBottom: 6 }}>
+                  <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(40px,4.5vw,64px)", fontWeight: 700, color: "rgba(212,175,55,0.75)", fontStyle: "italic", lineHeight: 1 }}>
                     {String(activeTab + 1).padStart(2, "0")}
-                  </span>
-                  <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.22em", color: "#D4AF37" }}>
-                    {current.label.toUpperCase()}
                   </span>
                 </div>
 
-                {/* Heading */}
+                {/* Title — the section label is now the main heading */}
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(32px,3vw,46px)",
                   fontWeight: 700, color: "#fff", lineHeight: 1.05,
                   margin: "0 0 20px", letterSpacing: "-0.01em",
                 }}>
-                  {current.heading}
+                  {current.label}
                 </h2>
 
                 {/* Body */}

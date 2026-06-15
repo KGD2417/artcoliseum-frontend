@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { api } from "../utils/api";
+import MediaUploader from "../components/ui/MediaUploader";
 import { validateForm, isValid, required, email as emailRule, minLen } from "../utils/validation";
 
 const FAQS = [
@@ -28,7 +29,9 @@ const FAQS = [
 
 export default function HelpDesk() {
   const [open, setOpen] = useState(0);
-  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
+  const [images, setImages] = useState([]);
+  const [videos, setVideos] = useState([]);
   const [formErr, setFormErr] = useState("");
 
   const submit = async (e) => {
@@ -40,9 +43,10 @@ export default function HelpDesk() {
     if (!isValid(errs)) { setFormErr(Object.values(errs)[0]); return; }
     setFormErr("");
     try {
-      await api.support.createTicket({ name: form.name, email: form.email, subject: form.subject, message: form.message });
+      await api.support.createTicket({ name: form.name, email: form.email, phone: form.phone, subject: form.subject, message: form.message, images, videos });
       alert(`Ticket submitted. Our concierge will respond to ${form.email} within 24 hours.`);
-      setForm({ name: "", email: "", subject: "", message: "" });
+      setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+      setImages([]); setVideos([]);
     } catch (err) { alert(err.message); }
   };
 
@@ -115,6 +119,11 @@ export default function HelpDesk() {
               style={inputS}
             />
             <input
+              type="tel" placeholder="Phone (optional)"
+              value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+              style={inputS}
+            />
+            <input
               type="text" placeholder="Subject" required
               value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })}
               style={inputS}
@@ -124,6 +133,9 @@ export default function HelpDesk() {
               value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
               style={{ ...inputS, resize: "vertical", fontFamily: "'Raleway',sans-serif" }}
             />
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.7)" }}>PHOTOS &amp; VIDEOS (OPTIONAL)</div>
+            <MediaUploader kind="image" multiple hint="UPLOAD PHOTOS" value={images} onChange={setImages} />
+            <MediaUploader kind="video" multiple hint="UPLOAD VIDEOS" value={videos} onChange={setVideos} />
             {formErr && <div style={{ color: "#ff8a8a", fontFamily: "'Raleway',sans-serif", fontSize: 12 }}>{formErr}</div>}
             <button type="submit" className="btn-gold-main" style={{ marginTop: 6 }}>SUBMIT TICKET</button>
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", textAlign: "center", marginTop: 4 }}>

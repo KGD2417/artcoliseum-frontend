@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "../utils/api";
+import MediaUploader from "../components/ui/MediaUploader";
 import {
   validateForm,
   isValid,
@@ -12,8 +13,11 @@ export default function Contact() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     message: "",
   });
+  const [images, setImages] = useState([]);
+  const [videos, setVideos] = useState([]);
   const [busy, setBusy] = useState(false);
   const [formErr, setFormErr] = useState("");
 
@@ -34,10 +38,15 @@ export default function Contact() {
       await api.support.contact({
         name: formData.name,
         email: formData.email,
+        phone: formData.phone,
         message: formData.message,
+        images,
+        videos,
       });
       alert("Message sent! We will get back to you soon.");
-      setFormData({ name: "", email: "", message: "" });
+      setFormData({ name: "", email: "", phone: "", message: "" });
+      setImages([]);
+      setVideos([]);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -148,6 +157,33 @@ export default function Contact() {
             }}
           />
         </div>
+        <div style={{ marginBottom: "24px" }}>
+          <label
+            style={{
+              display: "block",
+              fontFamily: "'Raleway', sans-serif",
+              fontSize: "12px",
+              letterSpacing: "0.1em",
+              color: "#D4AF37",
+              marginBottom: "8px",
+            }}>
+            PHONE (OPTIONAL)
+          </label>
+          <input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            style={{
+              width: "100%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(212,175,55,0.2)",
+              padding: "14px",
+              color: "#e8e0d0",
+              fontFamily: "'Raleway', sans-serif",
+              outline: "none",
+            }}
+          />
+        </div>
         <div style={{ marginBottom: "32px" }}>
           <label
             style={{
@@ -178,6 +214,22 @@ export default function Contact() {
               resize: "vertical",
             }}
           />
+        </div>
+        <div style={{ marginBottom: "32px" }}>
+          <label
+            style={{
+              display: "block",
+              fontFamily: "'Raleway', sans-serif",
+              fontSize: "12px",
+              letterSpacing: "0.1em",
+              color: "#D4AF37",
+              marginBottom: "8px",
+            }}>
+            PHOTOS &amp; VIDEOS (OPTIONAL) — ADD CONTEXT
+          </label>
+          <MediaUploader kind="image" multiple hint="UPLOAD PHOTOS" value={images} onChange={setImages} />
+          <div style={{ height: 10 }} />
+          <MediaUploader kind="video" multiple hint="UPLOAD VIDEOS" value={videos} onChange={setVideos} />
         </div>
         {formErr && (
           <p

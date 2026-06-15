@@ -61,8 +61,14 @@ export default function ArtistPortal() {
         {(st === "none" || isRejected) && (
           <>
             {isRejected && (
-              <div style={{ marginBottom: 16, padding: "14px 18px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.3)", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#fca5a5" }}>
-                Your previous application wasn't approved. You're welcome to refine your details and apply again.
+              <div style={{ marginBottom: 16, padding: "14px 18px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.3)", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#fca5a5", lineHeight: 1.6 }}>
+                Your previous application wasn't approved.
+                {status.rejection_reason
+                  ? <> <strong style={{ color: "#fecaca" }}>Reason:</strong> {status.rejection_reason}</>
+                  : ""}
+                <div style={{ marginTop: 6, color: "rgba(252,165,165,0.85)" }}>
+                  You're welcome to refine your details below and apply again.
+                </div>
               </div>
             )}
             <KycForm onApplied={(s) => setStatus(s)} />
@@ -252,7 +258,7 @@ function Overview({ works, onGo }) {
 
 function ArtworkForm({ onPublished }) {
   const [cats, setCats] = useState([]);
-  const [f, setF] = useState({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", width: "", height: "", depth: "", dim_unit: "cm", customizable: true, ratio_locked: false, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
+  const [f, setF] = useState({ title: "", narrative: "", category_id: "", subtype_id: "", width: "", height: "", depth: "", dim_unit: "cm", customizable: true, ratio_locked: false, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
   const [images, setImages] = useState([]);
   const [videos, setVideos] = useState([]);
   const [model3d, setModel3d] = useState(null);
@@ -277,15 +283,25 @@ function ArtworkForm({ onPublished }) {
     catch (e) { alert(e.message); }
   };
 
+  // Medium text is derived from the chosen medium + style — the artist no longer
+  // types it. Price is derived too: per-unit for made-to-order; for fixed works
+  // the lowest predefined-size price, or the single "price for this piece".
+  const derivedMedium = (cats.find((c) => c.id === f.subtype_id)?.label
+    || mains.find((c) => c.id === f.category_id)?.label || "");
+  const sizePrices = predefined.map((s) => Number(s.price)).filter((p) => p > 0);
+  const fixedPrice = predefined.length > 0
+    ? (sizePrices.length ? Math.min(...sizePrices) : 0)
+    : (Number(f.price) || 0);
+
   const submit = async () => {
     if (!f.title || !f.category_id) return alert("Title and main medium are required.");
-    if (f.customizable && !(Number(f.price_per_unit) > 0)) return alert("Customizable artworks need a price per unit greater than 0.");
-    if (!f.customizable && !(Number(f.price) > 0)) return alert("Fixed-price artworks need a price greater than 0.");
+    if (f.customizable && !(Number(f.price_per_unit) > 0)) return alert("Made-to-order artworks need a price per unit greater than 0.");
+    if (!f.customizable && !(fixedPrice > 0)) return alert("Set a price: either a price for the piece, or at least one predefined size with a price.");
     if (images.length === 0) return alert("Upload at least one image of your artwork.");
     setBusy(true);
     try {
       await api.artist.createArtwork({
-        title: f.title, narrative: f.narrative, medium: f.medium, category_id: f.category_id,
+        title: f.title, narrative: f.narrative, medium: derivedMedium, category_id: f.category_id,
         subtype_id: f.subtype_id || null,
         // Structured size (fixed works); base_dimensions string for display.
         width: !f.customizable && f.width !== "" ? Number(f.width) : null,
@@ -302,10 +318,10 @@ function ArtworkForm({ onPublished }) {
         min_depth: f.customizable && is3D && f.min_depth !== "" ? Number(f.min_depth) : null,
         max_depth: f.customizable && is3D && f.max_depth !== "" ? Number(f.max_depth) : null,
         predefined_sizes: f.customizable ? [] : predefined,
-        images, videos, model_3d_url: model3d, price: f.price ? Number(f.price) : 0,
+        images, videos, model_3d_url: model3d, price: f.customizable ? 0 : fixedPrice,
       });
       setDone(true);
-      setF({ title: "", narrative: "", medium: "", category_id: "", subtype_id: "", width: "", height: "", depth: "", dim_unit: "cm", customizable: true, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
+      setF({ title: "", narrative: "", category_id: "", subtype_id: "", width: "", height: "", depth: "", dim_unit: "cm", customizable: true, ratio_locked: false, price_per_unit: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "", price: "" });
       setImages([]); setVideos([]); setModel3d(null); setPredefined([]);
       onPublished && onPublished();
     } catch (e) { alert(e.message); } finally { setBusy(false); }
@@ -338,28 +354,47 @@ function ArtworkForm({ onPublished }) {
         <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="Add a new style (e.g. Luminism)" value={newStyle} onChange={(e) => setNewStyle(e.target.value)} />
         <button onClick={addStyle} style={{ ...btn, padding: "11px 18px", whiteSpace: "nowrap" }}>+ STYLE</button>
       </div>
-      <Field l="MEDIUM (TEXT, e.g. Oil on Canvas)"><input style={inputStyle} value={f.medium} onChange={set("medium")} /></Field>
-
-      <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
-        <input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} />
-        This artwork is customizable (priced per unit)
-      </label>
-      {f.customizable && (
-        <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
-          <input type="checkbox" checked={f.ratio_locked} onChange={(e) => setF({ ...f, ratio_locked: e.target.checked })} style={{ accentColor: gold }} />
-          Lock width : height ratio (buyer's W &amp; H stay proportional)
-        </label>
-      )}
+      {/* How it's sold — an explained choice instead of a bare checkbox. */}
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", margin: "4px 0 8px" }}>
+        HOW IS THIS ARTWORK SOLD?
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+        {[
+          { val: false, title: "Fixed size & price", desc: "A finished piece sold as-is. You set its size and price (one or more sizes)." },
+          { val: true, title: "Made to order", desc: "Buyers choose their own size; the price is calculated from your price per unit." },
+        ].map((opt) => {
+          const active = f.customizable === opt.val;
+          return (
+            <button key={String(opt.val)} type="button" onClick={() => setF({ ...f, customizable: opt.val })}
+              style={{ textAlign: "left", padding: "14px 16px", borderRadius: 12, cursor: "pointer", background: active ? "rgba(212,175,55,0.10)" : "rgba(255,255,255,0.02)", border: `1px solid ${active ? gold : "rgba(212,175,55,0.18)"}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ width: 15, height: 15, borderRadius: "50%", flexShrink: 0, border: `2px solid ${active ? gold : "rgba(200,191,160,0.4)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {active && <span style={{ width: 6, height: 6, borderRadius: "50%", background: gold }} />}
+                </span>
+                <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 700, color: active ? "#fff" : "rgba(232,224,208,0.8)" }}>{opt.title}</span>
+              </div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", lineHeight: 1.5 }}>{opt.desc}</div>
+            </button>
+          );
+        })}
+      </div>
 
       {f.customizable ? (
         <>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#e8e0d0" }}>
+            <input type="checkbox" checked={f.ratio_locked} onChange={(e) => setF({ ...f, ratio_locked: e.target.checked })} style={{ accentColor: gold }} />
+            Lock width : height ratio (buyer's W &amp; H stay proportional)
+          </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field l="PRICE PER UNIT"><input style={inputStyle} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></Field>
+            <Field l="PRICE PER UNIT (₹)"><input style={inputStyle} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></Field>
             <Field l="UNIT">
               <select style={inputStyle} value={f.unit} onChange={set("unit")}>
                 <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
               </select>
             </Field>
+          </div>
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", margin: "-2px 0 12px", lineHeight: 1.5 }}>
+            The buyer's total is calculated automatically from the size they pick — you don't set a separate price.
           </div>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", marginBottom: 8 }}>
             AVAILABLE SIZE RANGE ({f.unit}) — leave blank for no limit
@@ -391,11 +426,20 @@ function ArtworkForm({ onPublished }) {
             </Field>
           </div>
           {composedDims && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 12 }}>Shown as: <span style={{ color: gold }}>{composedDims}</span></div>}
+
+          {predefined.length === 0 ? (
+            <Field l="PRICE FOR THIS PIECE (₹)"><input style={inputStyle} type="number" value={f.price} onChange={set("price")} /></Field>
+          ) : (
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", margin: "0 0 8px", lineHeight: 1.5 }}>
+              Price comes from the sizes below — buyers pick one at checkout, and the lowest is shown as the “from” price.
+            </div>
+          )}
           <PredefinedSizes sizes={predefined} setSizes={setPredefined} />
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.4)", margin: "-4px 0 12px", lineHeight: 1.5 }}>
+            Offering several sizes? Add each with its own price above. Otherwise just set the single price.
+          </div>
         </>
       )}
-
-      <Field l="STARTING / DISPLAY PRICE"><input style={inputStyle} type="number" value={f.price} onChange={set("price")} /></Field>
       <Field l="IMAGES"><MediaUploader kind="image" multiple hint="UPLOAD IMAGES" value={images} onChange={setImages} /></Field>
       <Field l="VIDEOS (OPTIONAL)"><MediaUploader kind="video" multiple hint="UPLOAD VIDEOS" value={videos} onChange={setVideos} /></Field>
       <Field l="3D MODEL — GLB (FOR SCULPTURE/MURAL)"><MediaUploader kind="model" hint="UPLOAD 3D MODEL" value={model3d} onChange={setModel3d} /></Field>

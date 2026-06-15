@@ -56,7 +56,9 @@ export default function Categories() {
       ? true
       : `${c.name} ${c.description}`.toLowerCase().includes(search.trim().toLowerCase())
   );
-  const visible = showAll ? filteredCats : filteredCats.slice(0, 4);
+  // Show at least 9 collections up front; the rest behind "view all".
+  const DEFAULT_VISIBLE = 9;
+  const visible = showAll ? filteredCats : filteredCats.slice(0, DEFAULT_VISIBLE);
 
   return (
     <section
@@ -241,7 +243,7 @@ export default function Categories() {
       </div>
       )}
 
-      {!loading && categories.length > 4 && (
+      {!loading && filteredCats.length > DEFAULT_VISIBLE && (
         <div style={{ textAlign: "center", marginTop: 40 }}>
           <motion.button
             whileHover={{ scale: 1.03 }}
@@ -258,7 +260,7 @@ export default function Categories() {
               borderRadius: 999,
               cursor: "pointer",
             }}>
-            {showAll ? "SHOW LESS" : `VIEW ALL ${categories.length} MEDIUMS`}
+            {showAll ? "SHOW LESS" : `VIEW ALL ${filteredCats.length} MEDIUMS`}
           </motion.button>
         </div>
       )}

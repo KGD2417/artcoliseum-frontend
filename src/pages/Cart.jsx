@@ -192,11 +192,23 @@ export default function Cart() {
 function ItemSelection({ item }) {
   const chips = [];
   if (item.size_label) chips.push(["Size", item.size_label]);
+
+  // Dimensions: prefer the buyer's custom size; otherwise fall back to the
+  // artwork's own dimensions so every cart line shows a size.
+  let dims = null;
   if (item.custom_width && item.custom_height) {
     const u = item.custom_unit || "cm";
-    const dims = [item.custom_width, item.custom_height, item.custom_depth].filter(Boolean).join(" × ");
-    chips.push(["Dimensions", `${dims} ${u}`]);
+    dims = `${[item.custom_width, item.custom_height, item.custom_depth].filter(Boolean).join(" × ")} ${u}`;
+  } else if (item.size_dimensions) {
+    dims = item.size_dimensions;
+  } else if (item.base_dimensions) {
+    dims = item.base_dimensions;
+  } else if (item.width && item.height) {
+    const u = item.unit || "cm";
+    dims = `${[item.width, item.height, item.depth].filter(Boolean).join(" × ")} ${u}`;
   }
+  if (dims) chips.push(["Dimensions", dims]);
+
   const opts = item.options || {};
   for (const [k, v] of Object.entries(opts)) {
     if (v && v !== "No frame" && v !== "As created") chips.push([k[0].toUpperCase() + k.slice(1), v]);

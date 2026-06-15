@@ -1,7 +1,13 @@
 /* ═══════════════════════════════════════════════
-   GOOGLE FONTS
+   GOOGLE FONTS — Encode Sans is loaded in index.html.
+   Site-wide typeface: every element uses Encode Sans. The !important override
+   below beats the per-component inline fontFamily styles used across the app.
 ═══════════════════════════════════════════════ */
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Cinzel:wght@400;600;700&family=Raleway:wght@200;300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+*,
+*::before,
+*::after {
+  font-family: "Encode Sans", "Helvetica Neue", Arial, sans-serif !important;
+}
 
 /* ═══════════════════════════════════════════════
    DESIGN TOKENS
@@ -53,7 +59,7 @@ html,
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: "AC Numerals", "Cormorant Garamond", Georgia, serif;
+  font-family: "Encode Sans", "Helvetica Neue", Arial, sans-serif;
   font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -185,13 +191,13 @@ a {
     border-color 0.35s ease, box-shadow 0.35s ease;
 }
 .nav-container.is-scrolled {
-  height: 68px;
+  height: 82px;
   background: #050505;
   border-bottom-color: rgba(212, 175, 55, 0.22);
   box-shadow: 0 8px 36px rgba(0, 0, 0, 0.7);
 }
 .nav-container.is-scrolled .nav-logo-img {
-  height: 52px;
+  height: 60px;
 }
 .nav-container::before {
   content: "";
@@ -2168,6 +2174,13 @@ input[type="email"] {
   width: 200px;
   padding-left: 8px;
 }
+/* The pill itself shows focus via :focus-within — suppress the global
+   input:focus ring so no rectangular outline appears inside the rounded bar. */
+.nav-search-input:focus,
+.artist-search input:focus {
+  box-shadow: none;
+  border-color: transparent !important;
+}
 .nav-search-sm .nav-search-input {
   width: 150px;
   font-size: 11px;
@@ -3202,6 +3215,8 @@ input[type="email"] {
 .event-tilt-wrap {
   border-radius: 18px;
   cursor: default;
+  height: 100%;
+  display: flex;
 }
 .event-tilt-card {
   border-radius: 18px;
@@ -3210,6 +3225,11 @@ input[type="email"] {
   border: 1px solid rgba(212, 175, 55, 0.18);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
   transition: box-shadow 0.3s ease;
+  /* Fill the grid row so every card in a row is the same height. */
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .event-tilt-card:hover {
   box-shadow:
@@ -3243,6 +3263,11 @@ input[type="email"] {
 }
 .event-card-body {
   padding: 22px 24px 26px;
+  /* Let the body fill the card so the Register button can pin to the bottom,
+     keeping all cards' buttons aligned regardless of how much text each has. */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 .event-card-tag {
   display: inline-block;
@@ -4556,7 +4581,9 @@ input[type="email"] {
 ═══════════════════════════════════════════════ */
 .event-register-btn {
   display: inline-block;
-  margin-top: 16px;
+  /* Pin to the bottom of the card body so buttons align across all cards. */
+  margin-top: auto;
+  align-self: flex-start;
   padding: 10px 22px;
   font-family: "Cinzel", serif;
   font-size: 10px;
