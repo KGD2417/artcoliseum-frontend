@@ -957,10 +957,17 @@ export default function Home() {
   // only renders when there are real published items.
   useEffect(() => {
     let cancelled = false;
-    api.news.list()
-      .then((rows) => { if (!cancelled) setNews(rows || []); })
-      .catch(() => { if (!cancelled) setNews([]); });
-    return () => { cancelled = true; };
+    api.news
+      .list()
+      .then((rows) => {
+        if (!cancelled) setNews(rows || []);
+      })
+      .catch(() => {
+        if (!cancelled) setNews([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Open the registration modal, prefilling from the collector's profile.
@@ -1669,12 +1676,13 @@ export default function Home() {
             tag="Dispatches"
             title="Latest"
             italic="News"
-            sub="Announcements, press and happenings from the Art Coliseum world."
+            sub="Discover the stories, insights, voices, and trends shaping the industry across India and the world."
           />
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(300px,100%), 1fr))",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(300px,100%), 1fr))",
               gap: 22,
               maxWidth: 1100,
               margin: "0 auto",
@@ -1683,11 +1691,16 @@ export default function Home() {
               const isLink = !!n.link_url;
               const go = () => {
                 if (!isLink) return;
-                if (/^https?:\/\//.test(n.link_url)) window.open(n.link_url, "_blank", "noopener");
+                if (/^https?:\/\//.test(n.link_url))
+                  window.open(n.link_url, "_blank", "noopener");
                 else navigate(n.link_url);
               };
               const date = n.created_at
-                ? new Date(n.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+                ? new Date(n.created_at).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })
                 : "";
               return (
                 <motion.article
@@ -1711,26 +1724,66 @@ export default function Home() {
                       <SafeImage
                         src={n.image_url}
                         alt={n.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
                       />
                     </div>
                   )}
-                  <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", flex: 1 }}>
+                  <div
+                    style={{
+                      padding: "18px 20px 20px",
+                      display: "flex",
+                      flexDirection: "column",
+                      flex: 1,
+                    }}>
                     {date && (
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 8 }}>
+                      <div
+                        style={{
+                          fontFamily: "'Cinzel',serif",
+                          fontSize: 9,
+                          letterSpacing: "0.16em",
+                          color: "#D4AF37",
+                          marginBottom: 8,
+                        }}>
                         {date.toUpperCase()}
                       </div>
                     )}
-                    <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 21, fontWeight: 700, color: "#f0e8d8", margin: "0 0 8px", lineHeight: 1.25 }}>
+                    <h3
+                      style={{
+                        fontFamily: "'Cormorant Garamond',serif",
+                        fontSize: 21,
+                        fontWeight: 700,
+                        color: "#f0e8d8",
+                        margin: "0 0 8px",
+                        lineHeight: 1.25,
+                      }}>
                       {n.title}
                     </h3>
                     {n.summary && (
-                      <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.65)", lineHeight: 1.7, margin: 0 }}>
+                      <p
+                        style={{
+                          fontFamily: "'Raleway',sans-serif",
+                          fontSize: 13,
+                          color: "rgba(200,191,160,0.65)",
+                          lineHeight: 1.7,
+                          margin: 0,
+                        }}>
                         {n.summary}
                       </p>
                     )}
                     {isLink && (
-                      <span style={{ marginTop: 14, fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37" }}>
+                      <span
+                        style={{
+                          marginTop: 14,
+                          fontFamily: "'Cinzel',serif",
+                          fontSize: 9,
+                          letterSpacing: "0.14em",
+                          color: "#D4AF37",
+                        }}>
                         READ MORE →
                       </span>
                     )}

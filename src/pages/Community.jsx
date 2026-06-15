@@ -1122,7 +1122,7 @@ export default function Community() {
             <span className="bold-white">Art Coliseum</span> <em>Community</em>
           </h1>
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 15, color: "rgba(200,191,160,0.55)", maxWidth: 540, margin: "14px auto 0", lineHeight: 1.75 }}>
-            A gathering place for artists, collectors, and curators — organised by community, open for conversation and commerce.
+            A thriving community where artists, collectors, curators, and industry professionals connect, collaborate, and create opportunities together , support and help each other.
           </p>
         </motion.div>
       </div>

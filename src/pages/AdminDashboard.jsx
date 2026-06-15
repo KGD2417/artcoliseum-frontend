@@ -656,6 +656,11 @@ function News() {
       <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 14 }}>
         These appear in the “Latest News” section on the home page. Unpublished items are hidden from visitors. Lower order numbers show first, then newest.
       </div>
+
+      {/* Pull live art headlines from a news provider; admin picks which to show. */}
+      <ExternalNews onImported={load} />
+
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "4px 0 10px" }}>OR WRITE YOUR OWN</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
         <input placeholder="Headline / title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
         <input placeholder="Link (optional — e.g. /events or https://…)" value={f.link_url} onChange={(e) => setF({ ...f, link_url: e.target.value })} style={miniInput} />
@@ -693,6 +698,74 @@ function News() {
         ))}
       </div>
     </Panel>
+  );
+}
+
+// Live art-news discovery: fetch headlines from the configured provider and
+// import the chosen ones as published news items (shown on the home page).
+function ExternalNews({ onImported }) {
+  const [items, setItems] = useState([]);
+  const [provider, setProvider] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [fetched, setFetched] = useState(false);
+  const [adding, setAdding] = useState("");
+
+  const discover = async () => {
+    setBusy(true); setErr("");
+    try {
+      const r = await api.news.external();
+      setItems(r.items || []); setProvider(r.provider || ""); setFetched(true);
+    } catch (e) { setErr(e.message || "Could not fetch news"); setFetched(true); }
+    finally { setBusy(false); }
+  };
+
+  const add = async (a) => {
+    setAdding(a.link_url);
+    try {
+      await api.news.create({ title: a.title, summary: a.summary || "", image_url: a.image_url || "", link_url: a.link_url || "", published: true });
+      setItems((prev) => prev.map((x) => (x.link_url === a.link_url ? { ...x, already_added: true } : x)));
+      onImported?.();
+    } catch (e) { alert(e.message); } finally { setAdding(""); }
+  };
+
+  return (
+    <div style={{ border: "1px solid rgba(212,175,55,0.25)", borderRadius: 10, padding: 16, marginBottom: 22, background: "rgba(212,175,55,0.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold }}>
+          DISCOVER ART NEWS{provider ? ` · ${provider.toUpperCase()}` : ""}
+        </div>
+        <Btn onClick={discover} disabled={busy}>{busy ? "FETCHING…" : fetched ? "REFRESH" : "FETCH ART NEWS"}</Btn>
+      </div>
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 8 }}>
+        Pull the latest art headlines, then click ADD on the ones you want to show on the home page.
+      </div>
+      {err && (
+        <div style={{ marginTop: 12, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#fca5a5", lineHeight: 1.6 }}>
+          {err}
+        </div>
+      )}
+      {fetched && !err && items.length === 0 && <Empty>No articles returned.</Empty>}
+      <div style={{ marginTop: 12 }}>
+        {items.map((a, i) => (
+          <Item key={a.link_url || i}>
+            {a.image_url
+              ? <img src={a.image_url} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />
+              : <div style={{ width: 44, height: 44, borderRadius: 6, border: "1px dashed rgba(212,175,55,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(212,175,55,0.4)", flexShrink: 0 }}>◆</div>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {a.source}{a.published_at ? ` · ${new Date(a.published_at).toLocaleDateString()}` : ""}{a.summary ? ` — ${a.summary}` : ""}
+              </div>
+            </div>
+            <a href={a.link_url} target="_blank" rel="noreferrer" style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em", color: "rgba(200,191,160,0.7)", textDecoration: "none", whiteSpace: "nowrap" }}>OPEN ↗</a>
+            {a.already_added
+              ? <Btn ghost disabled>ADDED</Btn>
+              : <Btn primary disabled={adding === a.link_url} onClick={() => add(a)}>{adding === a.link_url ? "…" : "ADD"}</Btn>}
+          </Item>
+        ))}
+      </div>
+    </div>
   );
 }
 

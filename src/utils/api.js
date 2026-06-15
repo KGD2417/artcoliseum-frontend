@@ -319,6 +319,10 @@ export const api = {
     all() {
       return request("GET", "/news/all");
     },
+    // Admin: latest art news from the configured external provider.
+    external() {
+      return request("GET", "/news/external");
+    },
     create(body) {
       return request("POST", "/news", { body });
     },
