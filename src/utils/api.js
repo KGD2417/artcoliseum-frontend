@@ -374,6 +374,19 @@ export const api = {
         body: { label, parent_id },
       });
     },
+    // Sales dashboard
+    orders() {
+      return request("GET", "/artists/me/orders");
+    },
+    pickupAddress() {
+      return request("GET", "/artists/me/pickup-address");
+    },
+    setPickupAddress(body) {
+      return request("PUT", "/artists/me/pickup-address", { body });
+    },
+    dispatchOrder(orderItemId, body = {}) {
+      return request("POST", `/artists/me/orders/${orderItemId}/dispatch`, { body });
+    },
   },
 
   competitions: {

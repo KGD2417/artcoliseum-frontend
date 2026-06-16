@@ -427,6 +427,7 @@ const STUDIO_TABS = [
   ["overview", "Overview"],
   ["upload", "Upload Artwork"],
   ["works", "My Artworks"],
+  ["orders", "Orders"],
   ["exhibition", "Exhibition"],
   ["profile", "Profile"],
 ];
@@ -507,9 +508,209 @@ function StudioDashboard() {
         />
       )}
       {tab === "works" && <MyArtworks rows={works} reload={loadWorks} />}
+      {tab === "orders" && <ArtistOrders />}
       {tab === "exhibition" && <ArtistExhibitionPanel />}
       {tab === "profile" && <ProfilePanel />}
     </section>
+  );
+}
+
+/* ───────────────── Orders / Sales ───────────────── */
+const ORDER_STAGE_LABEL = {
+  order_confirmed: "ORDER CONFIRMED",
+  curation_crating: "IN PRODUCTION",
+  dispatched: "DISPATCHED",
+  out_for_delivery: "OUT FOR DELIVERY",
+  installation: "INSTALLATION",
+  delivered: "DELIVERED",
+};
+
+function ArtistOrders() {
+  const [orders, setOrders] = useState(null);   // null = loading
+  const [pickup, setPickup] = useState(null);   // null = loading
+
+  const loadOrders = () => api.artist.orders().then(setOrders).catch(() => setOrders([]));
+  const loadPickup = () => api.artist.pickupAddress().then(setPickup).catch(() => setPickup({}));
+
+  useEffect(() => { loadOrders(); loadPickup(); }, []);
+
+  const pickupSet = !!(pickup && pickup.line1 && pickup.city && pickup.zip && pickup.phone);
+
+  return (
+    <div>
+      <PickupAddressCard pickup={pickup} pickupSet={pickupSet} onSaved={setPickup} />
+
+      {orders === null ? (
+        <SkeletonRows count={3} height={120} gap={14} />
+      ) : orders.length === 0 ? (
+        <div style={{ ...card, textAlign: "center", color: "rgba(200,191,160,0.6)", fontFamily: "'Raleway',sans-serif", fontSize: 14 }}>
+          No sales yet. When someone buys your work, it'll appear here with the buyer's
+          shipping details so you can send it to them.
+        </div>
+      ) : (
+        orders.map((o) => (
+          <ArtistOrderCard key={o.order_item_id} order={o} pickupSet={pickupSet} onChanged={loadOrders} />
+        ))
+      )}
+    </div>
+  );
+}
+
+function PickupAddressCard({ pickup, pickupSet, onSaved }) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: "India" });
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (pickup) setF((p) => ({ ...p, ...pickup }));
+  }, [pickup]);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const saved = await api.artist.setPickupAddress({
+        name: f.name, phone: f.phone, line1: f.line1, line2: f.line2 || null,
+        city: f.city, state: f.state, zip: f.zip, country: f.country || "India",
+      });
+      onSaved(saved);
+      setOpen(false);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ ...card, borderColor: pickupSet ? "rgba(212,175,55,0.18)" : "rgba(255,170,90,0.5)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <span style={label}>SHIP-FROM / PICKUP ADDRESS</span>
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.75)", marginTop: 4 }}>
+            {pickupSet
+              ? `${pickup.line1}, ${pickup.city} ${pickup.zip} · ${pickup.phone}`
+              : "Set the address your artworks ship from — this is required before you can dispatch an order."}
+          </div>
+        </div>
+        <button onClick={() => setOpen((v) => !v)} style={{ ...btn, padding: "10px 20px", fontSize: 11, background: open ? "transparent" : btn.background, color: open ? gold : "#111", border: open ? `1px solid ${gold}` : "none" }}>
+          {open ? "CANCEL" : pickupSet ? "EDIT" : "SET ADDRESS"}
+        </button>
+      </div>
+
+      {open && (
+        <div style={{ marginTop: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field l="FULL NAME"><input style={inputStyle} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
+            <Field l="PHONE"><input style={inputStyle} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
+          </div>
+          <Field l="ADDRESS LINE 1"><input style={inputStyle} value={f.line1} onChange={(e) => setF({ ...f, line1: e.target.value })} /></Field>
+          <Field l="ADDRESS LINE 2 (OPTIONAL)"><input style={inputStyle} value={f.line2} onChange={(e) => setF({ ...f, line2: e.target.value })} /></Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <Field l="CITY"><input style={inputStyle} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></Field>
+            <Field l="STATE"><input style={inputStyle} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} /></Field>
+            <Field l="PIN CODE"><input style={inputStyle} value={f.zip} onChange={(e) => setF({ ...f, zip: e.target.value })} inputMode="numeric" maxLength={6} /></Field>
+          </div>
+          <button onClick={save} disabled={busy || !(f.line1 && f.city && f.zip && f.phone)} style={{ ...btn, opacity: busy || !(f.line1 && f.city && f.zip && f.phone) ? 0.5 : 1 }}>
+            {busy ? "SAVING…" : "SAVE ADDRESS"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ArtistOrderCard({ order: o, pickupSet, onChanged }) {
+  const [busy, setBusy] = useState(false);
+  const a = o.shipping_address || {};
+  const isPickup = o.fulfillment === "self_pickup";
+
+  const dims = [o.custom_width, o.custom_height, o.custom_depth].filter(Boolean).join(" × ");
+  const opts = o.options || {};
+
+  const dispatch = async () => {
+    if (!pickupSet) { alert("Set your pickup address first."); return; }
+    setBusy(true);
+    try {
+      await api.artist.dispatchOrder(o.order_item_id);
+      onChanged();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={card}>
+      <div style={{ display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
+        {o.image && <img src={o.image} alt={o.title} style={{ width: 88, height: 88, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />}
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, color: "#fff" }}>{o.title}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 700, color: gold }}>{inr(o.price)}</div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+            <Tag>{(o.fulfillment || "").replace(/_/g, " ").toUpperCase()}</Tag>
+            <Tag>{ORDER_STAGE_LABEL[o.delivery_stage] || o.order_status?.toUpperCase()}</Tag>
+            {o.is_custom && <Tag amber>CUSTOM ORDER</Tag>}
+          </div>
+
+          {/* Custom spec the buyer requested */}
+          {o.is_custom && (
+            <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.25)" }}>
+              <span style={{ ...label, marginBottom: 8 }}>BUYER'S CUSTOM SPEC</span>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.85)" }}>
+                {dims && <span>Size: <strong style={{ color: "#fff" }}>{dims} {o.custom_unit || "cm"}</strong></span>}
+                {opts.frame && <span>Frame: <strong style={{ color: "#fff" }}>{opts.frame}</strong></span>}
+                {opts.finish && <span>Finish: <strong style={{ color: "#fff" }}>{opts.finish}</strong></span>}
+                {opts.palette && <span>Palette: <strong style={{ color: "#fff" }}>{opts.palette}</strong></span>}
+              </div>
+            </div>
+          )}
+
+          {/* Ship-to */}
+          <div style={{ marginTop: 12 }}>
+            <span style={{ ...label, marginBottom: 6 }}>{isPickup ? "BUYER (SELF-PICKUP)" : "SHIP TO"}</span>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.8)", lineHeight: 1.6 }}>
+              <div style={{ color: "#fff" }}>{o.buyer_name} · {o.buyer_phone}</div>
+              {!isPickup && (a.line1
+                ? <div>{a.line1}{a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.state} {a.zip}, {a.country || "India"}</div>
+                : <div style={{ color: "rgba(200,191,160,0.5)" }}>No address on file.</div>)}
+            </div>
+          </div>
+
+          {/* Action / status */}
+          <div style={{ marginTop: 14 }}>
+            {isPickup ? (
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)" }}>
+                Buyer collects from the vault — no shipment needed from you.
+              </div>
+            ) : o.artist_dispatched ? (
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#4ade80" }}>
+                ✓ Dispatched{o.artist_tracking?.courier ? ` · ${o.artist_tracking.courier}` : ""}
+                {o.artist_tracking?.awb ? ` · ${o.artist_tracking.awb}` : ""}
+              </div>
+            ) : (
+              <button onClick={dispatch} disabled={busy} style={{ ...btn, padding: "12px 24px", fontSize: 12, opacity: busy ? 0.6 : 1 }}>
+                {busy ? "DISPATCHING…" : "SHIP TO BUYER →"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Tag({ children, amber }) {
+  return (
+    <span style={{
+      fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.14em",
+      padding: "4px 10px", borderRadius: 999,
+      background: amber ? "rgba(212,175,55,0.16)" : "rgba(255,255,255,0.04)",
+      border: `1px solid ${amber ? "rgba(212,175,55,0.5)" : "rgba(212,175,55,0.2)"}`,
+      color: amber ? gold : "rgba(200,191,160,0.7)",
+    }}>{children}</span>
   );
 }
 
