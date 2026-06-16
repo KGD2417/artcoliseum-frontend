@@ -26,6 +26,7 @@ export default function Contact() {
     const errs = validateForm(formData, {
       name: [required("Name")],
       email: [required("Email"), emailRule],
+      phone: [required("Phone")],
       message: [required("Message"), minLen(10, "Message")],
     });
     if (!isValid(errs)) {
@@ -167,12 +168,13 @@ export default function Contact() {
               color: "#D4AF37",
               marginBottom: "8px",
             }}>
-            PHONE (OPTIONAL)
+            PHONE
           </label>
           <input
             type="tel"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            required
             style={{
               width: "100%",
               background: "rgba(255,255,255,0.04)",

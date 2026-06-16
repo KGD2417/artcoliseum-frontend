@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { useLocale, LANGS } from "../context/Locale";
-import { CheckIcon } from "../components/Icons";
+import { CheckIcon, CopyIcon } from "../components/Icons";
 import { api, realtime } from "../utils/api";
+import { STAGE_ORDER, STAGE_LABEL } from "../utils/delivery";
 import { useAuth } from "../context/Auth";
 import { validateForm, isValid, required, phoneIN, pincodeIN, genId } from "../utils/validation";
 import i3 from "../assets/i3.png";
@@ -80,6 +81,7 @@ export default function Profile() {
       try {
         const ords = await api.orders.mine();
         setOrders(ords.map(o => ({
+          rawId: o.id,
           id: "AU-" + o.id.slice(0, 6).toUpperCase(),
           item: (o.items || []).map(i => i.title).filter(Boolean).join(", ") || "Order",
           total: Number(o.total),
@@ -293,28 +295,7 @@ export default function Profile() {
                       <div style={{ padding: 24, textAlign: "center", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.55)" }}>No orders yet.</div>
                     )}
                     {orders.map(o => (
-                      <div key={o.id} style={{
-                        padding: "18px 20px",
-                        border: "1px solid rgba(212,175,55,0.12)",
-                        borderRadius: 8,
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-                          <div>
-                            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "#D4AF37" }}>{o.id}</div>
-                            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#f0e8d8", marginTop: 4 }}>{o.item}</div>
-                            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{o.eta}</div>
-                          </div>
-                          <div style={{ textAlign: "right" }}>
-                            <div style={{
-                              display: "inline-block", marginTop: 8, padding: "5px 12px", borderRadius: 999,
-                              fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em",
-                              background: o.status === "DELIVERED" ? "rgba(74,222,128,0.12)" : "rgba(212,175,55,0.12)",
-                              color: o.status === "DELIVERED" ? "#4ade80" : "#D4AF37",
-                              border: o.status === "DELIVERED" ? "1px solid rgba(74,222,128,0.3)" : "1px solid rgba(212,175,55,0.3)",
-                            }}>{o.status}</div>
-                          </div>
-                        </div>
-                      </div>
+                      <OrderTracker key={o.rawId} order={o} />
                     ))}
                   </div>
                 </Card>
@@ -556,6 +537,155 @@ export default function Profile() {
         }
       `}</style>
     </section>
+  );
+}
+
+/** Expandable order row that fetches and renders live delivery tracking:
+ *  stage timeline, tracking id + courier + ETA, and the receipt-OTP confirm. */
+function OrderTracker({ order }) {
+  const [open, setOpen] = useState(false);
+  const [delivery, setDelivery] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpErr, setOtpErr] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const loadDelivery = async () => {
+    setLoading(true);
+    try {
+      setDelivery(await api.deliveries.byOrder(order.rawId));
+    } catch {
+      setDelivery(null); // no delivery yet (e.g. unpaid) → 404
+    } finally {
+      setLoading(false);
+      setLoaded(true);
+    }
+  };
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && !loaded) loadDelivery();
+  };
+
+  const confirmOtp = async () => {
+    setOtpErr("");
+    try {
+      setDelivery(await api.deliveries.confirm(delivery.id, otp.trim()));
+    } catch (e) {
+      setOtpErr(e.message);
+    }
+  };
+
+  const delivered = (order.status === "DELIVERED") || delivery?.stage === "delivered";
+  const currentIdx = delivery ? STAGE_ORDER.indexOf(delivery.stage) : -1;
+
+  return (
+    <div style={{ border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8, overflow: "hidden" }}>
+      {/* header — click to expand tracking */}
+      <button onClick={toggle} style={{
+        width: "100%", textAlign: "left", cursor: "pointer", background: "transparent", border: "none",
+        padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8,
+      }}>
+        <div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "#D4AF37" }}>{order.id}</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#f0e8d8", marginTop: 4 }}>{order.item}</div>
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{order.eta}</div>
+        </div>
+        <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          <div style={{
+            display: "inline-block", padding: "5px 12px", borderRadius: 999,
+            fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em",
+            background: delivered ? "rgba(74,222,128,0.12)" : "rgba(212,175,55,0.12)",
+            color: delivered ? "#4ade80" : "#D4AF37",
+            border: delivered ? "1px solid rgba(74,222,128,0.3)" : "1px solid rgba(212,175,55,0.3)",
+          }}>{order.status}</div>
+          <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(200,191,160,0.6)" }}>
+            {open ? "HIDE TRACKING ▴" : "TRACK ORDER ▾"}
+          </span>
+        </div>
+      </button>
+
+      {/* tracking detail */}
+      {open && (
+        <div style={{ padding: "0 20px 20px", borderTop: "1px solid rgba(212,175,55,0.1)" }}>
+          {loading ? (
+            <div style={{ padding: 18, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.55)" }}>Loading tracking…</div>
+          ) : !delivery ? (
+            <div style={{ padding: 18, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.55)", lineHeight: 1.6 }}>
+              {order.status === "PENDING"
+                ? "Tracking will appear once your payment is confirmed."
+                : "No tracking information is available for this order yet."}
+            </div>
+          ) : (
+            <>
+              {/* stage timeline */}
+              <div style={{ position: "relative", margin: "18px 0 8px" }}>
+                {STAGE_ORDER.map((stage, i) => {
+                  const state = i < currentIdx ? "done" : i === currentIdx ? "active" : "pending";
+                  return (
+                    <div key={stage} style={{ display: "flex", gap: 14, paddingBottom: i !== STAGE_ORDER.length - 1 ? 20 : 0, position: "relative" }}>
+                      {i !== STAGE_ORDER.length - 1 && (
+                        <div style={{ position: "absolute", left: 11, top: 24, bottom: 0, width: 1, background: i < currentIdx ? "#D4AF37" : "rgba(212,175,55,0.2)" }} />
+                      )}
+                      <div style={{
+                        width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                        background: state !== "pending" ? "#D4AF37" : "rgba(212,175,55,0.15)", color: state !== "pending" ? "#111" : "rgba(200,191,160,0.4)",
+                        fontSize: 10, fontWeight: 700, boxShadow: state === "active" ? "0 0 0 4px rgba(212,175,55,0.2)" : "none",
+                      }}>{state === "done" ? "✓" : state === "active" ? "●" : ""}</div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", paddingTop: 5,
+                        color: state === "active" ? "#D4AF37" : state === "done" ? "#e8e0d0" : "rgba(200,191,160,0.45)" }}>
+                        {STAGE_LABEL[stage]}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* tracking id + courier + eta */}
+              <div style={{ height: 1, background: "rgba(212,175,55,0.18)", margin: "10px 0 14px" }} />
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "rgba(200,191,160,0.55)", marginBottom: 6 }}>
+                TRACKING ID · {delivery.courier || "Courier"}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 14, color: "#D4AF37", letterSpacing: "0.1em" }}>{delivery.tracking_id || "—"}</div>
+                <button onClick={() => { navigator.clipboard?.writeText(delivery.tracking_id || ""); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#D4AF37", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em" }}>
+                  <CopyIcon size={14} />{copied && <span>COPIED</span>}
+                </button>
+              </div>
+              {delivery.eta && (
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 8 }}>
+                  Estimated arrival · <span style={{ color: "#D4AF37" }}>{delivery.eta}</span>
+                </div>
+              )}
+
+              {/* OTP confirm */}
+              {!delivered && (
+                <div style={{ marginTop: 18, padding: 16, background: "rgba(212,175,55,0.05)", border: "1px dashed rgba(212,175,55,0.3)", borderRadius: 10 }}>
+                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 8 }}>CONFIRM RECEIPT</div>
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.65)", marginBottom: 12, lineHeight: 1.6 }}>
+                    When your piece is installed, our team shares a 6-digit OTP. Enter it to confirm receipt.
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="6-digit OTP"
+                      style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 8, padding: "11px 14px", color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 14, letterSpacing: "0.2em", outline: "none" }} />
+                    <button onClick={confirmOtp} disabled={otp.trim().length < 4}
+                      style={{ padding: "0 22px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.14em", cursor: otp.trim().length < 4 ? "not-allowed" : "pointer" }}>CONFIRM</button>
+                  </div>
+                  {otpErr && <div style={{ color: "#ff8a8a", fontFamily: "'Raleway',sans-serif", fontSize: 12, marginTop: 8 }}>{otpErr}</div>}
+                </div>
+              )}
+
+              {delivered && (
+                <div style={{ marginTop: 16, fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#4ade80" }}>✓ Delivered and confirmed.</div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

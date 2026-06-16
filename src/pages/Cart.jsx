@@ -111,7 +111,7 @@ export default function Cart() {
                         {formatPrice(item.line_total)}
                       </div>
                       <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", marginTop: 2 }}>
-                        incl. delivery
+                        {item.fulfillment === "self_pickup" ? "self-pickup · no delivery fee" : "+ delivery at checkout"}
                       </div>
                     </div>
                   </div>

@@ -7,6 +7,7 @@ import { CopyIcon, CheckIcon } from "../components/Icons";
 import { useLocale } from "../context/Locale";
 import { useAuth } from "../context/Auth";
 import { api, realtime } from "../utils/api";
+import { loadRazorpay } from "../utils/razorpay";
 import { validateForm, isValid, required, phoneIN, pincodeIN, futureDate, todayISO, genId } from "../utils/validation";
 
 const STAGE_ORDER = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
@@ -138,7 +139,13 @@ export default function Checkout() {
         api.auth.updateMe({ addresses: next }).then((m) => setSavedAddresses(m?.addresses || next)).catch(() => {});
       }
       setOrder(created);
-      setShowPayOverlay(true);
+      // Real Razorpay checkout when keys are configured (backend returns a
+      // razorpay_order_id); otherwise the built-in demo overlay.
+      if (created.razorpay_order_id) {
+        await openRazorpay(created);
+      } else {
+        setShowPayOverlay(true);
+      }
     } catch (e) {
       alert(e.message);
     } finally {
@@ -146,6 +153,39 @@ export default function Checkout() {
     }
   };
 
+  // Open the hosted Razorpay checkout, then verify the result server-side.
+  const openRazorpay = async (created) => {
+    const Razorpay = await loadRazorpay();
+    const rzp = new Razorpay({
+      key: created.razorpay_key_id,
+      order_id: created.razorpay_order_id,
+      amount: created.amount_due,
+      currency: created.currency || "INR",
+      name: "Art Coliseum",
+      description: `Order #${created.id.slice(0, 8).toUpperCase()}`,
+      prefill: { name: address.name, email: user?.email || "", contact: address.phone },
+      theme: { color: "#D4AF37" },
+      handler: async (resp) => {
+        try {
+          const paid = await api.orders.verify(created.id, {
+            razorpay_order_id: resp.razorpay_order_id,
+            razorpay_payment_id: resp.razorpay_payment_id,
+            razorpay_signature: resp.razorpay_signature,
+          });
+          setOrder(paid);
+          const d = await api.deliveries.byOrder(created.id).catch(() => null);
+          setDelivery(d);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (e) {
+          alert(e.message);
+        }
+      },
+    });
+    rzp.on("payment.failed", (r) => alert(r.error?.description || "Payment failed. Please try again."));
+    rzp.open();
+  };
+
+  // Demo flow only (no Razorpay keys configured).
   const finalizePaid = async (orderId) => {
     const paid = await api.orders.pay(orderId);
     setOrder(paid);

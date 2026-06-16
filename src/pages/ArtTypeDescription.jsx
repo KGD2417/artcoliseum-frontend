@@ -8,16 +8,24 @@ const MEDIUM_DATA = {
   paintings: {
     title: "Paintings",
     label: "THE ART OF PAINTING",
-    heroImg: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1600&q=80",
+    heroImg:
+      "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1600&q=80",
     origin: [
       "Painting is one of humanity's oldest art forms, with origins in prehistoric cave art over 40,000 years ago. The Lascaux caves of France and Altamira in Spain bear witness to our ancestors' compulsion to depict the world around them — using natural pigments of ochre, charcoal, and hematite on rock faces. These earliest paintings were not mere decoration; they were ritual, memory, and identity rendered visible.",
       "The ancient Egyptians refined painting into a sacred practice, developing strict conventions of proportion and symbolism that persisted for three millennia. The Greeks brought naturalism, the Romans mastered fresco and mosaic, and Byzantium elevated icon painting to a spiritual science. Then came the Renaissance — spanning the 14th through 17th centuries — when European masters such as Leonardo, Michelangelo, and Raphael elevated painting to the absolute pinnacle of cultural achievement, fusing mathematical perspective, anatomical precision, and divine aspiration.",
       "The centuries that followed saw painting reinvent itself repeatedly: the dramatic chiaroscuro of Caravaggio, the luminous interiors of Vermeer, the revolutionary brushwork of the Impressionists, the psychological intensity of Expressionism, the radical abstraction of Rothko and Pollock. Today, painting remains among the most vital and contested of all art forms — simultaneously ancient and radically contemporary, speaking a language that no other medium can fully replicate.",
     ],
     pioneers: [
-      "Leonardo da Vinci", "Michelangelo Buonarroti", "Rembrandt van Rijn",
-      "Claude Monet", "Pablo Picasso", "Jackson Pollock", "Mark Rothko",
-      "Johannes Vermeer", "Caravaggio", "Jean-Michel Basquiat",
+      "Leonardo da Vinci",
+      "Michelangelo Buonarroti",
+      "Rembrandt van Rijn",
+      "Claude Monet",
+      "Pablo Picasso",
+      "Jackson Pollock",
+      "Mark Rothko",
+      "Johannes Vermeer",
+      "Caravaggio",
+      "Jean-Michel Basquiat",
     ],
     subtypes: [
       {
@@ -67,16 +75,23 @@ const MEDIUM_DATA = {
   sculptures: {
     title: "Sculptures",
     label: "THE ART OF SCULPTURE",
-    heroImg: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80",
+    heroImg:
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80",
     origin: [
       "Sculpture is among the oldest art forms in human history, with examples dating back over 40,000 years to the Venus of Hohle Fels — a small ivory figurine carved by early Homo sapiens in what is now southern Germany. From these primal beginnings, sculpture evolved across every civilization: the colossal monuments of ancient Egypt, the idealized athleticism of Greek marble, the psychological complexity of Roman portraiture.",
       "The Renaissance rekindled the ancient fascination with three-dimensional form. Michelangelo's David — carved from a single flawed block of Carrara marble — remains the paradigm of artistic ambition transmuted into physical perfection. Bernini brought the Baroque to life in stone with a theatricality that seems to defy the very nature of the material. Rodin, working in the 19th century, shattered academic convention with his raw, unfinished surfaces and existential intensity.",
       "The 20th century exploded the definition of sculpture entirely. Brâncuși reduced form to its most essential contour. Giacometti stretched the human figure into existential anguish. Louise Bourgeois made sculpture from private memory and psychological terror. Today, sculptors work in everything from stainless steel to light to living organisms, and the discipline continues to expand its understanding of what occupying physical space can mean.",
     ],
     pioneers: [
-      "Michelangelo Buonarroti", "Auguste Rodin", "Constantin Brâncuși",
-      "Alberto Giacometti", "Louise Bourgeois", "Richard Serra",
-      "Gian Lorenzo Bernini", "Henry Moore", "Donatello",
+      "Michelangelo Buonarroti",
+      "Auguste Rodin",
+      "Constantin Brâncuși",
+      "Alberto Giacometti",
+      "Louise Bourgeois",
+      "Richard Serra",
+      "Gian Lorenzo Bernini",
+      "Henry Moore",
+      "Donatello",
     ],
     subtypes: [
       {
@@ -126,16 +141,23 @@ const MEDIUM_DATA = {
   photography: {
     title: "Photography",
     label: "THE ART OF PHOTOGRAPHY",
-    heroImg: "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=1600&q=80",
+    heroImg:
+      "https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=1600&q=80",
     origin: [
       "Photography was invented in the 1820s and 1830s through the parallel experiments of Joseph Nicéphore Niépce and Louis Daguerre in France, and William Henry Fox Talbot in England. Niépce's heliograph of 1826 — the oldest surviving photograph — required an eight-hour exposure. By 1839, the daguerreotype had reduced that to minutes, and the world was transformed forever. A machine could now draw.",
       "The immediate question photography posed to painting — why paint when a machine can record? — proved ultimately liberating for both forms. Photography freed painting from the obligation of documentation. And photography, in its turn, struggled to establish itself as a legitimate fine art. Early pictorialists deliberately blurred and manipulated their prints to look like paintings. It was only with the 'straight photography' movement — championed by Alfred Stieglitz, Edward Weston, and later Ansel Adams — that the medium embraced its own mechanical nature as an aesthetic virtue.",
       "The 20th century produced photographic masterpieces that changed how humanity understood itself: Dorothea Lange's Migrant Mother, Henri Cartier-Bresson's decisive moments, Robert Frank's raw American vision. Today, digital technology has democratized the camera while simultaneously intensifying the debate about authenticity, manipulation, and what, in an age of infinite images, a truly great photograph actually is.",
     ],
     pioneers: [
-      "Ansel Adams", "Henri Cartier-Bresson", "Dorothea Lange",
-      "Cindy Sherman", "Andreas Gursky", "Richard Avedon",
-      "Diane Arbus", "Robert Frank", "Edward Weston",
+      "Ansel Adams",
+      "Henri Cartier-Bresson",
+      "Dorothea Lange",
+      "Cindy Sherman",
+      "Andreas Gursky",
+      "Richard Avedon",
+      "Diane Arbus",
+      "Robert Frank",
+      "Edward Weston",
     ],
     subtypes: [
       {
@@ -178,16 +200,22 @@ const MEDIUM_DATA = {
   digital: {
     title: "Digital Art",
     label: "THE ART OF THE DIGITAL AGE",
-    heroImg: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=1600&q=80",
+    heroImg:
+      "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=1600&q=80",
     origin: [
       "Digital art emerged in the 1960s with the first computer-generated graphics produced by pioneers such as Vera Molnár, Frieder Nake, and Georg Nees — mathematicians and engineers who recognized the aesthetic potential of algorithmic processes. Their plotted line drawings, generated by rule-based systems, inaugurated an entirely new relationship between artist and medium: one in which the work is not made by hand but authored through code.",
       "The 1980s brought personal computers and the first graphic design software, democratizing digital image-making. The 1990s saw the World Wide Web transform how digital art could be distributed and experienced. Harold Cohen's AARON — an artificial intelligence trained to paint — raised fundamental questions about authorship and creativity that remain unresolved today. By the 2000s, artists like Casey Reas and Ben Fry were developing Processing, an open-source programming environment that became the lingua franca of generative art.",
       "The 2020s brought seismic disruption with the rise of NFTs (non-fungible tokens), enabling digital artworks to be bought and sold with a verifiable record of ownership on the blockchain. Beeple's 'Everydays: The First 5000 Days' sold at Christie's for $69 million, instantly repositioning digital art within the mainstream art market. Refik Anadol's AI-powered data sculptures — trained on millions of images and rendered as immersive architectural projections — represent a new frontier in which art is inseparable from machine learning and real-time computation.",
     ],
     pioneers: [
-      "Vera Molnár", "Harold Cohen", "Casey Reas",
-      "Beeple (Mike Winkelmann)", "Refik Anadol",
-      "Frieder Nake", "Georg Nees", "Joshua Davis",
+      "Vera Molnár",
+      "Harold Cohen",
+      "Casey Reas",
+      "Beeple (Mike Winkelmann)",
+      "Refik Anadol",
+      "Frieder Nake",
+      "Georg Nees",
+      "Joshua Davis",
     ],
     subtypes: [
       {
@@ -230,16 +258,23 @@ const MEDIUM_DATA = {
   drawings: {
     title: "Drawings",
     label: "THE ART OF DRAWING",
-    heroImg: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1600&q=80",
+    heroImg:
+      "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1600&q=80",
     origin: [
       "Drawing is the most fundamental of all visual arts, predating painting by millennia. The cave drawings of Chauvet — over 35,000 years old — demonstrate a mastery of line, contour, and shading that remains astonishing today. Drawing is where all visual thinking begins: the sketch, the study, the gesture that precedes the finished work. In this sense, it is not merely a medium but the very grammar of visual intelligence.",
       "In the Renaissance, drawing (disegno) was elevated by theorists like Giorgio Vasari to the status of highest intellectual activity among the arts. Leonardo da Vinci's notebooks — filled with anatomical studies, mechanical inventions, landscape observations, and portrait sketches — represent perhaps the greatest sustained act of visual thinking in Western cultural history. For Renaissance artists, drawing was the primary tool of investigation: the means by which they understood the world well enough to reinvent it.",
       "From Dürer's precise botanical studies to Rembrandt's rapid pen sketches, from Ingres's silky graphite portraits to Egon Schiele's tortured line — drawing has always offered a direct connection to the artist's hand and mind that more laborious media cannot. Contemporary drawing practices have expanded dramatically: artists work at monumental scale, use non-traditional materials, and treat drawing as a complete mode of artistic expression rather than a preparatory step.",
     ],
     pioneers: [
-      "Leonardo da Vinci", "Michelangelo Buonarroti", "Raphael Sanzio",
-      "Egon Schiele", "Gustav Klimt", "Albrecht Dürer",
-      "Rembrandt van Rijn", "Jean-Auguste-Dominique Ingres", "Käthe Kollwitz",
+      "Leonardo da Vinci",
+      "Michelangelo Buonarroti",
+      "Raphael Sanzio",
+      "Egon Schiele",
+      "Gustav Klimt",
+      "Albrecht Dürer",
+      "Rembrandt van Rijn",
+      "Jean-Auguste-Dominique Ingres",
+      "Käthe Kollwitz",
     ],
     subtypes: [
       {
@@ -282,16 +317,22 @@ const MEDIUM_DATA = {
   prints: {
     title: "Prints",
     label: "THE ART OF PRINTMAKING",
-    heroImg: "https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=1600&q=80",
+    heroImg:
+      "https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=1600&q=80",
     origin: [
       "Printmaking has roots in ancient China with woodblock printing dating to approximately 200 AD — originally used for textile decoration and later for reproducing texts and images. The technology reached Europe in the 14th century, where it rapidly transformed culture: Gutenberg's moveable type press, itself a printmaking technology, made books affordable for the first time, catalyzing the Renaissance, the Reformation, and the Scientific Revolution. Albrecht Dürer, working in Nuremberg at the turn of the 16th century, elevated woodcut and engraving to the status of fine art, producing prints of astonishing technical virtuosity and conceptual depth.",
       "Etching — in which acid bites lines into a metal plate — allowed for finer marks and greater tonal range than woodcut or engraving. Rembrandt mastered etching as completely as he mastered oil paint, producing some of his most profound works in this medium. Francisco Goya's 'Los Caprichos' etchings stand as one of the first examples of printmaking deployed as a vehicle for social and political critique — a tradition that runs through Daumier, Käthe Kollwitz, and into the present.",
       "The 20th century brought lithography and screen printing to the forefront. Andy Warhol's silkscreen portraits of Marilyn Monroe and Mao Zedong used printmaking's inherent capacity for repetition and variation as a statement about consumer culture and the mass-production of celebrity. Today, giclée — archival inkjet printing on fine art paper or canvas — has made high-quality limited-edition prints accessible to a new generation of collectors while raising important questions about originality and the nature of the multiple.",
     ],
     pioneers: [
-      "Albrecht Dürer", "Francisco Goya", "Andy Warhol",
-      "Robert Rauschenberg", "Katsushika Hokusai",
-      "Rembrandt van Rijn", "Käthe Kollwitz", "Jasper Johns",
+      "Albrecht Dürer",
+      "Francisco Goya",
+      "Andy Warhol",
+      "Robert Rauschenberg",
+      "Katsushika Hokusai",
+      "Rembrandt van Rijn",
+      "Käthe Kollwitz",
+      "Jasper Johns",
     ],
     subtypes: [
       {
@@ -337,7 +378,12 @@ const TAB_ICONS = ["✦", "◆", "✳", "◈", "❖", "◇"];
 
 // Map real DB medium ids to the closest editorial prose block (purely for the
 // hero/history copy — subtypes & counts come live from the database).
-const PROSE_KEY = { oil: "paintings", sculpture: "sculptures", digital: "digital", mixed: "paintings" };
+const PROSE_KEY = {
+  oil: "paintings",
+  sculpture: "sculptures",
+  digital: "digital",
+  mixed: "paintings",
+};
 
 export default function ArtTypeDescription() {
   const { medium } = useParams();
@@ -368,22 +414,37 @@ export default function ArtTypeDescription() {
           .map((c) => {
             const inSub = (arts || []).filter((a) => a.subtype_id === c.id);
             return {
-              slug: c.id, label: c.label, count: inSub.length,
-              img: c.image_url || inSub.find((a) => a.images && a.images.length)?.images?.[0] || null,
+              slug: c.id,
+              label: c.label,
+              count: inSub.length,
+              img:
+                c.image_url ||
+                inSub.find((a) => a.images && a.images.length)?.images?.[0] ||
+                null,
             };
           });
         setSubtypes(subs);
-      } catch { /* fall back to editorial content where it exists */ }
-      finally { if (!cancelled) setLoading(false); }
+      } catch {
+        /* fall back to editorial content where it exists */
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [medium]);
 
-  const slugTitle = (medium || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const slugTitle = (medium || "")
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
   const title = mediumCat?.label || data?.title || slugTitle;
   const heroImg = mediumCat?.image_url || data?.heroImg || null;
-  const tagline = mediumCat?.tagline || data?.label || `THE ART OF ${title.toUpperCase()}`;
-  const pioneers = mediumCat?.pioneers?.length ? mediumCat.pioneers : data?.pioneers || [];
+  const tagline =
+    mediumCat?.tagline || data?.label || `THE ART OF ${title.toUpperCase()}`;
+  const pioneers = mediumCat?.pioneers?.length
+    ? mediumCat.pioneers
+    : data?.pioneers || [];
   // Styles come from the database only — no dummy style cards.
   const displaySubtypes = subtypes;
 
@@ -431,22 +492,45 @@ export default function ArtTypeDescription() {
         img: o.image_url || t.img,
       };
     })
-    .filter((t) => (t.isPioneers ? pioneers.length > 0 : t.body.trim().length > 0));
+    .filter((t) =>
+      t.isPioneers ? pioneers.length > 0 : t.body.trim().length > 0,
+    );
 
   const current = tabs[Math.min(activeTab, Math.max(tabs.length - 1, 0))];
-  const go = (dir) => setActiveTab(i => Math.max(0, Math.min(tabs.length - 1, i + dir)));
+  const go = (dir) =>
+    setActiveTab((i) => Math.max(0, Math.min(tabs.length - 1, i + dir)));
 
   if (loading) {
     return (
       <div style={{ background: "#080808", minHeight: "100vh" }}>
-        <div className="art-main-container" style={{ maxWidth: 1320, margin: "0 auto", padding: "100px 56px 100px" }}>
+        <div
+          className="art-main-container"
+          style={{
+            maxWidth: 1320,
+            margin: "0 auto",
+            padding: "100px 56px 100px",
+          }}>
           <Skeleton height={340} radius={20} />
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "48px 0 36px" }}>
-            {[0, 1, 2, 3].map((i) => <Skeleton key={i} width={170} height={38} radius={999} />)}
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              margin: "48px 0 36px",
+            }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} width={170} height={38} radius={999} />
+            ))}
           </div>
           <Skeleton height={480} radius={20} />
           <div style={{ marginTop: 72 }}>
-            <SkeletonGrid count={3} minColWidth={260} maxColWidth={420} imageHeight={230} gap={16} />
+            <SkeletonGrid
+              count={3}
+              minColWidth={260}
+              maxColWidth={420}
+              imageHeight={230}
+              gap={16}
+            />
           </div>
         </div>
       </div>
@@ -455,24 +539,94 @@ export default function ArtTypeDescription() {
 
   return (
     <div style={{ background: "#080808", minHeight: "100vh" }}>
-
       {/* HERO */}
-      <div className="art-hero" style={{ position: "relative", height: 440, overflow: "hidden" }}>
+      <div
+        className="art-hero"
+        style={{ position: "relative", height: 440, overflow: "hidden" }}>
         {heroImg ? (
-          <img src={heroImg} alt={title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <img
+            src={heroImg}
+            alt={title}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
         ) : (
-          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#16120b,#221b10)" }} />
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              background: "linear-gradient(135deg,#16120b,#221b10)",
+            }}
+          />
         )}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(8,8,8,0.25) 0%, rgba(8,8,8,0.55) 50%, rgba(8,8,8,1) 100%)" }} />
-        <div className="art-hero-padding" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 56px 48px", maxWidth: 1320, margin: "0 auto" }}>
-          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-            <Link to="/categories" style={{ color: "rgba(200,191,160,0.5)", textDecoration: "none" }}>Collections</Link>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to bottom, rgba(8,8,8,0.25) 0%, rgba(8,8,8,0.55) 50%, rgba(8,8,8,1) 100%)",
+          }}
+        />
+        <div
+          className="art-hero-padding"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: "0 56px 48px",
+            maxWidth: 1320,
+            margin: "0 auto",
+          }}>
+          <div
+            style={{
+              fontFamily: "'Raleway',sans-serif",
+              fontSize: 12,
+              color: "rgba(200,191,160,0.5)",
+              marginBottom: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}>
+            <Link
+              to="/categories"
+              style={{
+                color: "rgba(200,191,160,0.5)",
+                textDecoration: "none",
+              }}>
+              Collections
+            </Link>
             <span style={{ color: "rgba(212,175,55,0.4)" }}>›</span>
             <span style={{ color: "#D4AF37" }}>{title}</span>
           </div>
-          <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.24em", color: "#D4AF37", marginBottom: 12 }}>{tagline}</div>
-            <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(52px,6vw,84px)", fontWeight: 700, color: "#fff", lineHeight: 0.95, letterSpacing: "-0.01em", margin: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}>
+            <div
+              style={{
+                fontFamily: "'Cinzel',serif",
+                fontSize: 10,
+                letterSpacing: "0.24em",
+                color: "#D4AF37",
+                marginBottom: 12,
+              }}>
+              {tagline}
+            </div>
+            <h1
+              style={{
+                fontFamily: "'Cormorant Garamond',serif",
+                fontSize: "clamp(32px,3vw,46px)",
+                fontWeight: 700,
+                color: "#fff",
+                lineHeight: 1.05,
+                margin: "0 0 20px",
+                letterSpacing: "-0.01em",
+              }}>
               {title}
             </h1>
           </motion.div>
@@ -480,253 +634,526 @@ export default function ArtTypeDescription() {
       </div>
 
       {/* TABBED SECTION */}
-      <div className="art-main-container" style={{ maxWidth: 1320, margin: "0 auto", padding: "48px 56px 100px" }}>
-
-        {tabs.length > 0 && (<>
-        {/* Tab pills */}
-        <div className="art-tabs-row" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 36 }}>
-          {tabs.map((tab, i) => (
-            <motion.button
-              key={i}
-              onClick={() => setActiveTab(i)}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+      <div
+        className="art-main-container"
+        style={{
+          maxWidth: 1320,
+          margin: "0 auto",
+          padding: "48px 56px 100px",
+        }}>
+        {tabs.length > 0 && (
+          <>
+            {/* Tab pills */}
+            <div
+              className="art-tabs-row"
               style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "10px 20px",
-                background: activeTab === i ? "rgba(212,175,55,0.08)" : "transparent",
-                border: `1px solid ${activeTab === i ? "#D4AF37" : "rgba(212,175,55,0.2)"}`,
-                borderRadius: 999, cursor: "pointer",
-                fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em",
-                color: activeTab === i ? "#D4AF37" : "rgba(200,191,160,0.45)",
-                transition: "all 0.2s",
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                marginBottom: 36,
               }}>
-              <span style={{ fontSize: 9 }}>{TAB_ICONS[i]}</span>
-              {tab.label.toUpperCase()}
-              <span style={{ fontSize: 9, opacity: 0.6 }}>{String(i + 1).padStart(2, "0")}</span>
-            </motion.button>
-          ))}
-        </div>
-
-        {/* Slide panel */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.35 }}
-            className="art-slide-panel"
-            style={{
-              display: "grid", gridTemplateColumns: "1fr 1fr",
-              border: "1px solid rgba(212,175,55,0.15)",
-              borderRadius: 20, overflow: "hidden",
-              background: "rgba(255,255,255,0.018)",
-              height: 560,
-            }}>
-
-            {/* Left: Image panel */}
-            <div className="art-slide-img" style={{
-              position: "relative", overflow: "hidden",
-              background: "#0d0b08",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              padding: 36,
-            }}>
-              <div style={{
-                width: "100%", height: "100%", position: "absolute", inset: 0,
-                background: "radial-gradient(ellipse at center, rgba(212,175,55,0.06) 0%, transparent 70%)",
-              }} />
-              {current.img ? (
-                <motion.img
-                  key={current.img}
-                  initial={{ scale: 1.06, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.6 }}
-                  src={current.img}
-                  alt=""
+              {tabs.map((tab, i) => (
+                <motion.button
+                  key={i}
+                  onClick={() => setActiveTab(i)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   style={{
-                    width: "100%", height: "100%", objectFit: "cover",
-                    borderRadius: 12, display: "block", position: "relative", zIndex: 1,
-                    boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
-                  }}
-                />
-              ) : (
-                <div style={{
-                  width: "100%", height: "100%", borderRadius: 12, position: "relative", zIndex: 1,
-                  background: "linear-gradient(135deg,#16120b,#221b10)", border: "1px solid rgba(212,175,55,0.12)",
-                }} />
-              )}
-              {/* Bottom label */}
-              <div style={{
-                position: "absolute", bottom: 28, left: 28, zIndex: 2,
-                display: "flex", alignItems: "center", gap: 8,
-                background: "rgba(8,8,8,0.75)",
-                border: "1px solid rgba(212,175,55,0.3)",
-                borderRadius: 999, padding: "7px 16px",
-              }}>
-                <span style={{ color: "#D4AF37", fontSize: 9 }}>◆</span>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "#D4AF37" }}>
-                  {current.label.toUpperCase()}
-                </span>
-              </div>
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 20px",
+                    background:
+                      activeTab === i ? "rgba(212,175,55,0.08)" : "transparent",
+                    border: `1px solid ${activeTab === i ? "#D4AF37" : "rgba(212,175,55,0.2)"}`,
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    fontFamily: "'Cinzel',serif",
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    color:
+                      activeTab === i ? "#D4AF37" : "rgba(200,191,160,0.45)",
+                    transition: "all 0.2s",
+                  }}>
+                  <span style={{ fontSize: 9 }}>{TAB_ICONS[i]}</span>
+                  {tab.label.toUpperCase()}
+                  <span style={{ fontSize: 9, opacity: 0.6 }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </motion.button>
+              ))}
             </div>
 
-            {/* Right: Content panel */}
-            <div className="art-slide-content" style={{
-              padding: "40px 52px",
-              display: "flex", flexDirection: "column", justifyContent: "space-between",
-              borderLeft: "1px solid rgba(212,175,55,0.1)",
-              height: "100%",
-              boxSizing: "border-box",
-            }}>
-              {/* Centered content block */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                {/* Section number */}
-                <div style={{ marginBottom: 6 }}>
+            {/* Slide panel */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                transition={{ duration: 0.35 }}
+                className="art-slide-panel"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  border: "1px solid rgba(212,175,55,0.15)",
+                  borderRadius: 20,
+                  overflow: "hidden",
+                  background: "rgba(255,255,255,0.018)",
+                  height: 560,
+                }}>
+                {/* Left: Image panel */}
+                <div
+                  className="art-slide-img"
+                  style={{
+                    position: "relative",
+                    overflow: "hidden",
+                    background: "#0d0b08",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 36,
+                  }}>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      position: "absolute",
+                      inset: 0,
+                      background:
+                        "radial-gradient(ellipse at center, rgba(212,175,55,0.06) 0%, transparent 70%)",
+                    }}
+                  />
+                  {current.img ? (
+                    <motion.img
+                      key={current.img}
+                      initial={{ scale: 1.06, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.6 }}
+                      src={current.img}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: 12,
+                        display: "block",
+                        position: "relative",
+                        zIndex: 1,
+                        boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: 12,
+                        position: "relative",
+                        zIndex: 1,
+                        background: "linear-gradient(135deg,#16120b,#221b10)",
+                        border: "1px solid rgba(212,175,55,0.12)",
+                      }}
+                    />
+                  )}
+                  {/* Bottom label */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 28,
+                      left: 28,
+                      zIndex: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      background: "rgba(8,8,8,0.75)",
+                      border: "1px solid rgba(212,175,55,0.3)",
+                      borderRadius: 999,
+                      padding: "7px 16px",
+                    }}>
+                    <span style={{ color: "#D4AF37", fontSize: 9 }}>◆</span>
+                    <span
+                      style={{
+                        fontFamily: "'Cinzel',serif",
+                        fontSize: 9,
+                        letterSpacing: "0.16em",
+                        color: "#D4AF37",
+                      }}>
+                      {current.label.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: Content panel */}
+                <div
+                  className="art-slide-content"
+                  style={{
+                    padding: "40px 52px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    borderLeft: "1px solid rgba(212,175,55,0.1)",
+                    height: "100%",
+                    boxSizing: "border-box",
+                  }}>
+                  {/* Centered content block */}
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                    }}>
+                    {/* Section number */}
+                    {/* <div style={{ marginBottom: 6 }}>
                   <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(40px,4.5vw,64px)", fontWeight: 700, color: "rgba(212,175,55,0.75)", fontStyle: "italic", lineHeight: 1 }}>
                     {String(activeTab + 1).padStart(2, "0")}
                   </span>
-                </div>
+                </div> */}
 
-                {/* Title — the section label is now the main heading */}
-                <h2 style={{
-                  fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(32px,3vw,46px)",
-                  fontWeight: 700, color: "#fff", lineHeight: 1.05,
-                  margin: "0 0 20px", letterSpacing: "-0.01em",
-                }}>
-                  {current.label}
-                </h2>
+                    {/* Title — the section label is now the main heading */}
+                    <h2
+                      style={{
+                        fontFamily: "'Cormorant Garamond',serif",
+                        fontSize: "clamp(32px,3vw,46px)",
+                        fontWeight: 700,
+                        color: "#fff",
+                        lineHeight: 1.05,
+                        margin: "0 0 20px",
+                        letterSpacing: "-0.01em",
+                      }}>
+                      {current.label}
+                    </h2>
 
-                {/* Body */}
-                {current.isPioneers ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
-                    {pioneers.map((name) => (
-                      <span key={name} style={{
-                        fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontStyle: "italic",
-                        color: "rgba(200,191,160,0.75)",
-                        background: "rgba(212,175,55,0.06)",
-                        border: "1px solid rgba(212,175,55,0.15)",
-                        borderRadius: 999, padding: "5px 14px",
-                      }}>{name}</span>
-                    ))}
+                    {/* Body */}
+                    {current.isPioneers ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 8,
+                          marginBottom: 24,
+                        }}>
+                        {pioneers.map((name) => (
+                          <span
+                            key={name}
+                            style={{
+                              fontFamily: "'Cormorant Garamond',serif",
+                              fontSize: 14,
+                              fontStyle: "italic",
+                              color: "rgba(200,191,160,0.75)",
+                              background: "rgba(212,175,55,0.06)",
+                              border: "1px solid rgba(212,175,55,0.15)",
+                              borderRadius: 999,
+                              padding: "5px 14px",
+                            }}>
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p
+                        style={{
+                          fontFamily: "'Cormorant Garamond',serif",
+                          fontSize: 17,
+                          fontStyle: "italic",
+                          color: "rgba(200,191,160,0.78)",
+                          lineHeight: 1.8,
+                          margin: "0 0 24px",
+                        }}>
+                        {current.body}
+                      </p>
+                    )}
+
+                    {/* Gold accent line */}
+                    <div
+                      style={{
+                        width: 64,
+                        height: 2,
+                        background:
+                          "linear-gradient(90deg,#D4AF37,transparent)",
+                      }}
+                    />
                   </div>
-                ) : (
-                  <p style={{
-                    fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontStyle: "italic",
-                    color: "rgba(200,191,160,0.78)", lineHeight: 1.8, margin: "0 0 24px",
-                  }}>
-                    {current.body}
-                  </p>
-                )}
 
-                {/* Gold accent line */}
-                <div style={{ width: 64, height: 2, background: "linear-gradient(90deg,#D4AF37,transparent)" }} />
-              </div>
+                  {/* Navigation — pinned to bottom */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      paddingTop: 24,
+                    }}>
+                    <motion.button
+                      onClick={() => go(-1)}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      disabled={activeTab === 0}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background:
+                          activeTab === 0
+                            ? "rgba(255,255,255,0.03)"
+                            : "rgba(212,175,55,0.08)",
+                        border: `1px solid ${activeTab === 0 ? "rgba(212,175,55,0.1)" : "rgba(212,175,55,0.35)"}`,
+                        color:
+                          activeTab === 0 ? "rgba(200,191,160,0.2)" : "#D4AF37",
+                        cursor: activeTab === 0 ? "default" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "serif",
+                        fontSize: 18,
+                        transition: "all 0.2s",
+                      }}>
+                      ←
+                    </motion.button>
 
-              {/* Navigation — pinned to bottom */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 24 }}>
-                <motion.button
-                  onClick={() => go(-1)}
-                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
-                  disabled={activeTab === 0}
-                  style={{
-                    width: 44, height: 44, borderRadius: "50%",
-                    background: activeTab === 0 ? "rgba(255,255,255,0.03)" : "rgba(212,175,55,0.08)",
-                    border: `1px solid ${activeTab === 0 ? "rgba(212,175,55,0.1)" : "rgba(212,175,55,0.35)"}`,
-                    color: activeTab === 0 ? "rgba(200,191,160,0.2)" : "#D4AF37",
-                    cursor: activeTab === 0 ? "default" : "pointer",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "serif", fontSize: 18, transition: "all 0.2s",
-                  }}>←</motion.button>
+                    <span
+                      style={{
+                        fontFamily: "'Cinzel',serif",
+                        fontSize: 11,
+                        letterSpacing: "0.18em",
+                        color: "rgba(200,191,160,0.4)",
+                      }}>
+                      {String(activeTab + 1).padStart(2, "0")} /{" "}
+                      {String(tabs.length).padStart(2, "0")}
+                    </span>
 
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", color: "rgba(200,191,160,0.4)" }}>
-                  {String(activeTab + 1).padStart(2, "0")} / {String(tabs.length).padStart(2, "0")}
-                </span>
-
-                <motion.button
-                  onClick={() => go(1)}
-                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
-                  disabled={activeTab === tabs.length - 1}
-                  style={{
-                    width: 44, height: 44, borderRadius: "50%",
-                    background: activeTab === tabs.length - 1 ? "rgba(255,255,255,0.03)" : "rgba(212,175,55,0.08)",
-                    border: `1px solid ${activeTab === tabs.length - 1 ? "rgba(212,175,55,0.1)" : "rgba(212,175,55,0.35)"}`,
-                    color: activeTab === tabs.length - 1 ? "rgba(200,191,160,0.2)" : "#D4AF37",
-                    cursor: activeTab === tabs.length - 1 ? "default" : "pointer",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "serif", fontSize: 18, transition: "all 0.2s",
-                  }}>→</motion.button>
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-        </>)}
+                    <motion.button
+                      onClick={() => go(1)}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      disabled={activeTab === tabs.length - 1}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background:
+                          activeTab === tabs.length - 1
+                            ? "rgba(255,255,255,0.03)"
+                            : "rgba(212,175,55,0.08)",
+                        border: `1px solid ${activeTab === tabs.length - 1 ? "rgba(212,175,55,0.1)" : "rgba(212,175,55,0.35)"}`,
+                        color:
+                          activeTab === tabs.length - 1
+                            ? "rgba(200,191,160,0.2)"
+                            : "#D4AF37",
+                        cursor:
+                          activeTab === tabs.length - 1 ? "default" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "serif",
+                        fontSize: 18,
+                        transition: "all 0.2s",
+                      }}>
+                      →
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </>
+        )}
 
         {/* STYLES & FORMS — separate section */}
         <div style={{ marginTop: 72 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 36 }}>
-            <div style={{ width: 32, height: 1, background: "rgba(212,175,55,0.4)" }} />
-            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.24em", color: "#D4AF37" }}>STYLES & FORMS</span>
-            <div style={{ flex: 1, height: 1, background: "rgba(212,175,55,0.15)" }} />
-            <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontStyle: "italic", color: "rgba(200,191,160,0.4)" }}>
-              {displaySubtypes.length > 0 ? `${displaySubtypes.length} Distinct Styles` : ""}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              marginBottom: 36,
+            }}>
+            <div
+              style={{
+                width: 32,
+                height: 1,
+                background: "rgba(212,175,55,0.4)",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'Cinzel',serif",
+                fontSize: 9,
+                letterSpacing: "0.24em",
+                color: "#D4AF37",
+              }}>
+              STYLES & FORMS
+            </span>
+            <div
+              style={{
+                flex: 1,
+                height: 1,
+                background: "rgba(212,175,55,0.15)",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'Cormorant Garamond',serif",
+                fontSize: 13,
+                fontStyle: "italic",
+                color: "rgba(200,191,160,0.4)",
+              }}>
+              {displaySubtypes.length > 0
+                ? `${displaySubtypes.length} Distinct Styles`
+                : ""}
             </span>
           </div>
           {displaySubtypes.length === 0 ? (
-            <div style={{ padding: "60px 24px", textAlign: "center", fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontStyle: "italic", color: "rgba(200,191,160,0.45)" }}>
+            <div
+              style={{
+                padding: "60px 24px",
+                textAlign: "center",
+                fontFamily: "'Cormorant Garamond',serif",
+                fontSize: 20,
+                fontStyle: "italic",
+                color: "rgba(200,191,160,0.45)",
+              }}>
               No styles in this collection yet — check back soon.
             </div>
           ) : (
-          <div className="art-styles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-            {displaySubtypes.map(s => (
-              <div
-                key={s.slug}
-                onClick={() => navigate(`/categories/${medium}/${s.slug}`)}
-                style={{
-                  position: "relative", overflow: "hidden",
-                  borderRadius: 14, cursor: "pointer",
-                  border: "1px solid rgba(212,175,55,0.12)",
-                  aspectRatio: "4/3",
-                  transition: "border-color 0.25s, transform 0.25s, box-shadow 0.25s",
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)";
-                  e.currentTarget.style.transform = "scale(1.025)";
-                  e.currentTarget.style.boxShadow = "0 16px 48px rgba(0,0,0,0.5)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = "rgba(212,175,55,0.12)";
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}>
-                {(s.img || heroImg) ? (
-                  <img src={s.img || heroImg} alt={s.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                ) : (
-                  <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#16120b,#221b10)" }} />
-                )}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.9) 0%, rgba(8,8,8,0.15) 60%)" }} />
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "14px 16px" }}>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 17, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{s.label}</div>
-                  <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 4 }}>
-                    {typeof s.count === "number" ? `${s.count} work${s.count === 1 ? "" : "s"} · EXPLORE →` : "EXPLORE →"}
+            <div
+              className="art-styles-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 16,
+              }}>
+              {displaySubtypes.map((s) => (
+                <div
+                  key={s.slug}
+                  onClick={() => navigate(`/categories/${medium}/${s.slug}`)}
+                  style={{
+                    position: "relative",
+                    overflow: "hidden",
+                    borderRadius: 14,
+                    cursor: "pointer",
+                    border: "1px solid rgba(212,175,55,0.12)",
+                    aspectRatio: "4/3",
+                    transition:
+                      "border-color 0.25s, transform 0.25s, box-shadow 0.25s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)";
+                    e.currentTarget.style.transform = "scale(1.025)";
+                    e.currentTarget.style.boxShadow =
+                      "0 16px 48px rgba(0,0,0,0.5)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "rgba(212,175,55,0.12)";
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}>
+                  {s.img || heroImg ? (
+                    <img
+                      src={s.img || heroImg}
+                      alt={s.label}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg,#16120b,#221b10)",
+                      }}
+                    />
+                  )}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background:
+                        "linear-gradient(to top, rgba(8,8,8,0.9) 0%, rgba(8,8,8,0.15) 60%)",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      padding: "14px 16px",
+                    }}>
+                    <div
+                      style={{
+                        fontFamily: "'Cormorant Garamond',serif",
+                        fontSize: 17,
+                        fontWeight: 600,
+                        color: "#fff",
+                        lineHeight: 1.2,
+                      }}>
+                      {s.label}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Cinzel',serif",
+                        fontSize: 8,
+                        letterSpacing: "0.14em",
+                        color: "#D4AF37",
+                        marginTop: 4,
+                      }}>
+                      {typeof s.count === "number"
+                        ? `${s.count} work${s.count === 1 ? "" : "s"} · EXPLORE →`
+                        : "EXPLORE →"}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </div>
 
         {/* CTA row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, flexWrap: "wrap", paddingTop: 48, borderTop: "1px solid rgba(212,175,55,0.1)", marginTop: 48 }}>
-          <Link to="/categories" style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "rgba(200,191,160,0.4)", textDecoration: "none" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 20,
+            flexWrap: "wrap",
+            paddingTop: 48,
+            borderTop: "1px solid rgba(212,175,55,0.1)",
+            marginTop: 48,
+          }}>
+          <Link
+            to="/categories"
+            style={{
+              fontFamily: "'Cinzel',serif",
+              fontSize: 10,
+              letterSpacing: "0.18em",
+              color: "rgba(200,191,160,0.4)",
+              textDecoration: "none",
+            }}>
             ← BACK TO COLLECTIONS
           </Link>
           <motion.button
-            whileHover={{ scale: 1.04, boxShadow: "0 12px 36px rgba(212,175,55,0.3)" }}
+            whileHover={{
+              scale: 1.04,
+              boxShadow: "0 12px 36px rgba(212,175,55,0.3)",
+            }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate(`/categories/${medium}/all`)}
-            style={{ padding: "14px 40px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#0e0c0a", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", fontWeight: 600, cursor: "pointer" }}>
+            style={{
+              padding: "14px 40px",
+              background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+              color: "#0e0c0a",
+              border: "none",
+              borderRadius: 999,
+              fontFamily: "'Cinzel',serif",
+              fontSize: 10,
+              letterSpacing: "0.2em",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}>
             EXPLORE ALL {title.toUpperCase()}
           </motion.button>
         </div>

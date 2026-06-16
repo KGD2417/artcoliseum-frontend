@@ -243,6 +243,10 @@ export const api = {
     pay(id) {
       return request("POST", `/orders/${id}/pay`);
     },
+    // Verify a Razorpay checkout success payload server-side, then fulfill.
+    verify(id, payload) {
+      return request("POST", `/orders/${id}/verify`, { body: payload });
+    },
     mine() {
       return request("GET", "/orders/mine");
     },
