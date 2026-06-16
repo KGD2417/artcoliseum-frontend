@@ -291,6 +291,21 @@ export const api = {
     },
   },
 
+  notifications: {
+    list() {
+      return request("GET", "/notifications");
+    },
+    unread() {
+      return request("GET", "/notifications/unread");
+    },
+    markAllRead() {
+      return request("POST", "/notifications/read");
+    },
+    markRead(id) {
+      return request("POST", `/notifications/${id}/read`);
+    },
+  },
+
   reviews: {
     create(body) {
       return request("POST", "/reviews", { body });

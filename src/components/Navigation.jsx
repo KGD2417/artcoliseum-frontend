@@ -6,6 +6,7 @@ import { useLocale, LANGS } from "../context/Locale";
 import { useAuth } from "../context/Auth";
 import { api } from "../utils/api";
 import { CheckIcon, SearchIcon, MessageIcon } from "./Icons";
+import NotificationBell from "./NotificationBell";
 
 const LINKS = [
   { label: "COLLECTION", to: "/categories" },
@@ -562,6 +563,8 @@ export default function Navigation() {
               whileTap={{ scale: 0.92 }}>
               <CartIcon />
             </motion.button>
+
+            <NotificationBell />
 
             {isAdmin && (
               <motion.button
