@@ -5,6 +5,7 @@ import { CameraIcon } from "../components/Icons";
 import { runSegmentation, extractSurfaces, pickSurfaceFromPrompt, drawSurfaceOverlays } from "../utils/segmentation";
 import { compositeArtwork, compositeGroundShadow } from "../utils/homography";
 import { analyzeRoomPlacement, hasGeminiKey } from "../utils/geminiVisualizer";
+import { api } from "../utils/api";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
 import i4 from "../assets/i4.png";
@@ -230,7 +231,17 @@ function RoomVisualizer({ initialArtworkUrl, initialArtType }) {
   const [selectedSurf, setSelectedSurf] = useState(null);
   const [resultReady, setResultReady] = useState(false);
   const [error, setError]             = useState(null);
-  const [useAI, setUseAI]             = useState(hasGeminiKey());  // Gemini photorealistic vs on-device
+  // Render engine: "generate" = server-side Gemini photoreal image-gen,
+  // "place" = free Gemini vision picks a spot + canvas composite, "device" = offline.
+  const [engine, setEngine]           = useState(hasGeminiKey() ? "place" : "device");
+  const [genAvailable, setGenAvailable] = useState(false);  // backend photoreal generator configured?
+
+  // Ask the backend whether the (billing) photoreal generator is available.
+  useEffect(() => {
+    api.ai.status()
+      .then((s) => { if (s?.image_gen) { setGenAvailable(true); setEngine("generate"); } })
+      .catch(() => {});
+  }, []);
 
   const overlayCanvasRef = useRef(null);
   const resultCanvasRef  = useRef(null);
@@ -315,6 +326,45 @@ function RoomVisualizer({ initialArtworkUrl, initialArtType }) {
       ctx.restore();
     }
     if (artType === "sculpture") compositeGroundShadow(canvas, quad, 0.45);
+  };
+
+  // Photoreal path — backend Gemini image-gen actually *generates* the room with
+  // the artwork composited in (used on laptops/desktops with no AR camera).
+  const renderWithGenerate = async () => {
+    setStep("analysing");
+    setError(null);
+    setProgress({ status: "Generating your room with Gemini…", progress: 60 });
+    try {
+      // The artwork must be sent as data: or an http URL the server can fetch.
+      const artworkSrc = artworkUrl && (artworkUrl.startsWith("data:") || /^https?:\/\//.test(artworkUrl))
+        ? artworkUrl
+        : imgToDataURL(artworkImg);
+
+      const { image } = await api.ai.visualize({
+        room: roomDataURL,
+        artwork: artworkSrc,
+        art_type: artType,
+        prompt,
+      });
+
+      // Paint the generated image onto the result canvas so download works.
+      const out = new Image();
+      await new Promise((res, rej) => { out.onload = res; out.onerror = rej; out.src = image; });
+      const canvas = resultCanvasRef.current;
+      canvas.width = out.naturalWidth;
+      canvas.height = out.naturalHeight;
+      canvas.getContext("2d").drawImage(out, 0, 0);
+
+      setResultReady(true);
+      setStep("result");
+    } catch (err) {
+      console.error(err);
+      const msg = err?.status === 401
+        ? "Please sign in to use AI photoreal generation."
+        : "AI generation failed (" + err.message + "). Try Smart-place or On-device.";
+      setError(msg);
+      setStep("ready");
+    }
   };
 
   // Smart-placement path — free Gemini vision picks WHERE, canvas composites.
@@ -514,20 +564,28 @@ function RoomVisualizer({ initialArtworkUrl, initialArtType }) {
             </div>
           )}
 
-          {/* Render-quality toggle (only when a Gemini key is configured) */}
-          {roomDataURL && hasGeminiKey() && (step === "ready" || step === "upload") && (
+          {/* Render-engine toggle (shown when any AI engine is available) */}
+          {roomDataURL && (genAvailable || hasGeminiKey()) && (step === "ready" || step === "upload") && (
             <div style={{ background: "rgba(212,175,55,0.04)", border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: "14px 18px", marginBottom: 14 }}>
-              {label("PLACEMENT ENGINE")}
+              {label("RENDER ENGINE")}
               <div style={{ display: "flex", gap: 0, borderRadius: 999, overflow: "hidden", border: "1px solid rgba(212,175,55,0.2)" }}>
-                {[[true, "Smart AI (Gemini)"], [false, "On-device (offline)"]].map(([v, l]) => (
-                  <button key={String(v)} onClick={() => setUseAI(v)}
-                    style={{ flex: 1, padding: "8px 10px", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.1em", background: useAI === v ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "transparent", color: useAI === v ? "#111" : "rgba(200,191,160,0.5)", transition: "all 0.18s" }}>
+                {[
+                  genAvailable && ["generate", "Photoreal AI"],
+                  hasGeminiKey() && ["place", "Smart place"],
+                  ["device", "On-device"],
+                ].filter(Boolean).map(([v, l]) => (
+                  <button key={v} onClick={() => setEngine(v)}
+                    style={{ flex: 1, padding: "8px 8px", border: "none", cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.08em", background: engine === v ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "transparent", color: engine === v ? "#111" : "rgba(200,191,160,0.5)", transition: "all 0.18s" }}>
                     {l}
                   </button>
                 ))}
               </div>
               <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.35)", marginTop: 7, lineHeight: 1.5 }}>
-                {useAI ? "Gemini reads your room & prompt to pick the exact spot, then composites it (~2s, free)." : "Runs fully in your browser, no network."}
+                {engine === "generate"
+                  ? "Gemini generates a photorealistic image of your room with the artwork placed in it (~10s)."
+                  : engine === "place"
+                  ? "Gemini reads your room & prompt to pick the exact spot, then composites it (~2s, free)."
+                  : "Runs fully in your browser, no network."}
               </div>
             </div>
           )}
@@ -535,9 +593,9 @@ function RoomVisualizer({ initialArtworkUrl, initialArtType }) {
           {/* CTA */}
           {roomDataURL && artworkImg && (step === "ready" || step === "upload") && (
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-              onClick={useAI && hasGeminiKey() ? renderWithAI : analyseRoom}
+              onClick={engine === "generate" ? renderWithGenerate : engine === "place" ? renderWithAI : analyseRoom}
               style={{ width: "100%", padding: "14px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", border: "none", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.2em", fontWeight: 700, cursor: "pointer" }}>
-              {useAI && hasGeminiKey() ? "✦ PLACE ARTWORK WITH AI" : "ANALYSE ROOM & PLACE ARTWORK"}
+              {engine === "generate" ? "✦ GENERATE PHOTOREAL PREVIEW" : engine === "place" ? "✦ PLACE ARTWORK WITH AI" : "ANALYSE ROOM & PLACE ARTWORK"}
             </motion.button>
           )}
 
@@ -556,7 +614,9 @@ function RoomVisualizer({ initialArtworkUrl, initialArtType }) {
                   animate={{ width: `${progress.progress}%` }} transition={{ duration: 0.3 }} />
               </div>
               <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.4)", marginTop: 6 }}>
-                {useAI && hasGeminiKey()
+                {engine === "generate"
+                  ? "Gemini is generating a photorealistic image of your room…"
+                  : engine === "place"
                   ? "Gemini is reading your room to find the best spot…"
                   : (progress.progress < 100 ? "First load downloads ~100 MB (cached after). Please wait…" : "Running segmentation…")}
               </div>
@@ -602,9 +662,9 @@ function RoomVisualizer({ initialArtworkUrl, initialArtType }) {
                 DOWNLOAD IMAGE
               </motion.button>
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                onClick={() => { if (useAI && hasGeminiKey()) { renderWithAI(); } else { setStep("selecting"); setResultReady(false); } }}
+                onClick={() => { if (engine === "generate") { renderWithGenerate(); } else if (engine === "place") { renderWithAI(); } else { setStep("selecting"); setResultReady(false); } }}
                 style={{ width: "100%", padding: "13px", background: "transparent", color: gold, border: "1px solid rgba(212,175,55,0.35)", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", cursor: "pointer" }}>
-                {useAI && hasGeminiKey() ? "REGENERATE" : "TRY ANOTHER WALL"}
+                {engine === "device" ? "TRY ANOTHER WALL" : "REGENERATE"}
               </motion.button>
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                 onClick={() => { setStep("ready"); setResultReady(false); setSurfaces(null); setRoomDataURL(null); }}
@@ -661,7 +721,7 @@ function RoomVisualizer({ initialArtworkUrl, initialArtType }) {
               <motion.div style={{ width: 48, height: 48, borderRadius: "50%", border: "2px solid rgba(212,175,55,0.2)", borderTop: `2px solid ${gold}` }}
                 animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} />
               <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: gold }}>
-                {step === "compositing" ? "COMPOSITING…" : (useAI && hasGeminiKey() ? "RENDERING…" : "ANALYSING ROOM…")}
+                {step === "compositing" ? "COMPOSITING…" : engine === "generate" ? "GENERATING…" : engine === "place" ? "RENDERING…" : "ANALYSING ROOM…"}
               </div>
             </div>
           )}
@@ -764,6 +824,15 @@ function ManualPlacer({ roomDataURL, artworkImg, artType, resultCanvasRef, onDon
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// Rasterize a loaded <img> to a PNG data URL (so it can be POSTed to the server).
+function imgToDataURL(img) {
+  const c = document.createElement("canvas");
+  c.width = img.naturalWidth || img.width;
+  c.height = img.naturalHeight || img.height;
+  c.getContext("2d").drawImage(img, 0, 0);
+  return c.toDataURL("image/png");
+}
 
 // Gemini returns a normalized {x,y,w,h} region; convert to an axis-aligned pixel quad.
 function boxToQuad(box, imgW, imgH) {

@@ -239,7 +239,7 @@ export default function Gallery() {
                       alt={item.title}
                       fallbackIndex={i}
                       style={{
-                        width: "100%", height: "100%", objectFit: "cover", display: "block",
+                        width: "100%", height: "100%", objectFit: "contain", display: "block",
                         transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)",
                       }}
                       onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.04)")}

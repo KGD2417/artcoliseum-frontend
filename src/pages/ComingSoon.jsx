@@ -263,10 +263,33 @@ export default function ComingSoon({ page }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}>
             {info.features.map((feat, i) => (
-              <GlowCard key={i} glowColor="gold" style={{ padding: "22px 24px" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#D4AF37", flexShrink: 0, marginTop: 8 }} />
-                  <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 15, color: "rgba(220,210,190,0.85)", lineHeight: 1.6 }}>
+              <GlowCard
+                key={i}
+                glowColor="gold"
+                style={{ padding: "22px 24px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 14,
+                  }}>
+                  <span
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: "#D4AF37",
+                      flexShrink: 0,
+                      marginTop: 8,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "'Raleway',sans-serif",
+                      fontSize: 15,
+                      color: "rgba(220,210,190,0.85)",
+                      lineHeight: 1.6,
+                    }}>
                     {feat}
                   </span>
                 </div>
@@ -274,58 +297,6 @@ export default function ComingSoon({ page }) {
             ))}
           </motion.div>
         )}
-
-        <motion.div
-          style={{
-            textAlign: "center",
-            padding: "48px 40px",
-            background: "rgba(212,175,55,0.04)",
-            border: "1px solid rgba(212,175,55,0.2)",
-            borderRadius: 20,
-          }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.4 }}>
-          <h3
-            style={{
-              fontFamily: "'Cormorant Garamond',serif",
-              fontSize: 32,
-              fontWeight: 400,
-              color: "#fff",
-              marginBottom: 12,
-            }}>
-            Be the <em style={{ color: "#D4AF37" }}>First to Know</em>
-          </h3>
-          <p
-            style={{
-              fontFamily: "'Raleway',sans-serif",
-              fontSize: 13,
-              color: "rgba(200,191,160,0.6)",
-              marginBottom: 28,
-              lineHeight: 1.7,
-            }}>
-            {info.title} is being carefully built. Register your interest and
-            we'll notify you the moment it launches.
-          </p>
-
-          <NotifyForm />
-
-          <button
-            onClick={() => navigate("/")}
-            style={{
-              display: "block",
-              margin: "24px auto 0",
-              background: "transparent",
-              border: "none",
-              fontFamily: "'Cinzel',serif",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              color: "rgba(200,191,160,0.4)",
-              cursor: "pointer",
-            }}>
-            ← RETURN TO ART COLISEUM
-          </button>
-        </motion.div>
       </div>
       <style>{`
         @media (max-width: 760px) {

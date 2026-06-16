@@ -280,6 +280,17 @@ export const api = {
     },
   },
 
+  ai: {
+    // Whether the server-side photoreal generator (Gemini) is configured.
+    status() {
+      return request("GET", "/ai/status", { auth: false });
+    },
+    // Composite an artwork into a room photo → { image: dataURL }. Requires login.
+    visualize(body) {
+      return request("POST", "/ai/visualize", { body });
+    },
+  },
+
   reviews: {
     create(body) {
       return request("POST", "/reviews", { body });

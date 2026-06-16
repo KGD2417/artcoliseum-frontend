@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton, SkeletonGrid } from "../components/ui/Skeleton";
 import { api } from "../utils/api";
+import { useLocale } from "../context/Locale";
 
 const MEDIUM_DATA = {
   paintings: {
@@ -393,8 +394,10 @@ export default function ArtTypeDescription() {
   const data = MEDIUM_DATA[medium] || MEDIUM_DATA[PROSE_KEY[medium]] || null;
   const [activeTab, setActiveTab] = useState(0);
   const [subtypes, setSubtypes] = useState([]);
+  const [works, setWorks] = useState([]);          // all active works in this medium
   const [mediumCat, setMediumCat] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { formatPrice } = useLocale();
 
   // Real category content + subtypes + artwork counts for this medium.
   useEffect(() => {
@@ -409,6 +412,7 @@ export default function ArtTypeDescription() {
         ]);
         if (cancelled) return;
         setMediumCat((cats || []).find((c) => c.id === medium) || null);
+        setWorks(arts || []);
         const subs = (cats || [])
           .filter((c) => c.kind === "subtype" && c.parent_id === medium)
           .map((c) => {
@@ -447,6 +451,9 @@ export default function ArtTypeDescription() {
     : data?.pioneers || [];
   // Styles come from the database only — no dummy style cards.
   const displaySubtypes = subtypes;
+  // Works not tied to any style/subtype — they have no style card, so list them
+  // directly on the collection page (otherwise they'd be invisible here).
+  const ungroupedWorks = works.filter((a) => !a.subtype_id);
 
   const origin = data?.origin || [];
   const baseTabs = [
@@ -1002,7 +1009,7 @@ export default function ArtTypeDescription() {
                 : ""}
             </span>
           </div>
-          {displaySubtypes.length === 0 ? (
+          {displaySubtypes.length === 0 && ungroupedWorks.length === 0 ? (
             <div
               style={{
                 padding: "60px 24px",
@@ -1012,9 +1019,9 @@ export default function ArtTypeDescription() {
                 fontStyle: "italic",
                 color: "rgba(200,191,160,0.45)",
               }}>
-              No styles in this collection yet — check back soon.
+              No works in this collection yet — check back soon.
             </div>
-          ) : (
+          ) : displaySubtypes.length > 0 ? (
             <div
               className="art-styles-grid"
               style={{
@@ -1109,8 +1116,44 @@ export default function ArtTypeDescription() {
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
         </div>
+
+        {/* AVAILABLE WORKS — pieces not tied to a specific style */}
+        {ungroupedWorks.length > 0 && (
+          <div style={{ marginTop: 48 }}>
+            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.22em", color: "#D4AF37", marginBottom: 6 }}>
+              AVAILABLE WORKS
+            </div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, fontStyle: "italic", color: "rgba(200,191,160,0.5)", marginBottom: 20 }}>
+              {ungroupedWorks.length} piece{ungroupedWorks.length === 1 ? "" : "s"} in this collection
+            </div>
+            <div className="art-styles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+              {ungroupedWorks.map((a) => (
+                <div
+                  key={a.id}
+                  onClick={() => navigate(`/product/${a.id}`)}
+                  style={{ position: "relative", overflow: "hidden", borderRadius: 14, cursor: "pointer", border: "1px solid rgba(212,175,55,0.12)", aspectRatio: "4/3", transition: "border-color 0.25s, transform 0.25s, box-shadow 0.25s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)"; e.currentTarget.style.transform = "scale(1.025)"; e.currentTarget.style.boxShadow = "0 16px 48px rgba(0,0,0,0.5)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(212,175,55,0.12)"; e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "none"; }}>
+                  {a.images?.[0] ? (
+                    <img src={a.images[0]} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#16120b,#221b10)" }} />
+                  )}
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(8,8,8,0.92) 0%, rgba(8,8,8,0.1) 60%)" }} />
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "14px 16px" }}>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, fontWeight: 600, color: "#fff", lineHeight: 1.2 }}>{a.title}</div>
+                    <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "rgba(200,191,160,0.7)", marginTop: 4 }}>{(a.artist_name || "").toUpperCase()}</div>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 700, color: "#D4AF37", marginTop: 6 }}>
+                      {a.customizable ? "Customizable" : formatPrice(a.price)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* CTA row */}
         <div

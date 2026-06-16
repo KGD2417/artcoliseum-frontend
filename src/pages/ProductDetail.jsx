@@ -407,7 +407,7 @@ export default function ProductDetail() {
               src={productData.images[activeImg]}
               alt={productData.title}
               fallbackIndex={activeImg}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
             />
             <div
               style={{

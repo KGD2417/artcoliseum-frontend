@@ -6,117 +6,6 @@ import { SkeletonGrid } from "../components/ui/Skeleton";
 import ArtistAvatar from "../components/ArtistAvatar";
 import { api } from "../utils/api";
 
-const DEMO_ARTISTS = [
-  {
-    id: "elena-vance",
-    name: "Elena Vance",
-    role: "Neo-Classical Oil Painter · Florence, Italy",
-    bio: "Based in Florence, Elena Vance explores the intersection of digital abstraction and classical renaissance techniques. Her work serves as a silent dialogue between the tactile history of oil on canvas and the ephemeral nature of generative light. Vance's pieces are held in private collections globally and have been featured in the Venetian Biennale of Digital Arts.",
-    image:
-      "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=600&q=80&auto=format&fit=crop",
-    works: 14,
-  },
-  {
-    id: "elena-rossi",
-    name: "Elena Rossi",
-    role: "Digital Surrealist · Milan, Italy",
-    bio: "Milan-based digital surrealist whose work blends classical techniques with generative algorithms. Rossi's dreamscapes have been exhibited across Europe and Japan, earning her recognition as one of Italy's most provocative contemporary voices.",
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80&auto=format&fit=crop",
-    works: 9,
-  },
-  {
-    id: "hideo-tanaka",
-    name: "Hideo Tanaka",
-    role: "Kinetic Sculptor · Kyoto, Japan",
-    bio: "Kinetic sculptor working with metal, glass, and magnetic fields. His installations invite the viewer into a quiet conversation between motion and stillness, drawing on Zen aesthetics and contemporary physics in equal measure.",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80&auto=format&fit=crop",
-    works: 7,
-  },
-  {
-    id: "aria-voss",
-    name: "Aria Voss",
-    role: "Subconscious Cartographer · Berlin, Germany",
-    bio: "Berlin-based artist exploring the subconscious through dreamlike compositions. Voss collaborates with neuroscientists to interpret the architecture of memory, translating brainwave data into sweeping oil and digital hybrid works.",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&q=80&auto=format&fit=crop",
-    works: 11,
-  },
-  {
-    id: "chen-wei",
-    name: "Chen Wei",
-    role: "Ink & Oil Landscape Painter · Shanghai, China",
-    bio: "Captures the spiritual essence of nature in expansive oil and ink works that draw on classical Chinese landscape traditions. Wei's monumental canvases hang in the Shanghai Museum of Contemporary Art and several major European institutions.",
-    image:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80&auto=format&fit=crop",
-    works: 18,
-  },
-  {
-    id: "lena-bach",
-    name: "Lena Bach",
-    role: "Geometric Minimalist · Zurich, Switzerland",
-    bio: "Contemporary minimalism fused with metallic textures and geometric form. Bach's work is held in the permanent collections of the MoMA and Tate Modern, and her 2023 solo show at Art Basel was named one of the decade's most significant exhibitions.",
-    image:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&q=80&auto=format&fit=crop",
-    works: 22,
-  },
-  {
-    id: "marcus-thomas",
-    name: "Marcus Thomas",
-    role: "Figurative Oil Painter · London, UK",
-    bio: "London-based figurative painter whose work references the psychological directness of Lucian Freud alongside the tonal sensitivity of the old masters. Thomas's studio practice centres on the human body as a site of narrative, vulnerability, and beauty.",
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&q=80&auto=format&fit=crop",
-    works: 13,
-  },
-  {
-    id: "claire-bouchard",
-    name: "Claire Bouchard",
-    role: "Plein-Air Landscape Painter · Provence, France",
-    bio: "Working outdoors in the tradition of the Impressionists, Bouchard's luminous landscapes capture the changing light of the French countryside. Her layered glazes of cadmium yellow and viridian have earned her a devoted following among collectors across North America and Europe.",
-    image:
-      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=600&q=80&auto=format&fit=crop",
-    works: 16,
-  },
-  {
-    id: "ingrid-halvor",
-    name: "Ingrid Halvor",
-    role: "Maritime Oil Painter · Bergen, Norway",
-    bio: "Norwegian painter whose seascapes distil the drama of the North Atlantic into compositions of extraordinary emotional power. Working on location in all weathers, Halvor's oils capture the horizon line as a meditation on scale, solitude, and the sublime.",
-    image:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80&auto=format&fit=crop",
-    works: 10,
-  },
-  {
-    id: "julian-aris",
-    name: "Julian Aris",
-    role: "Abstract Expressionist · Buenos Aires, Argentina",
-    bio: "Dark pigments pour and solidify across Aris's canvases, channelling the raw energy of volcanic geology and Argentinian tango alike. His large-format works have been acquired by the Museo Nacional de Bellas Artes and collectors across Latin America.",
-    image:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&q=80&auto=format&fit=crop",
-    works: 8,
-  },
-  {
-    id: "marta-voss",
-    name: "Marta Voss",
-    role: "Psychological Realist · Prague, Czech Republic",
-    bio: "Voss paints domestic interiors as psychological landscapes — rooms in which colour becomes emotion and space becomes memory. Her meticulous oil technique, developed across a decade of study in Prague and Vienna, produces surfaces of uncanny stillness.",
-    image:
-      "https://images.unsplash.com/photo-1521252659862-eec69941b071?w=600&q=80&auto=format&fit=crop",
-    works: 12,
-  },
-  {
-    id: "henry-ashford",
-    name: "Henry Ashford",
-    role: "Atmospheric Impasto Painter · Edinburgh, Scotland",
-    bio: "Ashford's turbulent cloud formations and storm-lit valleys are rendered in thick impasto that gives each canvas the physical urgency of the landscapes that inspired them. A graduate of the Edinburgh College of Art, his work has been shown at the Royal Scottish Academy.",
-    image:
-      "https://images.unsplash.com/photo-1463453091185-61582044d556?w=600&q=80&auto=format&fit=crop",
-    works: 6,
-  },
-];
-
 export default function Artists() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -134,7 +23,7 @@ export default function Artists() {
       })
       .catch(() => {
         if (cancelled) return;
-        setArtists(DEMO_ARTISTS); // fallback to bundled demo data if API is down
+        setArtists([]); // no bundled demo data — show the empty state if the API is down
         setLoading(false);
       });
     return () => { cancelled = true; };

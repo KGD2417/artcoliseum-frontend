@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import LaunchGate from './components/LaunchGate';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Artists from './pages/Artists';
@@ -33,6 +34,7 @@ import Compare from './pages/Compare';
 
 function App() {
   return (
+    <LaunchGate>
     <Routes>
       <Route path="/ar-view" element={<ARView />} />
       <Route path="/" element={<Layout />}>
@@ -72,6 +74,7 @@ function App() {
         <Route path="waste-management" element={<ComingSoon page="waste-management" />} />
       </Route>
     </Routes>
+    </LaunchGate>
   );
 }
 

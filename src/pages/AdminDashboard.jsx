@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/Auth";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import MediaUploader from "../components/ui/MediaUploader";
+import ArtworkForm, { Field as AField, inputStyle as aInputStyle } from "../components/ArtworkForm";
 import { isThreeD, composeDims } from "../utils/dimensions";
 import { api, realtime } from "../utils/api";
 import { email as emailRule, minLen, intRange } from "../utils/validation";
@@ -1193,27 +1194,32 @@ function AddArtist({ onCreated }) {
   };
   const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
   return (
-    <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: 16, marginBottom: 18, background: "rgba(212,175,55,0.03)" }}>
-      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 12 }}>ADD AN ARTIST DIRECTLY</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <input placeholder="Full name" value={f.name} onChange={set("name")} style={miniInput} />
-        <input placeholder="Art type (e.g. Oil)" value={f.art_type} onChange={set("art_type")} style={miniInput} />
-        <input placeholder="Login email" value={f.email} onChange={set("email")} style={miniInput} />
-        <input placeholder="Login password" value={f.password} onChange={set("password")} style={miniInput} />
-        <input placeholder="Location" value={f.location} onChange={set("location")} style={miniInput} />
-        <input placeholder="Age" value={f.age} onChange={set("age")} style={miniInput} />
-        <select value={f.gender} onChange={set("gender")} style={miniInput}>
-          <option value="">Gender (for default avatar)…</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
-        </select>
-        <input placeholder="Bio" value={f.bio} onChange={set("bio")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
+    <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 14, padding: 28, marginBottom: 22, background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 16 }}>ADD AN ARTIST DIRECTLY</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <AField l="FULL NAME"><input style={aInputStyle} value={f.name} onChange={set("name")} /></AField>
+        <AField l="ART TYPE"><input style={aInputStyle} placeholder="e.g. Oil & Projection" value={f.art_type} onChange={set("art_type")} /></AField>
+        <AField l="LOGIN EMAIL"><input style={aInputStyle} value={f.email} onChange={set("email")} /></AField>
+        <AField l="LOGIN PASSWORD"><input style={aInputStyle} type="password" value={f.password} onChange={set("password")} /></AField>
+        <AField l="LOCATION"><input style={aInputStyle} value={f.location} onChange={set("location")} /></AField>
+        <AField l="AGE"><input style={aInputStyle} type="number" value={f.age} onChange={set("age")} /></AField>
+        <AField l="GENDER (FOR DEFAULT AVATAR)">
+          <select style={aInputStyle} value={f.gender} onChange={set("gender")}>
+            <option value="">Select…</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </AField>
+        <div />
+        <div style={{ gridColumn: "1 / -1" }}>
+          <AField l="BIO"><textarea style={{ ...aInputStyle, minHeight: 80 }} value={f.bio} onChange={set("bio")} /></AField>
+        </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <MediaUploader kind="image" label="ARTIST PHOTO" hint="UPLOAD PHOTO" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
         </div>
       </div>
-      <div style={{ marginTop: 12 }}>
+      <div style={{ marginTop: 14 }}>
         <Btn onClick={submit} primary disabled={busy}>{busy ? "CREATING…" : "+ CREATE ARTIST"}</Btn>
       </div>
       {done && <div style={{ marginTop: 10, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#4ade80" }}>{done}</div>}
@@ -1222,131 +1228,35 @@ function AddArtist({ onCreated }) {
 }
 
 function AddArtworkForArtist({ tick }) {
-  const blank = { artist_id: "", title: "", price: "", price_per_unit: "", medium: "", category_id: "", width: "", height: "", depth: "", dim_unit: "cm", image_url: "", customizable: false, ratio_locked: false, featured: false, narrative: "", unit: "cm", min_width: "", max_width: "", min_height: "", max_height: "", min_depth: "", max_depth: "" };
   const [artists, setArtists] = useState([]);
-  const [cats, setCats] = useState([]);
-  const [f, setF] = useState(blank);
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(null);
-  useEffect(() => {
-    api.catalog.artists().then(setArtists).catch(() => {});
-    api.catalog.categories().then((c) => setCats(c.filter((x) => x.kind === "main"))).catch(() => {});
-  }, [tick]);
-  const is3D = isThreeD(f.category_id, cats);
-  const composedDims = composeDims(f.width, f.height, is3D ? f.depth : "", f.dim_unit);
-  const submit = async () => {
-    if (!f.artist_id || !f.title || !f.category_id) { alert("Artist, title and category are required"); return; }
-    if (!f.customizable && (!f.price || Number(f.price) <= 0)) { alert("Predefined (fixed-price) artworks need a price greater than 0"); return; }
-    if (f.customizable && (!f.price_per_unit || Number(f.price_per_unit) <= 0)) { alert("Customizable artworks need a price per unit greater than 0"); return; }
-    setBusy(true);
-    try {
-      await api.admin.createArtwork({
-        title: f.title, narrative: f.narrative || null, medium: f.medium || null,
-        category_id: f.category_id,
-        width: !f.customizable && f.width !== "" ? Number(f.width) : null,
-        height: !f.customizable && f.height !== "" ? Number(f.height) : null,
-        depth: !f.customizable && is3D && f.depth !== "" ? Number(f.depth) : null,
-        base_dimensions: f.customizable ? null : (composedDims || null),
-        customizable: f.customizable, ratio_locked: f.customizable && f.ratio_locked,
-        price: f.price ? Number(f.price) : 0,
-        unit: f.customizable ? f.unit : null,
-        price_per_unit: f.customizable && f.price_per_unit !== "" ? Number(f.price_per_unit) : null,
-        min_width: f.customizable && f.min_width !== "" ? Number(f.min_width) : null,
-        max_width: f.customizable && f.max_width !== "" ? Number(f.max_width) : null,
-        min_height: f.customizable && f.min_height !== "" ? Number(f.min_height) : null,
-        max_height: f.customizable && f.max_height !== "" ? Number(f.max_height) : null,
-        min_depth: f.customizable && is3D && f.min_depth !== "" ? Number(f.min_depth) : null,
-        max_depth: f.customizable && is3D && f.max_depth !== "" ? Number(f.max_depth) : null,
-        featured: f.featured, images: f.image_url ? [f.image_url] : [], artist_id: f.artist_id,
-      });
-      setDone(`Added "${f.title}".`);
-      setF({ ...blank, artist_id: f.artist_id });
-    } catch (e) { alert(e.message); }
-    finally { setBusy(false); }
-  };
-  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+  const [artistId, setArtistId] = useState("");
+  useEffect(() => { api.catalog.artists().then(setArtists).catch(() => {}); }, [tick]);
+
+  // Same full-featured form the artist uses, with an artist picker on top + the
+  // admin-only "Featured on home" toggle. Admin uploads go live immediately.
+  const artistSelect = (
+    <AField l="ARTIST">
+      <select value={artistId} onChange={(e) => setArtistId(e.target.value)} style={aInputStyle}>
+        <option value="">Select artist…</option>
+        {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+      </select>
+    </AField>
+  );
+
   return (
-    <div style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 10, padding: 16, marginBottom: 4, background: "rgba(255,255,255,0.02)" }}>
+    <div style={{ marginBottom: 4 }}>
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 12 }}>ADD ARTWORK FOR AN ARTIST</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <select value={f.artist_id} onChange={set("artist_id")} style={miniInput}>
-          <option value="">Select artist…</option>
-          {artists.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>
-        <select value={f.category_id} onChange={set("category_id")} style={miniInput}>
-          <option value="">Select medium…</option>
-          {cats.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-        </select>
-        <input placeholder="Title" value={f.title} onChange={set("title")} style={miniInput} />
-        <input placeholder="Medium (e.g. Oil on canvas)" value={f.medium} onChange={set("medium")} style={miniInput} />
-        <input placeholder="Price (₹)" value={f.price} onChange={set("price")} style={miniInput} disabled={f.customizable} />
-        <div />
-        {!f.customizable && (
-          <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.6)", marginBottom: 6 }}>
-              ARTWORK SIZE{is3D ? " (W × H × D)" : " (W × H)"}{composedDims ? ` — ${composedDims}` : ""}
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: is3D ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: 8 }}>
-              <input placeholder="Width" value={f.width} onChange={set("width")} style={miniInput} />
-              <input placeholder="Height" value={f.height} onChange={set("height")} style={miniInput} />
-              {is3D && <input placeholder="Depth / Length" value={f.depth} onChange={set("depth")} style={miniInput} />}
-              <select value={f.dim_unit} onChange={set("dim_unit")} style={miniInput}>
-                <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
-              </select>
-            </div>
-          </div>
-        )}
-        <input placeholder="Narrative / description" value={f.narrative} onChange={set("narrative")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
-        {f.customizable && (
-          <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.6)", marginBottom: 6 }}>
-              PRICE PER UNIT (₹ per {f.unit}²) — used to calculate the buyer's total
-            </div>
-            <input placeholder={`Price per ${f.unit}² (₹)`} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} style={{ ...miniInput, width: "100%", marginBottom: 12 }} />
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: "rgba(212,175,55,0.6)", marginBottom: 6 }}>
-              CUSTOMIZATION SIZE RANGE — leave blank for no limit
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-              <input placeholder="Min W" value={f.min_width} onChange={set("min_width")} style={miniInput} />
-              <input placeholder="Max W" value={f.max_width} onChange={set("max_width")} style={miniInput} />
-              <input placeholder="Min H" value={f.min_height} onChange={set("min_height")} style={miniInput} />
-              <input placeholder="Max H" value={f.max_height} onChange={set("max_height")} style={miniInput} />
-              <select value={f.unit} onChange={set("unit")} style={miniInput}>
-                <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
-              </select>
-              {is3D && (
-                <>
-                  <input placeholder="Min Depth" value={f.min_depth} onChange={set("min_depth")} style={miniInput} />
-                  <input placeholder="Max Depth" value={f.max_depth} onChange={set("max_depth")} style={miniInput} />
-                </>
-              )}
-            </div>
-          </div>
-        )}
-        <div style={{ gridColumn: "1 / -1" }}>
-          <MediaUploader kind="image" label="ARTWORK IMAGE" hint="UPLOAD IMAGE" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, gridColumn: "1 / -1", flexWrap: "wrap" }}>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
-            <input type="checkbox" checked={f.customizable} onChange={(e) => setF((v) => ({ ...v, customizable: e.target.checked }))} style={{ accentColor: gold }} />
-            Customizable (priced per unit)
-          </label>
-          {f.customizable && (
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
-              <input type="checkbox" checked={f.ratio_locked} onChange={(e) => setF((v) => ({ ...v, ratio_locked: e.target.checked }))} style={{ accentColor: gold }} />
-              Lock W:H ratio
-            </label>
-          )}
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)", cursor: "pointer" }}>
-            <input type="checkbox" checked={f.featured} onChange={(e) => setF((v) => ({ ...v, featured: e.target.checked }))} style={{ accentColor: gold }} />
-            Featured on home
-          </label>
-        </div>
-      </div>
-      <div style={{ marginTop: 12 }}>
-        <Btn onClick={submit} primary disabled={busy}>{busy ? "ADDING…" : "+ ADD ARTWORK"}</Btn>
-      </div>
-      {done && <div style={{ marginTop: 10, fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#4ade80" }}>{done}</div>}
+      <ArtworkForm
+        topSlot={artistSelect}
+        showFeatured
+        submitLabel="+ ADD ARTWORK"
+        submittingLabel="ADDING…"
+        successMessage={<>✓ Artwork added and is now <strong>live</strong> in the collection.</>}
+        onSubmit={(payload) => {
+          if (!artistId) throw new Error("Select an artist first.");
+          return api.admin.createArtwork({ ...payload, artist_id: artistId });
+        }}
+      />
     </div>
   );
 }
@@ -1587,29 +1497,11 @@ function Categories() {
   );
 }
 
-// Upload button + thumbnail preview for a single image URL field.
-function ImageField({ label, value, onChange, hint }) {
-  const upload = async (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    try { const { url } = await api.uploads.file(file, "image"); onChange(url); }
-    catch (err) { alert(err.message); }
-    e.target.value = "";
-  };
+// Single-image field — drag-and-drop dropzone + preview (shared MediaUploader).
+function ImageField({ label, value, onChange }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      {label && <L>{label}</L>}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <label style={{ ...miniInput, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-          <input type="file" accept="image/*" onChange={upload} style={{ display: "none" }} />
-          {value ? "REPLACE IMAGE" : "UPLOAD IMAGE"}
-        </label>
-        {value
-          ? <img src={value} alt="" style={{ width: 54, height: 54, borderRadius: 6, objectFit: "cover", border: "1px solid rgba(212,175,55,0.3)" }} />
-          : <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.45)" }}>{hint || "No image yet"}</span>}
-        {value && (
-          <button onClick={() => onChange("")} style={{ background: "none", border: "none", color: "rgba(200,191,160,0.5)", cursor: "pointer", fontSize: 12, fontFamily: "'Raleway',sans-serif" }}>remove</button>
-        )}
-      </div>
+      <MediaUploader kind="image" value={value} onChange={onChange} label={label} size={64} />
     </div>
   );
 }

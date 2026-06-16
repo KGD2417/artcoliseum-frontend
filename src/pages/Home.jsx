@@ -472,7 +472,7 @@ function CylinderCarousel({ items, navigate }) {
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
+                  objectFit: "contain",
                   display: "block",
                 }}
               />
@@ -789,6 +789,8 @@ export default function Home() {
   const [eventsData, setEventsData] = useState(EVENTS_DATA);
   const [testimonials, setTestimonials] = useState(TESTIMONIALS_FALLBACK);
   const [news, setNews] = useState([]);
+  const [featured, setFeatured] = useState(null);   // Artist of the Month
+  const [newLaunch, setNewLaunch] = useState([]);   // newest products, from backend
   const [email, setEmail] = useState("");
   const [registerEvent, setRegisterEvent] = useState(null);
   const [regForm, setRegForm] = useState({
@@ -855,6 +857,48 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Artist of the Month spotlight — a real artist from the catalog (prefers one
+  // with the most works + a photo). Section hides itself when there are none.
+  useEffect(() => {
+    let cancelled = false;
+    api.catalog
+      .artists()
+      .then((rows) => {
+        if (cancelled || !rows || rows.length === 0) return;
+        const ranked = [...rows].sort((a, b) => (b.works_count || 0) - (a.works_count || 0));
+        setFeatured(ranked.find((a) => a.image_url) || ranked[0]);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // "Launch of New Product" — the most recently added live artworks, so a new
+  // product appears here automatically the moment it goes live. Falls back to
+  // the editorial cards only when the catalog is empty.
+  useEffect(() => {
+    let cancelled = false;
+    api.catalog
+      .artworks({})
+      .then((arts) => {
+        if (cancelled || !arts || arts.length === 0) return;
+        // Backend returns active works oldest→newest; take the most recent few.
+        const withImg = arts.filter((a) => a.images && a.images.length);
+        const newest = (withImg.length ? withImg : arts).slice(-6).reverse();
+        setNewLaunch(
+          newest.map((a) => ({
+            id: a.id,
+            src: a.images?.[0],
+            name: a.title,
+            designation: [a.artist_name, a.medium].filter(Boolean).join(" · "),
+            quote: a.narrative || a.description || "A new work, fresh from the studio.",
+            tag: "NEW",
+          })),
+        );
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   // Events come from the database (ongoing + upcoming).
@@ -1220,7 +1264,7 @@ export default function Home() {
             <CircularTestimonials
               imagesOnly
               cardHeight="380px"
-              testimonials={PRODUCT_TESTIMONIALS}
+              testimonials={newLaunch.length ? newLaunch : PRODUCT_TESTIMONIALS}
               autoplay={true}
               colors={{
                 arrowBackground: "#1a1612",
@@ -1358,6 +1402,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════
           ARTIST OF THE MONTH
       ═══════════════════════════════════════════════ */}
+      {featured && (
       <section
         className="home-sec"
         style={{
@@ -1399,7 +1444,7 @@ export default function Home() {
                 lineHeight: 1.1,
                 margin: "0 0 14px",
               }}>
-              Elena Vance
+              {featured.name}
             </h2>
 
             <p
@@ -1410,7 +1455,7 @@ export default function Home() {
                 color: "#D4AF37",
                 marginBottom: 24,
               }}>
-              Florence · Oil &amp; Gold Leaf · Twelve Years in Practice
+              {[featured.location, featured.art_type].filter(Boolean).join(" · ") || featured.role || "Art Coliseum Artist"}
             </p>
 
             <p
@@ -1421,9 +1466,7 @@ export default function Home() {
                 lineHeight: 1.8,
                 marginBottom: 28,
               }}>
-              Florence-born Elena Vance brings the Renaissance tradition into
-              the 21st century. Her latest series, 'Golden Hours', captures the
-              interplay of light and memory across twelve monumental canvases.
+              {featured.bio || "An Art Coliseum artist — their full monograph is being prepared."}
             </p>
 
             <ul
@@ -1436,10 +1479,10 @@ export default function Home() {
                 gap: 12,
               }}>
               {[
-                "Featured in Vogue Italia & Apollo Magazine",
-                "Twelve original canvases — only three remain",
-                "Studio film & monograph included with every purchase",
-              ].map((b, i) => (
+                featured.works_count ? `${featured.works_count} works in the collection` : null,
+                featured.location ? `Based in ${featured.location}` : null,
+                featured.art_type || null,
+              ].filter(Boolean).map((b, i) => (
                 <li
                   key={i}
                   style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1470,7 +1513,7 @@ export default function Home() {
               style={{ marginTop: 40 }}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => navigate("/artists/elena-vance")}>
+              onClick={() => navigate(`/artists/${featured.id}`)}>
               VIEW ARTIST PROFILE →
             </motion.button>
           </motion.div>
@@ -1495,9 +1538,9 @@ export default function Home() {
                 "--backup-border": "rgba(212,175,55,0.45)",
                 "--backdrop": "rgba(212,175,55,0.06)",
               }}>
-              <img
-                src={b2}
-                alt="Elena Vance"
+              <SafeImage
+                src={featured.image_url || b2}
+                alt={featured.name}
                 style={{
                   position: "absolute",
                   inset: 0,
@@ -1511,6 +1554,7 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* ═══════════════════════════════════════════════
           PRESERVATION OF ART

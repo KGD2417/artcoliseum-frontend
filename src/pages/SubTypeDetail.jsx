@@ -1035,7 +1035,7 @@ export default function SubTypeDetail() {
                       style={{
                         width: "100%",
                         height: "100%",
-                        objectFit: "cover",
+                        objectFit: "contain",
                         display: "block",
                         transform:
                           hoveredId === item.id ? "scale(1.07)" : "scale(1)",
