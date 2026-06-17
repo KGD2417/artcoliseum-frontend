@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { api } from "../utils/api";
 
-const SECTIONS = [
+const DEFAULT_SECTIONS = [
   {
     title: "1. Information We Collect",
     body: "We collect information you provide directly when creating an account, completing a purchase, contacting our concierge team, or subscribing to our newsletter. This includes your name, email address, postal address, phone number, and payment details.",
@@ -28,6 +30,19 @@ const SECTIONS = [
 ];
 
 export default function PrivacyPolicy() {
+  // Admin-editable content (Admin → Legal) overrides the built-in default.
+  const [sections, setSections] = useState(DEFAULT_SECTIONS);
+  const [updated, setUpdated] = useState("January 2026");
+
+  useEffect(() => {
+    api.site.getPrivacy().then((data) => {
+      if (data && Array.isArray(data.sections) && data.sections.length) {
+        setSections(data.sections);
+        if (data.updated) setUpdated(data.updated);
+      }
+    }).catch(() => {});
+  }, []);
+
   return (
     <section style={{ padding: "120px 24px 100px", maxWidth: 900, margin: "0 auto" }}>
       <motion.div
@@ -42,12 +57,12 @@ export default function PrivacyPolicy() {
           <span className="bold-white">Privacy</span> <em>Policy</em>
         </h2>
         <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.55)", marginTop: 12 }}>
-          Last updated: January 2026
+          Last updated: {updated}
         </p>
       </motion.div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-        {SECTIONS.map(({ title, body }, i) => (
+        {sections.map(({ title, body }, i) => (
           <motion.div
             key={title}
             initial={{ opacity: 0, y: 20 }}

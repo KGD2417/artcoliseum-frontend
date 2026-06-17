@@ -1,6 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 
+// Builder credit — update with Trisparc's website URL when available.
+const TRISPARC_URL = "#";
+
 const LINKS = [
   { label: "Collection", to: "/categories" },
   { label: "Events", to: "/events" },
@@ -47,6 +50,17 @@ export default function Footer() {
               letterSpacing: "0.05em",
             }}>
             © {new Date().getFullYear()} Art Coliseum
+            {" · "}
+            Made by{" "}
+            <a
+              href={TRISPARC_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "rgba(212,175,55,0.85)", textDecoration: "none", fontWeight: 600 }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#D4AF37")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(212,175,55,0.85)")}>
+              Trisparc Pvt Ltd
+            </a>
           </span>
         </div>
 

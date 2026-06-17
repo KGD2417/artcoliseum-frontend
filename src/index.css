@@ -466,6 +466,7 @@ a {
   font-size: clamp(32px, 3.5vw, 48px);
   color: #f0e8d8;
   font-weight: 300;
+  line-height: 1.05;
 }
 .section-heading .bold-white {
   font-weight: 700;
@@ -473,6 +474,7 @@ a {
 }
 .section-heading em {
   font-style: italic;
+  font-weight: 600;
   color: var(--gold-primary);
 }
 

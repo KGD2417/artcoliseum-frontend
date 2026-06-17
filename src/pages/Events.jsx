@@ -34,96 +34,6 @@ import e7 from "../assets/events/e7.png";
 import e8 from "../assets/events/e8.png";
 import e9 from "../assets/events/e9.png";
 
-const FALLBACK_PAST = [
-  {
-    title: "Echoes of the Ancients",
-    date: "Jan 10 – Mar 28, 2025",
-    time: "10:00 AM – 6:00 PM · Tue – Sun",
-    location: "Rome, Italy",
-    desc: "A landmark retrospective tracing the influence of classical antiquity on modern and contemporary art forms. Sculptures, reliefs, and painted panels spanning three millennia.",
-    img: e4,
-    curator: "Marco Bianchi",
-  },
-  {
-    title: "Chromatic Dialogues",
-    date: "Feb 14 – Apr 30, 2025",
-    time: "11:00 AM – 7:00 PM · Daily",
-    location: "Paris, France",
-    desc: "Colour as conversation — thirty artists across five decades exploring how pigment, light, and surface unite to create experiences that transcend the visual.",
-    img: e5,
-    curator: "Sophie Laurent",
-  },
-  {
-    title: "Invisible Architectures",
-    date: "Mar 1 – May 10, 2025",
-    time: "10:30 AM – 6:30 PM · Wed – Mon",
-    location: "Tokyo, Japan",
-    desc: "Structural art installations exploring negative space, shadow, and the geometry of absence. Twenty-two artists, one shared vision.",
-    img: e6,
-    curator: "Kenji Mori",
-  },
-];
-
-const FALLBACK_ONGOING = [
-  {
-    title: "The Golden Age Exhibition",
-    date: "May 15 – June 30, 2025",
-    time: "10:00 AM – 8:00 PM · Daily",
-    location: "Mumbai, India",
-    desc: "A curated journey through contemporary Indian masters exploring gold as medium, metaphor, and memory. Works spanning oil, mixed media and bronze sculpture.",
-    img: e4,
-    curator: "Elena Vance",
-  },
-  {
-    title: "Silence in Motion",
-    date: "June 5 – July 20, 2025",
-    time: "11:00 AM – 7:00 PM · Tue – Sun",
-    location: "Florence, Italy",
-    desc: "Dynamic sculptures and kinetic installations that blur the boundary between stillness and movement. Nine artists, one shared language.",
-    img: e5,
-    curator: "Hideo Tanaka",
-  },
-  {
-    title: "Chromatic Resonance",
-    date: "April 1 – May 18, 2026",
-    time: "10:30 AM – 6:30 PM · Wed – Mon",
-    location: "Paris, France",
-    desc: "A symphony of colour — how pigment, light, and surface unite to create experiences that transcend the visual.",
-    img: e6,
-    curator: "Lena Bach",
-  },
-];
-
-const FALLBACK_UPCOMING = [
-  {
-    title: "Digital Frontiers",
-    date: "July 1 – August 15, 2026",
-    time: "12:00 PM – 9:00 PM · Daily",
-    location: "Berlin, Germany",
-    desc: "Generative art and digital works redefining what it means to own and experience art in the modern era.",
-    img: e7,
-    curator: "Aria Voss",
-  },
-  {
-    title: "Monochrome Dialogues",
-    date: "September 1 – October 15, 2026",
-    time: "11:00 AM – 7:00 PM · Tue – Sun",
-    location: "London, UK",
-    desc: "Exploring the infinite range of black, white, and shadow through photography, etching, and charcoal.",
-    img: e8,
-    curator: "Julian Voss",
-  },
-  {
-    title: "Ocean Meditations",
-    date: "October 5 – November 30, 2026",
-    time: "10:00 AM – 8:00 PM · Daily",
-    location: "Sydney, Australia",
-    desc: "Works inspired by the sea — its depth, its fury, its silence. A multi-sensory exhibition spanning three pavilions.",
-    img: e9,
-    curator: "Chen Wei",
-  },
-];
-
 function EventCard({
   event,
   index,
@@ -324,9 +234,9 @@ export default function Events() {
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
   const [registeredIds, setRegisteredIds] = useState(() => new Set());
   const [done, setDone] = useState(false);
-  const [past, setPast] = useState(FALLBACK_PAST);
-  const [ongoing, setOngoing] = useState(FALLBACK_ONGOING);
-  const [upcoming, setUpcoming] = useState(FALLBACK_UPCOMING);
+  const [past, setPast] = useState([]);
+  const [ongoing, setOngoing] = useState([]);
+  const [upcoming, setUpcoming] = useState([]);
   const [detailEvent, setDetailEvent] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -361,7 +271,7 @@ export default function Events() {
         console.error(e);
         return;
       }
-      if (!data || data.length === 0) return; // keep fallback demo data
+      if (!data || data.length === 0) return; // no events → show empty state
       const fmt = (s, e) => {
         if (!s) return "";
         const d1 = new Date(s).toLocaleDateString("en-US", {

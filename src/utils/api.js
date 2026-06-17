@@ -291,6 +291,15 @@ export const api = {
     },
   },
 
+  site: {
+    getPrivacy() {
+      return request("GET", "/site/privacy", { auth: false });
+    },
+    setPrivacy(body) {
+      return request("PUT", "/site/privacy", { body });
+    },
+  },
+
   notifications: {
     list() {
       return request("GET", "/notifications");

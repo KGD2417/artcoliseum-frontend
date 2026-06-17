@@ -14,7 +14,7 @@ const TABS = [
   ["artworks", "Artworks"], ["categories", "Categories"], ["exhibitions", "Exhibitions"], ["events", "Events"],
   ["artists", "Artists"], ["competition", "Competition"], ["communities", "Communities"],
   ["news", "News"], ["testimonials", "Testimonials"],
-  ["contact", "Contact"], ["support", "Support"], ["messages", "Messages"],
+  ["contact", "Contact"], ["support", "Support"], ["legal", "Legal"], ["messages", "Messages"],
 ];
 
 const STAGES = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
@@ -86,6 +86,7 @@ export default function AdminDashboard() {
           {tab === "testimonials" && <Testimonials />}
           {tab === "contact" && <ContactList />}
           {tab === "support" && <Support />}
+          {tab === "legal" && <PrivacyEditor />}
           {tab === "messages" && <Panel title="Messages"><Link to="/admin/inbox" className="btn-gold-main" style={{ textDecoration: "none", padding: "12px 24px", fontSize: 12 }}>OPEN INBOX →</Link></Panel>}
         </div>
       </div>
@@ -1258,6 +1259,58 @@ function AddArtworkForArtist({ tick }) {
         }}
       />
     </div>
+  );
+}
+
+// Edit the public Privacy Policy (stored server-side, live immediately).
+function PrivacyEditor() {
+  const [sections, setSections] = useState(null);
+  const [updated, setUpdated] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    api.site.getPrivacy().then((d) => {
+      if (d?.sections?.length) { setSections(d.sections); setUpdated(d.updated || ""); }
+      else setSections([{ title: "", body: "" }]);
+    }).catch(() => setSections([{ title: "", body: "" }]));
+  }, []);
+  const upd = (i, k, v) => setSections((s) => s.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
+  const save = async () => {
+    setBusy(true);
+    try {
+      const clean = (sections || []).filter((s) => (s.title || "").trim() || (s.body || "").trim());
+      await api.site.setPrivacy({
+        sections: clean,
+        updated: updated || new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      });
+      setDone(true); setTimeout(() => setDone(false), 2500);
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  if (!sections) return <Panel title="Privacy Policy"><Empty>Loading…</Empty></Panel>;
+  return (
+    <Panel title="Privacy Policy">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", marginBottom: 16, lineHeight: 1.6 }}>
+        Edit the sections shown on the public <strong>/privacy</strong> page. Changes go live immediately.
+      </div>
+      <L>"LAST UPDATED" LABEL</L>
+      <input value={updated} onChange={(e) => setUpdated(e.target.value)} placeholder="e.g. June 2026" style={{ ...miniInput, marginBottom: 18 }} />
+      {sections.map((s, i) => (
+        <div key={i} style={{ border: "1px solid rgba(212,175,55,0.15)", borderRadius: 10, padding: 14, marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.14em", color: gold }}>SECTION {i + 1}</span>
+            <button onClick={() => setSections((xs) => xs.filter((_, j) => j !== i))}
+              style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 12 }}>remove</button>
+          </div>
+          <input value={s.title} onChange={(e) => upd(i, "title", e.target.value)} placeholder="Section title" style={{ ...miniInput, marginBottom: 8 }} />
+          <textarea value={s.body} onChange={(e) => upd(i, "body", e.target.value)} placeholder="Section text" style={{ ...miniInput, minHeight: 96, width: "100%", boxSizing: "border-box", resize: "vertical" }} />
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+        <Btn onClick={() => setSections((s) => [...s, { title: "", body: "" }])}>+ ADD SECTION</Btn>
+        <Btn onClick={save} primary disabled={busy}>{busy ? "SAVING…" : "SAVE & PUBLISH"}</Btn>
+      </div>
+      {done && <div style={{ marginTop: 10, color: "#4ade80", fontFamily: "'Raleway',sans-serif", fontSize: 12 }}>✓ Saved — live on the Privacy page.</div>}
+    </Panel>
   );
 }
 

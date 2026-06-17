@@ -52,194 +52,6 @@ import e1 from "../assets/events/e1.png";
 import e2 from "../assets/events/e2.png";
 import e3 from "../assets/events/e3.png";
 
-/* ── Hero gallery ────────────────────────────────────────────────── */
-const HERO_GALLERY = [
-  { image: i1, text: "Ethereal Horizon", id: null },
-  { image: i2, text: "Eternal Grace", id: null },
-  { image: i6, text: "Cosmic Flow", id: null },
-  { image: i4, text: "The Golden Tree", id: null },
-  { image: i5, text: "Whispers of Silence", id: null },
-  {
-    image:
-      "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=900&q=80&auto=format&fit=crop",
-    text: "Crimson Reverie",
-    id: null,
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1579783901586-d88db74b4fe4?w=900&q=80&auto=format&fit=crop",
-    text: "Velvet Mirage",
-    id: null,
-  },
-  { image: i8, text: "Renaissance Study", id: null },
-  {
-    image:
-      "https://images.unsplash.com/photo-1549887534-1541e9326642?w=900&q=80&auto=format&fit=crop",
-    text: "Crimson Tides",
-    id: null,
-  },
-  { image: i3, text: "The Infinite Stair", id: null },
-  {
-    image:
-      "https://images.unsplash.com/photo-1551913902-c92207136625?w=900&q=80&auto=format&fit=crop",
-    text: "Solstice",
-    id: null,
-  },
-  { image: i7, text: "Ocean Depths", id: null },
-];
-
-const FALLBACK_HERO_GALLERY = HERO_GALLERY;
-
-/* ── Highlights carousel ─────────────────────────────────────────── */
-const CAROUSEL_ITEMS = [
-  { img: p1, title: "Golden Horizon", medium: "Acrylic on Canvas" },
-  { img: p4, title: "Eternal Grace", medium: "Bronze Sculpture" },
-  { img: p6, title: "Cosmic Flow", medium: "Mixed Media" },
-  { img: p7, title: "The Golden Tree", medium: "Oil on Canvas" },
-  { img: p5, title: "Whispers of Silence", medium: "Oil on Canvas" },
-  { img: p3, title: "Azure Dreams", medium: "Mixed Media" },
-  { img: p8, title: "Renaissance Study", medium: "Oil on Panel" },
-  { img: p2, title: "Ocean Depths", medium: "Digital Print" },
-];
-
-const FALLBACK_CAROUSEL = CAROUSEL_ITEMS;
-
-/* ── Launch of New Product — circular testimonials ───────────────── */
-const PRODUCT_TESTIMONIALS = [
-  {
-    quote:
-      "Forty-eight new works. Eighteen artists. One season. Each piece a testament to the enduring power of human expression — verified provenance, direct from the artist's studio.",
-    name: "New Collection",
-    designation: "48 works · Oil, Sculpture & Photography",
-    src: i4,
-    tag: "NEW ARRIVALS",
-  },
-  {
-    quote:
-      "The most coveted works of this season — from emerging masters whose voices are reshaping contemporary art. Members receive 48-hour early access before public launch.",
-    name: "Early Access",
-    designation: "Members-only · 48 hrs before public",
-    src: i1,
-    tag: "EXCLUSIVE",
-  },
-  {
-    quote:
-      "A new chapter in art begins. Every work presented with full documentation, artist monograph, and our authenticity guarantee. Art that will endure for generations.",
-    name: "Guaranteed Authentic",
-    designation: "Provenance-verified · Framing included",
-    src: i6,
-    tag: "COLLECTION",
-  },
-];
-
-/* ── Collector testimonials (fallback until admin adds their own) ─────
-   Portrait avatars use known-good Unsplash stock photos; admin-managed
-   testimonials (Admin → Testimonials) replace this set when present. */
-const TESTIMONIALS_FALLBACK = [
-  {
-    quote:
-      "Acquiring through Art Coliseum felt like being welcomed into a private salon. The provenance, the framing, the white-glove delivery — every detail was considered.",
-    name: "Isabella Moreau",
-    designation: "Private Collector · Paris",
-    src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "COLLECTOR",
-  },
-  {
-    quote:
-      "As an interior designer I source art constantly. Nothing compares to the curation here — each work arrives with a story, and the AR preview saved my client weeks of indecision.",
-    name: "Rohan Mehta",
-    designation: "Interior Designer · Mumbai",
-    src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "DESIGNER",
-  },
-  {
-    quote:
-      "I have collected for thirty years and rarely trust online galleries. Art Coliseum changed that — authenticity guaranteed, the artist reachable, the experience genuinely elegant.",
-    name: "Eleanor Whitfield",
-    designation: "Patron of the Arts · London",
-    src: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "PATRON",
-  },
-  {
-    quote:
-      "The first piece I bought now greets every guest who enters my home. The commissioning process was intimate and the result far exceeded what I imagined.",
-    name: "Bilal Ahmed",
-    designation: "First-time Collector · Dubai",
-    src: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "COLLECTOR",
-  },
-  {
-    quote:
-      "From discovery to delivery, the team treated a single canvas like a museum loan. That care is rare, and it is why I keep coming back.",
-    name: "Saman Malik",
-    designation: "Gallery Advisor · Lahore",
-    src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "ADVISOR",
-  },
-  {
-    quote:
-      "I commissioned a sculpture for our courtyard. Watching it take shape through the artist updates was as moving as unveiling the finished work.",
-    name: "Omar Raza",
-    designation: "Architect · Istanbul",
-    src: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "PATRON",
-  },
-  {
-    quote:
-      "Every acquisition arrives with a monograph and a film of the studio. It turns owning art into living with a story.",
-    name: "Zainab Hussain",
-    designation: "Private Collector · Singapore",
-    src: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "COLLECTOR",
-  },
-  {
-    quote:
-      "Their curators understood our hotel's vision instantly and assembled a collection that guests now ask about by name.",
-    name: "Farhan Siddiqui",
-    designation: "Creative Director · New York",
-    src: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "DESIGNER",
-  },
-  {
-    quote:
-      "I was nervous buying art online. One conversation with their concierge and a verified certificate later, I was completely at ease.",
-    name: "Sana Sheikh",
-    designation: "Collector · Florence",
-    src: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150&h=150",
-    tag: "COLLECTOR",
-  },
-];
-
-/* ── Events ──────────────────────────────────────────────────────── */
-const EVENTS_DATA = [
-  {
-    title: "The Golden Age Exhibition",
-    date: "May 15 – June 30, 2025",
-    time: "10:00 AM – 8:00 PM · Daily",
-    location: "Mumbai, India",
-    desc: "A curated journey through contemporary Indian masters exploring gold as medium, metaphor, and memory.",
-    img: e1,
-    tag: "ONGOING",
-  },
-  {
-    title: "Silence in Motion",
-    date: "June 5 – July 20, 2025",
-    time: "11:00 AM – 7:00 PM · Tue – Sun",
-    location: "Florence, Italy",
-    desc: "Kinetic installations that blur the boundary between stillness and movement. Nine artists, one shared language.",
-    img: e2,
-    tag: "ONGOING",
-  },
-  {
-    title: "Digital Frontiers",
-    date: "July 1 – August 15, 2025",
-    time: "12:00 PM – 9:00 PM · Daily",
-    location: "Berlin, Germany",
-    desc: "Generative art redefining what it means to own and experience art in the modern era.",
-    img: e3,
-    tag: "UPCOMING",
-  },
-];
 
 /* ── Flip gallery images ─────────────────────────────────────────── */
 const FLIP_IMAGES = [
@@ -784,13 +596,13 @@ function TiltCard({ event, index, onRegister, registered }) {
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [heroGallery, setHeroGallery] = useState(FALLBACK_HERO_GALLERY);
-  const [carouselItems, setCarouselItems] = useState(FALLBACK_CAROUSEL);
-  const [eventsData, setEventsData] = useState(EVENTS_DATA);
-  const [testimonials, setTestimonials] = useState(TESTIMONIALS_FALLBACK);
+  const [heroGallery, setHeroGallery] = useState([]);
+  const [carouselItems, setCarouselItems] = useState([]);
+  const [eventsData, setEventsData] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
   const [news, setNews] = useState([]);
-  const [featured, setFeatured] = useState(null);   // Artist of the Month
-  const [newLaunch, setNewLaunch] = useState([]);   // newest products, from backend
+  const [featured, setFeatured] = useState(null); // Artist of the Month
+  const [newLaunch, setNewLaunch] = useState([]); // newest products, from backend
   const [email, setEmail] = useState("");
   const [registerEvent, setRegisterEvent] = useState(null);
   const [regForm, setRegForm] = useState({
@@ -867,11 +679,15 @@ export default function Home() {
       .artists()
       .then((rows) => {
         if (cancelled || !rows || rows.length === 0) return;
-        const ranked = [...rows].sort((a, b) => (b.works_count || 0) - (a.works_count || 0));
+        const ranked = [...rows].sort(
+          (a, b) => (b.works_count || 0) - (a.works_count || 0),
+        );
         setFeatured(ranked.find((a) => a.image_url) || ranked[0]);
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // "Launch of New Product" — the most recently added live artworks, so a new
@@ -892,13 +708,18 @@ export default function Home() {
             src: a.images?.[0],
             name: a.title,
             designation: [a.artist_name, a.medium].filter(Boolean).join(" · "),
-            quote: a.narrative || a.description || "A new work, fresh from the studio.",
+            quote:
+              a.narrative ||
+              a.description ||
+              "A new work, fresh from the studio.",
             tag: "NEW",
           })),
         );
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Events come from the database (ongoing + upcoming).
@@ -1247,6 +1068,7 @@ export default function Home() {
       {/* ═══════════════════════════════════════════════
           LAUNCH OF NEW PRODUCT
       ═══════════════════════════════════════════════ */}
+      {newLaunch.length > 0 && (
       <section
         className="home-sec home-inline-section"
         style={{
@@ -1264,7 +1086,7 @@ export default function Home() {
             <CircularTestimonials
               imagesOnly
               cardHeight="380px"
-              testimonials={newLaunch.length ? newLaunch : PRODUCT_TESTIMONIALS}
+              testimonials={newLaunch}
               autoplay={true}
               colors={{
                 arrowBackground: "#1a1612",
@@ -1285,19 +1107,8 @@ export default function Home() {
               delay: 0.1,
               ease: [0.22, 1, 0.36, 1],
             }}>
-            <h2
-              style={{
-                fontFamily: "'Cormorant Garamond',serif",
-                fontSize: "clamp(28px, 2.7vw, 38px)",
-                fontWeight: 400,
-                color: "#fff",
-                lineHeight: 1.15,
-                margin: "0 0 16px",
-              }}>
-              Launch of{" "}
-              <em style={{ color: "#D4AF37", fontStyle: "italic" }}>
-                New Product
-              </em>
+            <h2 className="ar-heading" style={{ margin: "0 0 16px" }}>
+              Launch of <em>New Product</em>
             </h2>
 
             <p
@@ -1361,10 +1172,12 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* ═══════════════════════════════════════════════
           EVENTS
       ═══════════════════════════════════════════════ */}
+      {eventsData.length > 0 && (
       <section
         className="home-sec"
         style={{
@@ -1398,162 +1211,180 @@ export default function Home() {
           </motion.button>
         </div>
       </section>
+      )}
 
       {/* ═══════════════════════════════════════════════
           ARTIST OF THE MONTH
       ═══════════════════════════════════════════════ */}
       {featured && (
-      <section
-        className="home-sec"
-        style={{
-          background:
-            "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
-        }}>
-        <div className="home-launch-inner">
-          {/* Left: text */}
-          <motion.div
-            className="home-launch-text"
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            style={{ maxWidth: 520 }}>
-            <div className="gold-rule" style={{ marginBottom: 24 }}>
-              <div
-                className="grl"
+        <section
+          className="home-sec"
+          style={{
+            background:
+              "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
+          }}>
+          <div className="home-launch-inner">
+            {/* Left: text */}
+            <motion.div
+              className="home-launch-text"
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              style={{ maxWidth: 520 }}>
+              <div className="gold-rule" style={{ marginBottom: 24 }}>
+                <div
+                  className="grl"
+                  style={{
+                    background: "linear-gradient(90deg, transparent, #D4AF37)",
+                  }}
+                />
+                <span className="grt">ARTIST OF THE MONTH</span>
+                <div
+                  className="grl"
+                  style={{
+                    background: "linear-gradient(90deg, #D4AF37, transparent)",
+                  }}
+                />
+              </div>
+
+              <h2
                 style={{
-                  background: "linear-gradient(90deg, transparent, #D4AF37)",
-                }}
-              />
-              <span className="grt">ARTIST OF THE MONTH</span>
-              <div
-                className="grl"
+                  fontFamily: "'Cormorant Garamond',serif",
+                  fontStyle: "italic",
+                  fontSize: "clamp(32px,3.4vw,50px)",
+                  fontWeight: 400,
+                  color: "#D4AF37",
+                  lineHeight: 1.1,
+                  margin: "0 0 14px",
+                }}>
+                {featured.name}
+              </h2>
+
+              <p
                 style={{
-                  background: "linear-gradient(90deg, #D4AF37, transparent)",
-                }}
-              />
-            </div>
+                  fontFamily: "'Cormorant Garamond',serif",
+                  fontStyle: "italic",
+                  fontSize: 17,
+                  color: "#D4AF37",
+                  marginBottom: 24,
+                }}>
+                {[featured.location, featured.art_type]
+                  .filter(Boolean)
+                  .join(" · ") ||
+                  featured.role ||
+                  "Art Coliseum Artist"}
+              </p>
 
-            <h2
-              style={{
-                fontFamily: "'Cormorant Garamond',serif",
-                fontStyle: "italic",
-                fontSize: "clamp(48px,5vw,72px)",
-                fontWeight: 400,
-                color: "#D4AF37",
-                lineHeight: 1.1,
-                margin: "0 0 14px",
-              }}>
-              {featured.name}
-            </h2>
-
-            <p
-              style={{
-                fontFamily: "'Cormorant Garamond',serif",
-                fontStyle: "italic",
-                fontSize: 17,
-                color: "#D4AF37",
-                marginBottom: 24,
-              }}>
-              {[featured.location, featured.art_type].filter(Boolean).join(" · ") || featured.role || "Art Coliseum Artist"}
-            </p>
-
-            <p
-              style={{
-                fontFamily: "'Cormorant Garamond',serif",
-                fontSize: 18,
-                color: "rgba(200,191,160,0.75)",
-                lineHeight: 1.8,
-                marginBottom: 28,
-              }}>
-              {featured.bio || "An Art Coliseum artist — their full monograph is being prepared."}
-            </p>
-
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: "0 0 0 0",
-                display: "flex",
-                flexDirection: "column",
-                gap: 12,
-              }}>
-              {[
-                featured.works_count ? `${featured.works_count} works in the collection` : null,
-                featured.location ? `Based in ${featured.location}` : null,
-                featured.art_type || null,
-              ].filter(Boolean).map((b, i) => (
-                <li
-                  key={i}
-                  style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: "#D4AF37",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontFamily: "'Raleway',sans-serif",
-                      fontSize: 14,
-                      color: "rgba(200,191,160,0.75)",
-                      letterSpacing: "0.03em",
-                    }}>
-                    {b}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <motion.button
-              className="btn-secondary"
-              style={{ marginTop: 40 }}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate(`/artists/${featured.id}`)}>
-              VIEW ARTIST PROFILE →
-            </motion.button>
-          </motion.div>
-
-          {/* Right: photo with light golden glow */}
-          <motion.div
-            className="home-launch-visual"
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.9, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            style={{ display: "flex", justifyContent: "center" }}>
-            <GlowCard
-              glowColor="gold"
-              width={360}
-              height={480}
-              style={{
-                "--lightness": "88",
-                "--saturation": "85",
-                "--bg-spot-opacity": "0.18",
-                "--size": "320",
-                "--backup-border": "rgba(212,175,55,0.45)",
-                "--backdrop": "rgba(212,175,55,0.06)",
-              }}>
-              <SafeImage
-                src={featured.image_url || b2}
-                alt={featured.name}
+              <p
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: 14,
-                }}
-              />
-            </GlowCard>
-          </motion.div>
-        </div>
-      </section>
+                  fontFamily: "'Cormorant Garamond',serif",
+                  fontSize: 18,
+                  color: "rgba(200,191,160,0.75)",
+                  lineHeight: 1.8,
+                  marginBottom: 28,
+                }}>
+                {featured.bio ||
+                  "An Art Coliseum artist — their full monograph is being prepared."}
+              </p>
+
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: "0 0 0 0",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 12,
+                }}>
+                {[
+                  featured.works_count
+                    ? `${featured.works_count} works in the collection`
+                    : null,
+                  featured.location ? `Based in ${featured.location}` : null,
+                  featured.art_type || null,
+                ]
+                  .filter(Boolean)
+                  .map((b, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                      }}>
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: "#D4AF37",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontFamily: "'Raleway',sans-serif",
+                          fontSize: 14,
+                          color: "rgba(200,191,160,0.75)",
+                          letterSpacing: "0.03em",
+                        }}>
+                        {b}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+
+              <motion.button
+                className="btn-secondary"
+                style={{ marginTop: 40 }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate(`/artists/${featured.id}`)}>
+                VIEW ARTIST PROFILE →
+              </motion.button>
+            </motion.div>
+
+            {/* Right: photo with light golden glow */}
+            <motion.div
+              className="home-launch-visual"
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{
+                duration: 0.9,
+                delay: 0.1,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              style={{ display: "flex", justifyContent: "center" }}>
+              <GlowCard
+                glowColor="gold"
+                width={360}
+                height={480}
+                style={{
+                  "--lightness": "88",
+                  "--saturation": "85",
+                  "--bg-spot-opacity": "0.18",
+                  "--size": "320",
+                  "--backup-border": "rgba(212,175,55,0.45)",
+                  "--backdrop": "rgba(212,175,55,0.06)",
+                }}>
+                <SafeImage
+                  src={featured.image_url || b2}
+                  alt={featured.name}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: 14,
+                  }}
+                />
+              </GlowCard>
+            </motion.div>
+          </div>
+        </section>
       )}
 
       {/* ═══════════════════════════════════════════════
@@ -1609,19 +1440,8 @@ export default function Home() {
             </ContainerAnimated>
 
             <ContainerAnimated>
-              <h2
-                style={{
-                  fontFamily: "'Cormorant Garamond',serif",
-                  fontSize: "clamp(38px,4vw,58px)",
-                  fontWeight: 400,
-                  color: "#fff",
-                  lineHeight: 1.15,
-                  margin: "0 0 18px",
-                }}>
-                Art in{" "}
-                <em style={{ color: "#D4AF37", fontStyle: "italic" }}>
-                  Your Space
-                </em>
+              <h2 className="ar-heading" style={{ margin: "0 0 18px" }}>
+                Art in <em>Your Space</em>
               </h2>
             </ContainerAnimated>
 
