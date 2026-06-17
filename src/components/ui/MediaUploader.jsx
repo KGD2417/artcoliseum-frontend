@@ -40,7 +40,13 @@ export default function MediaUploader({
     } catch (err) { alert(err.message); } finally { setBusy(false); }
   };
 
-  const handleInput = (e) => { const fl = e.target.files; e.target.value = ""; uploadFiles(fl); };
+  const handleInput = (e) => {
+    // Copy the FileList to an array BEFORE resetting the input — in Chrome,
+    // clearing value empties the live FileList, so reading it after would be empty.
+    const files = [...(e.target.files || [])];
+    e.target.value = "";
+    uploadFiles(files);
+  };
   const onDrop = (e) => { e.preventDefault(); setDrag(false); if (!busy) uploadFiles(e.dataTransfer.files); };
   const onDragOver = (e) => { e.preventDefault(); if (!drag) setDrag(true); };
   const onDragLeave = (e) => { e.preventDefault(); setDrag(false); };

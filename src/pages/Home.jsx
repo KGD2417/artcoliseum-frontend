@@ -442,9 +442,14 @@ function StackedCardsInteraction({ images }) {
 }
 
 /* ═══════════════ PRESERVATION — FLOATING ART IMAGES ═══════════════ */
-function AnimatedPreservation({ navigate }) {
+// Default photos; admin can replace the set (Admin → Homepage). They cycle
+// across the fixed floating positions.
+const DEFAULT_PRES_IMAGES = [p1, p2, p3, p4, p5, p6, p7, p8];
+
+function AnimatedPreservation({ navigate, images }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
+  const pics = images && images.length ? images : DEFAULT_PRES_IMAGES;
   return (
     <div ref={ref} className="pres-float-section">
       {FLOAT_ART.map(
@@ -462,7 +467,7 @@ function AnimatedPreservation({ navigate }) {
               delay: i * 0.07,
             }}>
             <motion.img
-              src={src}
+              src={pics[i % pics.length] || src}
               alt=""
               draggable={false}
               animate={{ y: FLOAT_PARAMS[i].y }}
@@ -601,6 +606,7 @@ export default function Home() {
   const [eventsData, setEventsData] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [news, setNews] = useState([]);
+  const [preservationImgs, setPreservationImgs] = useState([]); // admin-editable
   const [featured, setFeatured] = useState(null); // Artist of the Month
   const [newLaunch, setNewLaunch] = useState([]); // newest products, from backend
   const [email, setEmail] = useState("");
@@ -669,6 +675,13 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Preservation-section images — admin-editable (Admin → Homepage).
+  useEffect(() => {
+    api.site.getPreservation()
+      .then((d) => { if (d?.images?.length) setPreservationImgs(d.images); })
+      .catch(() => {});
   }, []);
 
   // Artist of the Month spotlight — a real artist from the catalog (prefers one
@@ -1396,7 +1409,7 @@ export default function Home() {
           background:
             "linear-gradient(180deg,#080808 0%,#0c0a07 50%,#080808 100%)",
         }}>
-        <AnimatedPreservation navigate={navigate} />
+        <AnimatedPreservation navigate={navigate} images={preservationImgs} />
       </section>
 
       {/* ═══════════════════════════════════════════════

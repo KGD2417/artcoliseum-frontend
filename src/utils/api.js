@@ -298,6 +298,12 @@ export const api = {
     setPrivacy(body) {
       return request("PUT", "/site/privacy", { body });
     },
+    getPreservation() {
+      return request("GET", "/site/preservation", { auth: false });
+    },
+    setPreservation(body) {
+      return request("PUT", "/site/preservation", { body });
+    },
   },
 
   notifications: {

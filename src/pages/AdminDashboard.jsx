@@ -14,7 +14,7 @@ const TABS = [
   ["artworks", "Artworks"], ["categories", "Categories"], ["exhibitions", "Exhibitions"], ["events", "Events"],
   ["artists", "Artists"], ["competition", "Competition"], ["communities", "Communities"],
   ["news", "News"], ["testimonials", "Testimonials"],
-  ["contact", "Contact"], ["support", "Support"], ["legal", "Legal"], ["messages", "Messages"],
+  ["contact", "Contact"], ["support", "Support"], ["legal", "Legal"], ["homepage", "Homepage"], ["messages", "Messages"],
 ];
 
 const STAGES = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
@@ -87,6 +87,7 @@ export default function AdminDashboard() {
           {tab === "contact" && <ContactList />}
           {tab === "support" && <Support />}
           {tab === "legal" && <PrivacyEditor />}
+          {tab === "homepage" && <PreservationEditor />}
           {tab === "messages" && <Panel title="Messages"><Link to="/admin/inbox" className="btn-gold-main" style={{ textDecoration: "none", padding: "12px 24px", fontSize: 12 }}>OPEN INBOX →</Link></Panel>}
         </div>
       </div>
@@ -1259,6 +1260,37 @@ function AddArtworkForArtist({ tick }) {
         }}
       />
     </div>
+  );
+}
+
+// Edit the homepage "Preservation of Art" floating images (live immediately).
+function PreservationEditor() {
+  const [images, setImages] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    api.site.getPreservation().then((d) => setImages(d?.images || [])).catch(() => setImages([]));
+  }, []);
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api.site.setPreservation({ images: images || [] });
+      setDone(true); setTimeout(() => setDone(false), 2500);
+    } catch (e) { alert(e.message); } finally { setBusy(false); }
+  };
+  if (!images) return <Panel title="Homepage"><Empty>Loading…</Empty></Panel>;
+  return (
+    <Panel title="Homepage">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", marginBottom: 16, lineHeight: 1.6 }}>
+        Images for the homepage <strong>"Preservation of Art"</strong> section (the floating photos around the panel).
+        They cycle across the fixed layout positions. Leave empty to use the built-in defaults.
+      </div>
+      <MediaUploader kind="image" multiple value={images} onChange={setImages} label="PRESERVATION IMAGES" />
+      <div style={{ marginTop: 14 }}>
+        <Btn onClick={save} primary disabled={busy}>{busy ? "SAVING…" : "SAVE & PUBLISH"}</Btn>
+      </div>
+      {done && <div style={{ marginTop: 10, color: "#4ade80", fontFamily: "'Raleway',sans-serif", fontSize: 12 }}>✓ Saved — live on the homepage.</div>}
+    </Panel>
   );
 }
 
