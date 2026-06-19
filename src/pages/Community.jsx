@@ -5,19 +5,6 @@ import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
 import { useLocale } from "../context/Locale";
 
-// Relative "time left" for an auction deadline. Returns null when no deadline.
-function timeLeft(iso) {
-  if (!iso) return null;
-  const ms = new Date(iso) - Date.now();
-  if (ms <= 0) return "Ended";
-  const d = Math.floor(ms / 86400000);
-  const h = Math.floor((ms % 86400000) / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  if (d > 0) return `${d}d ${h}h left`;
-  if (h > 0) return `${h}h ${m}m left`;
-  return `${Math.max(1, m)}m left`;
-}
-
 // datetime-local input value (local wall-clock) from a stored ISO/UTC string.
 function toLocalInput(iso) {
   if (!iso) return "";
@@ -438,6 +425,371 @@ function CommunitySidebarRow({
   );
 }
 
+// ─── Live auction countdown (re-renders every second) ──────────────────────────
+function LiveCountdown({ endsAt, ended, urgentColor = "#e0703a" }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (ended || !endsAt) return undefined;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [endsAt, ended]);
+
+  if (ended)
+    return (
+      <span style={{ color: "#D4AF37", letterSpacing: "0.12em" }}>ENDED</span>
+    );
+  if (!endsAt)
+    return (
+      <span style={{ color: "#4caf7d", letterSpacing: "0.1em" }}>
+        OPEN · NO DEADLINE
+      </span>
+    );
+
+  const ms = new Date(endsAt).getTime() - now;
+  if (ms <= 0)
+    return <span style={{ color: "#D4AF37" }}>FINALISING…</span>;
+
+  const d = Math.floor(ms / 86400000);
+  const h = Math.floor((ms % 86400000) / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  const pad = (n) => String(n).padStart(2, "0");
+  const urgent = ms < 3600000; // final hour
+  const segs =
+    d > 0
+      ? [
+          ["D", d],
+          ["H", h],
+          ["M", m],
+        ]
+      : [
+          ["H", h],
+          ["M", m],
+          ["S", s],
+        ];
+  const col = urgent ? urgentColor : "#e8c060";
+
+  return (
+    <span style={{ display: "inline-flex", gap: 4 }}>
+      {segs.map(([label, val]) => (
+        <span
+          key={label}
+          style={{
+            display: "inline-flex",
+            flexDirection: "column",
+            alignItems: "center",
+            background: urgent ? "rgba(224,112,58,0.14)" : "rgba(212,175,55,0.1)",
+            border: `1px solid ${urgent ? "rgba(224,112,58,0.4)" : "rgba(212,175,55,0.25)"}`,
+            borderRadius: 6,
+            padding: "3px 6px",
+            minWidth: 26,
+          }}>
+          <span
+            style={{
+              fontFamily: "'Cormorant Garamond',serif",
+              fontSize: 15,
+              fontWeight: 700,
+              lineHeight: 1,
+              color: col,
+              fontVariantNumeric: "tabular-nums",
+            }}>
+            {pad(val)}
+          </span>
+          <span
+            style={{
+              fontFamily: "'Raleway',sans-serif",
+              fontSize: 6,
+              letterSpacing: "0.1em",
+              color: "rgba(200,191,160,0.45)",
+              marginTop: 2,
+            }}>
+            {label}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// ─── Full-screen image lightbox ────────────────────────────────────────────────
+function Lightbox({ images, index, onClose, onIndex }) {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") onIndex((index + 1) % images.length);
+      if (e.key === "ArrowLeft")
+        onIndex((index - 1 + images.length) % images.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, images.length, onClose, onIndex]);
+
+  const multi = images.length > 1;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 10000,
+        background: "rgba(6,5,4,0.94)",
+        backdropFilter: "blur(6px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }}>
+      <button
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          top: 20,
+          right: 24,
+          width: 42,
+          height: 42,
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(212,175,55,0.3)",
+          color: "#f0e8d8",
+          fontSize: 22,
+          cursor: "pointer",
+          lineHeight: 1,
+          zIndex: 2,
+        }}>
+        ×
+      </button>
+      {multi && (
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onIndex((index - 1 + images.length) % images.length);
+            }}
+            style={lightboxArrowStyle("left")}>
+            ‹
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onIndex((index + 1) % images.length);
+            }}
+            style={lightboxArrowStyle("right")}>
+            ›
+          </button>
+        </>
+      )}
+      <motion.img
+        key={index}
+        src={images[index]}
+        alt=""
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          maxWidth: "92vw",
+          maxHeight: "88vh",
+          objectFit: "contain",
+          borderRadius: 8,
+          boxShadow: "0 30px 80px rgba(0,0,0,0.7)",
+        }}
+      />
+      {multi && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 22,
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            gap: 7,
+          }}>
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={(e) => {
+                e.stopPropagation();
+                onIndex(i);
+              }}
+              style={{
+                width: i === index ? 22 : 8,
+                height: 8,
+                borderRadius: 999,
+                border: "none",
+                cursor: "pointer",
+                background: i === index ? "#D4AF37" : "rgba(255,255,255,0.3)",
+                transition: "all 0.2s",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+function lightboxArrowStyle(side) {
+  return {
+    position: "absolute",
+    [side]: 18,
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: 46,
+    height: 46,
+    borderRadius: "50%",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(212,175,55,0.3)",
+    color: "#f0e8d8",
+    fontSize: 26,
+    cursor: "pointer",
+    lineHeight: 1,
+    zIndex: 2,
+  };
+}
+
+// ─── Post image gallery — shows full artwork (no crop) + lightbox ───────────────
+function PostImages({ images }) {
+  const [active, setActive] = useState(0);
+  const [zoom, setZoom] = useState(false);
+  if (!images || images.length === 0) return null;
+  const multiple = images.length > 1;
+  const src = images[Math.min(active, images.length - 1)];
+
+  return (
+    <>
+      {/* Main image — full, uncropped, with a soft blurred fill behind */}
+      <div
+        onClick={() => setZoom(true)}
+        style={{
+          position: "relative",
+          borderRadius: 12,
+          overflow: "hidden",
+          background: "#0a0907",
+          border: "1px solid rgba(212,175,55,0.08)",
+          cursor: "zoom-in",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 200,
+        }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url(${src})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(34px) brightness(0.42)",
+            transform: "scale(1.15)",
+          }}
+        />
+        <img
+          src={src}
+          alt=""
+          style={{
+            position: "relative",
+            width: "100%",
+            maxHeight: "62vh",
+            objectFit: "contain",
+            display: "block",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: 10,
+            right: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            background: "rgba(0,0,0,0.55)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 999,
+            padding: "4px 9px",
+            color: "rgba(240,232,216,0.85)",
+            fontFamily: "'Raleway',sans-serif",
+            fontSize: 9,
+            letterSpacing: "0.05em",
+            pointerEvents: "none",
+          }}>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <line x1="11" y1="8" x2="11" y2="14" />
+            <line x1="8" y1="11" x2="14" y2="11" />
+          </svg>
+          {multiple ? `${active + 1} / ${images.length}` : "View"}
+        </div>
+      </div>
+
+      {/* Thumbnail strip */}
+      {multiple && (
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            marginTop: 7,
+            overflowX: "auto",
+            paddingBottom: 2,
+          }}>
+          {images.map((thumb, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              style={{
+                flexShrink: 0,
+                width: 58,
+                height: 58,
+                borderRadius: 8,
+                overflow: "hidden",
+                cursor: "pointer",
+                padding: 0,
+                background: "#0a0907",
+                border:
+                  i === active
+                    ? "2px solid #D4AF37"
+                    : "1px solid rgba(212,175,55,0.15)",
+                opacity: i === active ? 1 : 0.6,
+                transition: "all 0.18s",
+              }}>
+              <img
+                src={thumb}
+                alt=""
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {zoom && (
+          <Lightbox
+            images={images}
+            index={active}
+            onIndex={setActive}
+            onClose={() => setZoom(false)}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 // ─── Post card ─────────────────────────────────────────────────────────────────
 function PostCard({
   post,
@@ -475,15 +827,27 @@ function PostCard({
     meId &&
     post.winnerUserId === meId;
 
-  const submitBid = () => {
-    const amt = Number(bidAmount);
+  // Live bid-status for the signed-in viewer.
+  const winning =
+    isAuction && !ended && meId && post.topBidderId && post.topBidderId === meId;
+  const hasMyBid =
+    isAuction && meId && (post.bids || []).some((b) => b.user_id === meId);
+  const outbid = isAuction && !ended && hasMyBid && !winning;
+
+  // Quick-bid suggestions built around the minimum next bid.
+  const step = inc > 0 ? inc : Math.max(1, Math.round(minNext * 0.05));
+  const quickBids = [...new Set([minNext, minNext + step, minNext + step * 2])];
+
+  const placeBid = (amt) => {
     if (!amt || amt < minNext) {
       alert(`Your bid must be at least ${formatPrice(minNext)}.`);
       return;
     }
     onBid(post.id, amt);
     setBidding(false);
+    setBidAmount("");
   };
+  const submitBid = () => placeBid(Number(bidAmount));
 
   // After an auction ends, connect the two parties to arrange payment & shipment.
   const openHandoff = () => {
@@ -904,26 +1268,72 @@ function PostCard({
             <div style={{ textAlign: "right" }}>
               <div
                 style={{
-                  fontFamily: "'Raleway',sans-serif",
-                  fontSize: 10,
-                  color: "rgba(200,191,160,0.5)",
+                  fontFamily: "'Cinzel',serif",
+                  fontSize: 7,
+                  letterSpacing: "0.16em",
+                  color: "rgba(200,191,160,0.4)",
+                  marginBottom: 5,
                 }}>
-                {post.bidCount} {post.bidCount === 1 ? "bid" : "bids"}
+                {ended ? "CLOSED" : "TIME LEFT"}
               </div>
               <div
                 style={{
                   fontFamily: "'Raleway',sans-serif",
                   fontSize: 11,
                   fontWeight: 700,
-                  marginTop: 3,
-                  color: ended ? "#D4AF37" : "#4caf7d",
                 }}>
-                {ended
-                  ? "AUCTION ENDED"
-                  : timeLeft(post.auctionEndsAt) || "OPEN"}
+                <LiveCountdown endsAt={post.auctionEndsAt} ended={ended} />
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Raleway',sans-serif",
+                  fontSize: 9,
+                  color: "rgba(200,191,160,0.45)",
+                  marginTop: 6,
+                }}>
+                {post.bidCount} {post.bidCount === 1 ? "bid" : "bids"}
               </div>
             </div>
           </div>
+
+          {/* Your-position status pill */}
+          {(winning || outbid) && (
+            <div
+              style={{
+                marginTop: 12,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                padding: "6px 12px",
+                borderRadius: 999,
+                background: winning
+                  ? "rgba(76,175,125,0.12)"
+                  : "rgba(224,112,58,0.14)",
+                border: `1px solid ${winning ? "rgba(76,175,125,0.4)" : "rgba(224,112,58,0.45)"}`,
+              }}>
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: winning ? "#4caf7d" : "#e0703a",
+                  boxShadow: `0 0 8px ${winning ? "#4caf7d" : "#e0703a"}`,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "'Raleway',sans-serif",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  color: winning ? "#6cd49d" : "#e89060",
+                }}>
+                {winning
+                  ? "YOU'RE THE HIGHEST BIDDER"
+                  : "YOU'VE BEEN OUTBID — RAISE YOUR BID"}
+              </span>
+            </div>
+          )}
 
           {/* Ended → winner + handoff to private chat */}
           {ended ? (
@@ -1040,78 +1450,136 @@ function PostCard({
                 <div
                   style={{
                     display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                    flexWrap: "wrap",
+                    flexDirection: "column",
+                    gap: 10,
                   }}>
-                  <input
-                    type="number"
-                    min={minNext}
-                    value={bidAmount}
-                    autoFocus
-                    onChange={(e) => setBidAmount(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && submitBid()}
+                  {/* Quick-bid chips */}
+                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                    {quickBids.map((amt, i) => (
+                      <button
+                        key={amt}
+                        onClick={() => placeBid(amt)}
+                        style={{
+                          flex: 1,
+                          minWidth: 86,
+                          padding: "9px 8px",
+                          borderRadius: 10,
+                          cursor: "pointer",
+                          background:
+                            i === 0
+                              ? "rgba(184,115,51,0.14)"
+                              : "rgba(255,255,255,0.04)",
+                          border: `1px solid ${i === 0 ? "rgba(184,115,51,0.45)" : "rgba(212,175,55,0.18)"}`,
+                          color: i === 0 ? "#d9974f" : "rgba(200,191,160,0.7)",
+                          fontFamily: "'Raleway',sans-serif",
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor =
+                            "rgba(212,175,55,0.6)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor =
+                            i === 0
+                              ? "rgba(184,115,51,0.45)"
+                              : "rgba(212,175,55,0.18)";
+                        }}>
+                        <div
+                          style={{
+                            fontSize: 7,
+                            letterSpacing: "0.1em",
+                            opacity: 0.7,
+                            marginBottom: 3,
+                          }}>
+                          {i === 0 ? "MIN BID" : `+${formatPrice(step * i)}`}
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: "'Cormorant Garamond',serif",
+                            fontSize: 17,
+                            fontWeight: 700,
+                            color: "#f0e8d8",
+                            lineHeight: 1,
+                          }}>
+                          {formatPrice(amt)}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {/* Custom amount + confirm */}
+                  <div
                     style={{
-                      width: 130,
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(184,115,51,0.4)",
-                      borderRadius: 999,
-                      padding: "9px 14px",
-                      color: "#e8e0d0",
-                      fontFamily: "'Raleway',sans-serif",
-                      fontSize: 13,
-                      outline: "none",
-                    }}
-                  />
-                  <button
-                    onClick={submitBid}
-                    style={{
-                      background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
-                      color: "#0e0c0a",
-                      border: "none",
-                      cursor: "pointer",
-                      fontFamily: "'Cinzel',serif",
-                      fontSize: 9,
-                      letterSpacing: "0.1em",
-                      fontWeight: 700,
-                      padding: "9px 16px",
-                      borderRadius: 999,
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                      flexWrap: "wrap",
                     }}>
-                    CONFIRM BID
-                  </button>
-                  <button
-                    onClick={() => setBidding(false)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "rgba(200,191,160,0.45)",
-                      fontFamily: "'Raleway',sans-serif",
-                      fontSize: 11,
-                    }}>
-                    Cancel
-                  </button>
-                  <span
-                    style={{
-                      fontFamily: "'Raleway',sans-serif",
-                      fontSize: 10,
-                      color: "rgba(200,191,160,0.45)",
-                      width: "100%",
-                    }}>
-                    Minimum bid: {formatPrice(minNext)}
-                  </span>
+                    <div style={{ position: "relative", flex: 1, minWidth: 150 }}>
+                      <input
+                        type="number"
+                        min={minNext}
+                        value={bidAmount}
+                        autoFocus
+                        placeholder={`Custom — min ${minNext}`}
+                        onChange={(e) => setBidAmount(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && submitBid()}
+                        style={{
+                          width: "100%",
+                          boxSizing: "border-box",
+                          background: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(184,115,51,0.4)",
+                          borderRadius: 999,
+                          padding: "10px 16px",
+                          color: "#e8e0d0",
+                          fontFamily: "'Raleway',sans-serif",
+                          fontSize: 13,
+                          outline: "none",
+                        }}
+                      />
+                    </div>
+                    <button
+                      onClick={submitBid}
+                      style={{
+                        background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+                        color: "#0e0c0a",
+                        border: "none",
+                        cursor: "pointer",
+                        fontFamily: "'Cinzel',serif",
+                        fontSize: 9,
+                        letterSpacing: "0.1em",
+                        fontWeight: 700,
+                        padding: "11px 18px",
+                        borderRadius: 999,
+                      }}>
+                      CONFIRM BID
+                    </button>
+                    <button
+                      onClick={() => setBidding(false)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "rgba(200,191,160,0.45)",
+                        fontFamily: "'Raleway',sans-serif",
+                        fontSize: 11,
+                      }}>
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button
                   onClick={() => {
-                    setBidAmount(String(minNext));
+                    setBidAmount("");
                     setBidding(true);
                   }}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 7,
-                    background: "linear-gradient(135deg,#B87333,#d18a44)",
+                    background: outbid
+                      ? "linear-gradient(135deg,#e0703a,#d18a44)"
+                      : "linear-gradient(135deg,#B87333,#d18a44)",
                     color: "#0e0c0a",
                     border: "none",
                     cursor: "pointer",
@@ -1119,10 +1587,24 @@ function PostCard({
                     fontSize: 9,
                     letterSpacing: "0.1em",
                     fontWeight: 700,
-                    padding: "9px 18px",
+                    padding: "11px 20px",
                     borderRadius: 999,
+                    boxShadow: "0 6px 18px rgba(184,115,51,0.25)",
                   }}>
-                  PLACE BID — FROM {formatPrice(minNext)}
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <path d="M14.5 5.5 18 9l-9.5 9.5L5 19l.5-3.5L15 6z" />
+                    <path d="m18 9 2-2-3.5-3.5-2 2" />
+                  </svg>
+                  {outbid ? "RAISE YOUR BID" : "PLACE BID"} ·{" "}
+                  {formatPrice(minNext)}
                 </button>
               )}
             </div>
@@ -1218,44 +1700,10 @@ function PostCard({
         </p>
       </div>
 
-      {/* Images */}
+      {/* Images — full artwork, no crop, click to zoom */}
       {post.images && post.images.length > 0 && (
         <div style={{ margin: "0 18px 14px" }}>
-          {post.images.length === 1 ? (
-            <div
-              style={{ borderRadius: 10, overflow: "hidden", maxHeight: 320 }}>
-              <img
-                src={post.images[0]}
-                alt=""
-                style={{ width: "100%", objectFit: "cover", display: "block" }}
-              />
-            </div>
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  post.images.length === 2 ? "1fr 1fr" : "1fr 1fr 1fr",
-                gap: 4,
-                borderRadius: 10,
-                overflow: "hidden",
-              }}>
-              {post.images.map((src, i) => (
-                <div key={i} style={{ aspectRatio: "1", overflow: "hidden" }}>
-                  <img
-                    src={src}
-                    alt=""
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <PostImages images={post.images} />
         </div>
       )}
 
@@ -1546,14 +1994,23 @@ function PostCard({
 }
 
 // ─── Create / Edit post modal ──────────────────────────────────────────────────
-function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
+function CreatePostModal({
+  onClose,
+  onPost,
+  editingPost,
+  defaultCommunity,
+  forceListing = false,
+}) {
+  // A listing when in the marketplace section, or when editing an existing listing.
+  const isMarketplace = forceListing || editingPost?.type === "listing";
   const [text, setText] = useState(editingPost?.text || "");
   const [images, setImages] = useState(editingPost?.images || []);
   const [videos, setVideos] = useState(
     editingPost?.videos || (editingPost?.video ? [editingPost.video] : []),
   );
   const [community, setCommunity] = useState(
-    editingPost?.community || defaultCommunity || "general",
+    editingPost?.community ||
+      (isMarketplace ? "marketplace" : defaultCommunity || "general"),
   );
   const [listingTitle, setListingTitle] = useState(editingPost?.title || "");
   const [condition, setCondition] = useState(
@@ -1570,8 +2027,6 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
   const [auctionEndsAt, setAuctionEndsAt] = useState(
     toLocalInput(editingPost?.auctionEndsAt),
   );
-
-  const isMarketplace = community === "marketplace";
 
   const handleImages = async (e) => {
     const files = Array.from(e.target.files);
@@ -1699,7 +2154,13 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
               color: "#fff",
               margin: 0,
             }}>
-            {editingPost ? "Edit Post" : "Create Post"}
+            {editingPost
+              ? isMarketplace
+                ? "Edit Listing"
+                : "Edit Post"
+              : isMarketplace
+                ? "List an Artwork"
+                : "Create Post"}
           </h3>
           <button
             onClick={onClose}
@@ -1715,7 +2176,7 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
           </button>
         </div>
 
-        {/* Community picker */}
+        {/* Community picker — listings always go to the Marketplace */}
         <div style={{ marginBottom: 18 }}>
           <div
             style={{
@@ -1725,34 +2186,73 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
               color: "rgba(200,191,160,0.38)",
               marginBottom: 8,
             }}>
-            POST TO COMMUNITY
+            {isMarketplace ? "SECTION" : "POST TO COMMUNITY"}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-            {COMMUNITIES.filter((c) => c.id !== "all").map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setCommunity(c.id)}
+          {isMarketplace ? (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 9,
+                padding: "8px 14px",
+                borderRadius: 999,
+                background: "rgba(184,115,51,0.12)",
+                border: "1px solid rgba(184,115,51,0.4)",
+              }}>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#d9974f"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round">
+                <path d="M3 9l1-5h16l1 5" />
+                <path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9" />
+                <path d="M9 22V12h6v10" />
+              </svg>
+              <span
                 style={{
-                  padding: "5px 13px",
-                  borderRadius: 999,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  background:
-                    community === c.id
-                      ? `${c.color}28`
-                      : "rgba(255,255,255,0.03)",
-                  border: `1px solid ${community === c.id ? c.color : "rgba(212,175,55,0.12)"}`,
-                  color:
-                    community === c.id ? c.color : "rgba(200,191,160,0.45)",
                   fontFamily: "'Raleway',sans-serif",
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: "0.06em",
+                  color: "#d9974f",
                 }}>
-                {c.name}
-              </button>
-            ))}
-          </div>
+                Marketplace · For Sale & Auctions
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {COMMUNITIES.filter(
+                (c) => c.id !== "all" && c.id !== "marketplace",
+              ).map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setCommunity(c.id)}
+                  style={{
+                    padding: "5px 13px",
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    background:
+                      community === c.id
+                        ? `${c.color}28`
+                        : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${community === c.id ? c.color : "rgba(212,175,55,0.12)"}`,
+                    color:
+                      community === c.id ? c.color : "rgba(200,191,160,0.45)",
+                    fontFamily: "'Raleway',sans-serif",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                  }}>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Marketplace fields */}
@@ -2010,17 +2510,34 @@ function CreatePostModal({ onClose, onPost, editingPost, defaultCommunity }) {
                 key={i}
                 style={{
                   position: "relative",
-                  aspectRatio: "1",
+                  height: 150,
                   overflow: "hidden",
                   borderRadius: 8,
+                  background: "#0a0907",
+                  border: "1px solid rgba(212,175,55,0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    backgroundImage: `url(${src})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    filter: "blur(20px) brightness(0.4)",
+                    transform: "scale(1.15)",
+                  }}
+                />
                 <img
                   src={src}
                   alt=""
                   style={{
+                    position: "relative",
                     width: "100%",
                     height: "100%",
-                    objectFit: "cover",
+                    objectFit: "contain",
                     display: "block",
                   }}
                 />
@@ -2588,6 +3105,10 @@ export default function Community() {
   const [joined, setJoined] = useState(new Set());
   const [notifications, setNotifications] = useState({});
   const [, setCommTick] = useState(0);
+  // Two top-level sections: "community" (chat / discussion) and "marketplace" (bidding).
+  const [mode, setMode] = useState("community");
+  // Marketplace listing filter: all | auction | buy | ending.
+  const [mktFilter, setMktFilter] = useState("all");
 
   // Load the admin-managed community list (replaces the in-place defaults).
   useEffect(() => {
@@ -2615,12 +3136,13 @@ export default function Community() {
       .catch(() => {});
   }, []);
 
-  // Load the real feed for the active community.
+  // Load the real feed — marketplace pulls listings, community pulls discussions.
   useEffect(() => {
     let cancelled = false;
     setFeedLoading(true);
+    const target = mode === "marketplace" ? "marketplace" : activeCommunity;
     api.community
-      .posts(activeCommunity)
+      .posts(target)
       .then((rows) => {
         if (!cancelled) setPosts((rows || []).map(mapPost));
       })
@@ -2633,7 +3155,7 @@ export default function Community() {
     return () => {
       cancelled = true;
     };
-  }, [activeCommunity]);
+  }, [activeCommunity, mode]);
 
   const handleJoin = (id) => {
     setJoined((prev) => {
@@ -2647,7 +3169,31 @@ export default function Community() {
   const handleNotif = (id, level) =>
     setNotifications((prev) => ({ ...prev, [id]: level }));
 
-  const filteredPosts = posts;
+  // Derive the visible feed from the active section.
+  let filteredPosts;
+  if (mode === "marketplace") {
+    const listings = posts.filter((p) => p.type === "listing");
+    if (mktFilter === "auction") {
+      filteredPosts = listings.filter((p) => p.isAuction && !p.auctionEnded);
+    } else if (mktFilter === "buy") {
+      filteredPosts = listings.filter((p) => !p.isAuction);
+    } else if (mktFilter === "ending") {
+      filteredPosts = listings
+        .filter((p) => p.isAuction && !p.auctionEnded && p.auctionEndsAt)
+        .sort((a, b) => new Date(a.auctionEndsAt) - new Date(b.auctionEndsAt));
+    } else {
+      filteredPosts = listings;
+    }
+  } else {
+    // Community / chat — discussions only (never marketplace listings).
+    filteredPosts = posts.filter((p) => p.type !== "listing");
+  }
+
+  // Live marketplace stats for the section banner.
+  const allListings = posts.filter((p) => p.type === "listing");
+  const liveAuctions = allListings.filter(
+    (p) => p.isAuction && !p.auctionEnded,
+  ).length;
 
   const handleLike = async (id) => {
     if (!user) {
@@ -2775,7 +3321,8 @@ export default function Community() {
             />
           </div>
           <h1 className="section-heading">
-            <span className="bold-white">Arrt Coliseum</span> <em>Community</em>
+            <span className="bold-white">Arrt Coliseum</span>{" "}
+            <em>{mode === "marketplace" ? "Marketplace" : "Community"}</em>
           </h1>
           <p
             style={{
@@ -2786,10 +3333,102 @@ export default function Community() {
               margin: "14px auto 0",
               lineHeight: 1.75,
             }}>
-            A thriving community where artists, collectors, curators, and
-            industry professionals connect, collaborate, and create
-            opportunities together , support and help each other.
+            {mode === "marketplace"
+              ? "Discover, bid on and acquire original artworks — direct from artists and collectors. Win an auction and arrange delivery privately in chat."
+              : "A thriving community where artists, collectors, curators and industry professionals connect, collaborate and support each other."}
           </p>
+
+          {/* ── Two main sections: Community (chat) vs Marketplace (bidding) ── */}
+          <div className="comm-mode-toggle">
+            {[
+              {
+                id: "community",
+                label: "Community",
+                sub: "Chat & discuss",
+                icon: (
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                ),
+              },
+              {
+                id: "marketplace",
+                label: "Marketplace",
+                sub: "Buy, sell & bid",
+                icon: (
+                  <>
+                    <path d="M3 9l1-5h16l1 5" />
+                    <path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9" />
+                    <path d="M9 22V12h6v10" />
+                  </>
+                ),
+              },
+            ].map((m) => {
+              const on = mode === m.id;
+              const accent = m.id === "marketplace" ? "#B87333" : "#D4AF37";
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setMode(m.id)}
+                  className="comm-mode-btn"
+                  style={{
+                    background: on
+                      ? `linear-gradient(135deg, ${accent}22, ${accent}0d)`
+                      : "transparent",
+                    border: `1px solid ${on ? `${accent}88` : "rgba(212,175,55,0.14)"}`,
+                    boxShadow: on ? `0 8px 26px ${accent}26` : "none",
+                  }}>
+                  <span
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: on ? accent : "rgba(255,255,255,0.04)",
+                      color: on ? "#0e0c0a" : "rgba(200,191,160,0.5)",
+                      transition: "all 0.2s",
+                    }}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      {m.icon}
+                    </svg>
+                  </span>
+                  <span style={{ textAlign: "left" }}>
+                    <span
+                      style={{
+                        display: "block",
+                        fontFamily: "'Cinzel',serif",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        color: on ? "#f4ecdc" : "rgba(200,191,160,0.7)",
+                      }}>
+                      {m.label}
+                    </span>
+                    <span
+                      style={{
+                        display: "block",
+                        fontFamily: "'Raleway',sans-serif",
+                        fontSize: 9.5,
+                        letterSpacing: "0.05em",
+                        color: on ? accent : "rgba(200,191,160,0.35)",
+                        marginTop: 2,
+                      }}>
+                      {m.sub}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </motion.div>
       </div>
 
@@ -2797,59 +3436,327 @@ export default function Community() {
       <div className="comm-layout">
         {/* ── Sidebar ── */}
         <aside className="comm-sidebar">
-          <div
-            style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(212,175,55,0.1)",
-              borderRadius: 14,
-              padding: "14px 10px",
-            }}>
-            <div
-              style={{
-                fontFamily: "'Cinzel',serif",
-                fontSize: 8,
-                letterSpacing: "0.18em",
-                color: "rgba(200,191,160,0.3)",
-                marginBottom: 10,
-                paddingLeft: 4,
-              }}>
-              COMMUNITIES
-            </div>
-            {COMMUNITIES.map((c) => (
-              <CommunitySidebarRow
-                key={c.id}
-                community={c}
-                joined={joined.has(c.id)}
-                notifLevel={notifications[c.id] || "Off"}
-                onJoin={handleJoin}
-                onNotif={(lv) => handleNotif(c.id, lv)}
-                active={activeCommunity === c.id}
-                onClick={() => setActiveCommunity(c.id)}
-              />
-            ))}
-          </div>
+          {mode === "community" ? (
+            <>
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(212,175,55,0.1)",
+                  borderRadius: 14,
+                  padding: "14px 10px",
+                }}>
+                <div
+                  style={{
+                    fontFamily: "'Cinzel',serif",
+                    fontSize: 8,
+                    letterSpacing: "0.18em",
+                    color: "rgba(200,191,160,0.3)",
+                    marginBottom: 10,
+                    paddingLeft: 4,
+                  }}>
+                  COMMUNITIES
+                </div>
+                {COMMUNITIES.filter((c) => c.id !== "marketplace").map((c) => (
+                  <CommunitySidebarRow
+                    key={c.id}
+                    community={c}
+                    joined={joined.has(c.id)}
+                    notifLevel={notifications[c.id] || "Off"}
+                    onJoin={handleJoin}
+                    onNotif={(lv) => handleNotif(c.id, lv)}
+                    active={activeCommunity === c.id}
+                    onClick={() => setActiveCommunity(c.id)}
+                  />
+                ))}
+              </div>
 
-          {role === "admin" && (
-            <div
-              style={{
-                marginTop: 12,
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px dashed rgba(212,175,55,0.2)",
-                fontFamily: "'Raleway',sans-serif",
-                fontSize: 11,
-                color: "rgba(200,191,160,0.45)",
-                lineHeight: 1.5,
-              }}>
-              Manage communities in the{" "}
-              <strong style={{ color: "#D4AF37" }}>Admin → Categories</strong>{" "}
-              panel.
-            </div>
+              {role === "admin" && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1px dashed rgba(212,175,55,0.2)",
+                    fontFamily: "'Raleway',sans-serif",
+                    fontSize: 11,
+                    color: "rgba(200,191,160,0.45)",
+                    lineHeight: 1.5,
+                  }}>
+                  Manage communities in the{" "}
+                  <strong style={{ color: "#D4AF37" }}>
+                    Admin → Categories
+                  </strong>{" "}
+                  panel.
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Sell CTA */}
+              <button
+                onClick={openCreate}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "13px 14px",
+                  marginBottom: 12,
+                  borderRadius: 13,
+                  cursor: "pointer",
+                  background: "linear-gradient(135deg,#B87333,#d18a44)",
+                  border: "none",
+                  boxShadow: "0 8px 24px rgba(184,115,51,0.28)",
+                }}>
+                <span
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 9,
+                    background: "rgba(0,0,0,0.18)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#1a1208",
+                  }}>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </span>
+                <span style={{ textAlign: "left" }}>
+                  <span
+                    style={{
+                      display: "block",
+                      fontFamily: "'Cinzel',serif",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: "0.1em",
+                      color: "#1a1208",
+                    }}>
+                    SELL AN ARTWORK
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      fontFamily: "'Raleway',sans-serif",
+                      fontSize: 9,
+                      color: "rgba(26,18,8,0.65)",
+                      marginTop: 1,
+                    }}>
+                    List for sale or auction
+                  </span>
+                </span>
+              </button>
+
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(184,115,51,0.18)",
+                  borderRadius: 14,
+                  padding: "14px 10px",
+                }}>
+                <div
+                  style={{
+                    fontFamily: "'Cinzel',serif",
+                    fontSize: 8,
+                    letterSpacing: "0.18em",
+                    color: "rgba(200,191,160,0.3)",
+                    marginBottom: 10,
+                    paddingLeft: 4,
+                  }}>
+                  BROWSE
+                </div>
+                {[
+                  { id: "all", name: "All Listings", count: allListings.length },
+                  {
+                    id: "auction",
+                    name: "Live Auctions",
+                    count: liveAuctions,
+                  },
+                  {
+                    id: "ending",
+                    name: "Ending Soon",
+                    count: allListings.filter(
+                      (p) => p.isAuction && !p.auctionEnded && p.auctionEndsAt,
+                    ).length,
+                  },
+                  {
+                    id: "buy",
+                    name: "Buy & Enquire",
+                    count: allListings.filter((p) => !p.isAuction).length,
+                  },
+                ].map((f) => {
+                  const on = mktFilter === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setMktFilter(f.id)}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        padding: "10px 11px",
+                        marginBottom: 3,
+                        borderRadius: 10,
+                        cursor: "pointer",
+                        background: on ? "rgba(184,115,51,0.12)" : "transparent",
+                        border: `1px solid ${on ? "rgba(184,115,51,0.4)" : "transparent"}`,
+                        transition: "all 0.16s",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!on)
+                          e.currentTarget.style.background =
+                            "rgba(255,255,255,0.04)";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!on)
+                          e.currentTarget.style.background = "transparent";
+                      }}>
+                      <span
+                        style={{
+                          fontFamily: "'Raleway',sans-serif",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: "0.04em",
+                          color: on ? "#d9974f" : "#e0d8c8",
+                        }}>
+                        {f.name}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "'Raleway',sans-serif",
+                          fontSize: 9,
+                          fontWeight: 700,
+                          color: on ? "#d9974f" : "rgba(200,191,160,0.4)",
+                          background: on
+                            ? "rgba(184,115,51,0.18)"
+                            : "rgba(255,255,255,0.05)",
+                          borderRadius: 999,
+                          padding: "2px 8px",
+                          minWidth: 18,
+                          textAlign: "center",
+                        }}>
+                        {f.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "12px 13px",
+                  borderRadius: 12,
+                  background: "rgba(212,175,55,0.05)",
+                  border: "1px solid rgba(212,175,55,0.12)",
+                  fontFamily: "'Raleway',sans-serif",
+                  fontSize: 10.5,
+                  color: "rgba(200,191,160,0.5)",
+                  lineHeight: 1.55,
+                }}>
+                <strong style={{ color: "#D4AF37" }}>How bidding works</strong>
+                <br />
+                Place a bid above the minimum. When the auction ends, the
+                highest bidder wins and arranges payment &amp; delivery privately
+                with the seller in chat.
+              </div>
+            </>
           )}
         </aside>
 
         {/* ── Feed ── */}
         <main className="comm-feed">
+          {/* Marketplace stats banner */}
+          {mode === "marketplace" && (
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                marginBottom: 18,
+                flexWrap: "wrap",
+              }}>
+              {[
+                {
+                  label: "Listings",
+                  value: allListings.length,
+                  color: "#D4AF37",
+                },
+                {
+                  label: "Live Auctions",
+                  value: liveAuctions,
+                  color: "#4caf7d",
+                  live: true,
+                },
+                {
+                  label: "For Sale",
+                  value: allListings.filter((p) => !p.isAuction).length,
+                  color: "#B87333",
+                },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  style={{
+                    flex: 1,
+                    minWidth: 96,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(212,175,55,0.1)",
+                  }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}>
+                    {s.live && (
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: s.color,
+                          boxShadow: `0 0 7px ${s.color}`,
+                        }}
+                      />
+                    )}
+                    <span
+                      style={{
+                        fontFamily: "'Cormorant Garamond',serif",
+                        fontSize: 26,
+                        fontWeight: 700,
+                        color: s.color,
+                        lineHeight: 1,
+                      }}>
+                      {s.value}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "'Raleway',sans-serif",
+                      fontSize: 9,
+                      letterSpacing: "0.08em",
+                      color: "rgba(200,191,160,0.4)",
+                      marginTop: 5,
+                    }}>
+                    {s.label.toUpperCase()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Feed header */}
           <div
             style={{
@@ -2868,9 +3775,30 @@ export default function Community() {
                   color: "#f0e8d8",
                   margin: 0,
                 }}>
-                {activeCommunityData?.name || "All Communities"}
+                {mode === "marketplace"
+                  ? {
+                      all: "All Listings",
+                      auction: "Live Auctions",
+                      ending: "Ending Soon",
+                      buy: "Buy & Enquire",
+                    }[mktFilter]
+                  : activeCommunityData?.name || "All Communities"}
               </h2>
-              {activeCommunity !== "all" && activeCommunityData?.desc && (
+              {mode === "community" &&
+                activeCommunity !== "all" &&
+                activeCommunityData?.desc && (
+                  <p
+                    style={{
+                      fontFamily: "'Raleway',sans-serif",
+                      fontSize: 10,
+                      color: "rgba(200,191,160,0.35)",
+                      margin: "4px 0 0",
+                      letterSpacing: "0.03em",
+                    }}>
+                    {activeCommunityData.desc}
+                  </p>
+                )}
+              {mode === "marketplace" && (
                 <p
                   style={{
                     fontFamily: "'Raleway',sans-serif",
@@ -2879,20 +3807,28 @@ export default function Community() {
                     margin: "4px 0 0",
                     letterSpacing: "0.03em",
                   }}>
-                  {activeCommunityData.desc}
+                  {filteredPosts.length}{" "}
+                  {filteredPosts.length === 1 ? "artwork" : "artworks"}{" "}
+                  available
                 </p>
               )}
             </div>
             <motion.button
               whileHover={{
                 scale: 1.04,
-                boxShadow: "0 8px 24px rgba(212,175,55,0.22)",
+                boxShadow:
+                  mode === "marketplace"
+                    ? "0 8px 24px rgba(184,115,51,0.3)"
+                    : "0 8px 24px rgba(212,175,55,0.22)",
               }}
               whileTap={{ scale: 0.97 }}
               onClick={openCreate}
               style={{
                 padding: "10px 20px",
-                background: "linear-gradient(135deg,#D4AF37,#e8c53a)",
+                background:
+                  mode === "marketplace"
+                    ? "linear-gradient(135deg,#B87333,#d18a44)"
+                    : "linear-gradient(135deg,#D4AF37,#e8c53a)",
                 color: "#0e0c0a",
                 border: "none",
                 borderRadius: 999,
@@ -2917,12 +3853,20 @@ export default function Community() {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              CREATE POST
+              {mode === "marketplace" ? "LIST ARTWORK" : "CREATE POST"}
             </motion.button>
           </div>
 
           {feedLoading ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div
+              className={
+                mode === "marketplace" ? "marketplace-grid" : undefined
+              }
+              style={
+                mode === "marketplace"
+                  ? undefined
+                  : { display: "flex", flexDirection: "column", gap: 16 }
+              }>
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
@@ -2957,10 +3901,13 @@ export default function Community() {
                 </div>
               ))}
             </div>
-          ) : (
-            <AnimatePresence mode="popLayout">
-              {filteredPosts.length > 0 ? (
-                filteredPosts.map((post) => (
+          ) : filteredPosts.length > 0 ? (
+            <div
+              className={
+                mode === "marketplace" ? "marketplace-grid" : undefined
+              }>
+              <AnimatePresence mode="popLayout">
+                {filteredPosts.map((post) => (
                   <PostCard
                     key={post.id}
                     post={post}
@@ -2973,32 +3920,78 @@ export default function Community() {
                     isOwn={!!user && post.userId === user.id}
                     meId={user?.id}
                   />
-                ))
-              ) : (
-                <motion.div
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  style={{
-                    textAlign: "center",
-                    padding: "70px 0",
-                    color: "rgba(200,191,160,0.28)",
-                    fontFamily: "'Cormorant Garamond',serif",
-                    fontSize: 19,
-                  }}>
-                  No posts in this community yet.
-                  <br />
-                  <span
-                    style={{
-                      fontSize: 14,
-                      color: "rgba(200,191,160,0.18)",
-                      fontFamily: "'Raleway',sans-serif",
-                    }}>
-                    Be the first to share something.
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                ))}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{
+                textAlign: "center",
+                padding: "70px 20px",
+                color: "rgba(200,191,160,0.4)",
+                fontFamily: "'Cormorant Garamond',serif",
+                fontSize: 19,
+              }}>
+              <div
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: "50%",
+                  margin: "0 auto 18px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background:
+                    mode === "marketplace"
+                      ? "rgba(184,115,51,0.1)"
+                      : "rgba(212,175,55,0.1)",
+                  border: `1px solid ${mode === "marketplace" ? "rgba(184,115,51,0.3)" : "rgba(212,175,55,0.25)"}`,
+                  color: mode === "marketplace" ? "#B87333" : "#D4AF37",
+                }}>
+                <svg
+                  width="26"
+                  height="26"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  {mode === "marketplace" ? (
+                    <>
+                      <path d="M3 9l1-5h16l1 5" />
+                      <path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9" />
+                      <path d="M9 22V12h6v10" />
+                    </>
+                  ) : (
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  )}
+                </svg>
+              </div>
+              {mode === "marketplace"
+                ? mktFilter === "auction"
+                  ? "No live auctions right now."
+                  : mktFilter === "ending"
+                    ? "Nothing ending soon."
+                    : mktFilter === "buy"
+                      ? "No items for sale yet."
+                      : "No listings yet."
+                : "No posts in this community yet."}
+              <br />
+              <span
+                style={{
+                  fontSize: 14,
+                  color: "rgba(200,191,160,0.3)",
+                  fontFamily: "'Raleway',sans-serif",
+                }}>
+                {mode === "marketplace"
+                  ? "Be the first to list an artwork for sale or auction."
+                  : "Be the first to share something."}
+              </span>
+            </motion.div>
           )}
         </main>
       </div>
@@ -3012,8 +4005,11 @@ export default function Community() {
             }}
             onPost={editingPost ? handleEditSave : handlePost}
             editingPost={editingPost}
+            forceListing={mode === "marketplace"}
             defaultCommunity={
-              activeCommunity !== "all" ? activeCommunity : "general"
+              mode === "community" && activeCommunity !== "all"
+                ? activeCommunity
+                : "general"
             }
           />
         )}

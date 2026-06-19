@@ -5233,8 +5233,41 @@ input[type="email"] {
 .comm-feed {
   flex: 1;
   min-width: 0;
-  max-width: 720px;
+  max-width: 760px;
 }
+
+/* ── Two-section mode toggle (Community / Marketplace) ── */
+.comm-mode-toggle {
+  display: inline-flex;
+  gap: 8px;
+  margin-top: 28px;
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  box-sizing: border-box;
+}
+.comm-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 22px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+.comm-mode-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ── Marketplace listings grid ── */
+.marketplace-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 18px;
+  align-items: start;
+}
+
 @media (max-width: 900px) {
   .comm-layout {
     flex-direction: column;
@@ -5247,6 +5280,22 @@ input[type="email"] {
   }
   .comm-feed {
     max-width: 100%;
+  }
+}
+
+/* Marketplace grid → single column on narrow viewports */
+@media (max-width: 680px) {
+  .marketplace-grid {
+    grid-template-columns: 1fr;
+  }
+  .comm-mode-toggle {
+    width: 100%;
+    max-width: 380px;
+  }
+  .comm-mode-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 12px;
   }
 }
 
