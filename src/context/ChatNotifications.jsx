@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api, realtime } from "../utils/api";
 import { useAuth } from "./Auth";
+import { conversationTitle, senderLabel, isPeerKey, peerIds, otherPeerId } from "../utils/chatLabels";
 
 /**
  * Listens for new chat_messages and shows:
@@ -32,20 +33,37 @@ export function ChatNotificationsProvider({ children }) {
   useEffect(() => {
     if (!user) return;
 
-    const handle = (m) => {
+    const handle = async (m) => {
       if (seen.current.has(m.id)) return;
       seen.current.add(m.id);
 
-      const isOwnMessage = m.sender === "me" && m.user_id === user.id;
-      const userIsRecipient = m.user_id === user.id && m.sender !== "me";
+      const isPeer = isPeerKey(m.conversation_key);
+      const peerParticipant = isPeer && peerIds(m.conversation_key).includes(String(user.id));
+      const isOwnMessage = m.user_id === user.id && m.sender === "me";
+      // Peer DMs store sender="me" for both sides, so "incoming" = authored by the
+      // other participant. Other threads: any message not sent by me.
+      const userIsRecipient = isPeer
+        ? (peerParticipant && m.user_id !== user.id)
+        : (m.user_id === user.id && m.sender !== "me");
+      // Admins are notified of customers writing in — but not of private artist DMs.
       const adminIsRecipient =
-        isAdmin && m.sender === "me" && m.user_id !== user.id;
-      if (isOwnMessage && !adminIsRecipient) return;
+        isAdmin && !isPeer && m.sender === "me" && m.user_id !== user.id;
+      if (isOwnMessage) return;
       if (!userIsRecipient && !adminIsRecipient) return;
 
+      // Build a readable title — resolve the DM sender's name when possible.
+      let convo = conversationTitle(m.conversation_key, { meId: user.id });
+      if (isPeer) {
+        try {
+          const other = otherPeerId(m.conversation_key, user.id);
+          if (other) { const map = await api.chat.names([other]); if (map[other]) convo = map[other]; }
+        } catch { /* ignore */ }
+      }
       const title = adminIsRecipient
-        ? `New message · ${m.conversation_key}`
-        : `${m.sender}: ${m.conversation_key}`;
+        ? `New message · ${convo}`
+        : isPeer
+          ? convo
+          : `${senderLabel(m.sender)} · ${convo}`;
       const body = m.text;
 
       if (

@@ -48,6 +48,7 @@ export default function Checkout() {
   const [delivery, setDelivery] = useState(null);
   const [showPayOverlay, setShowPayOverlay] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [payNotice, setPayNotice] = useState("");   // shown after a failed/cancelled payment
   const [otp, setOtp] = useState("");
   const [otpErr, setOtpErr] = useState("");
   const [copied, setCopied] = useState(false);
@@ -123,22 +124,29 @@ export default function Checkout() {
     if (!items.length || submitting) return;
     if (!formValid) { setTouched(true); return; }
     setSubmitting(true);
+    setPayNotice("");
     try {
-      const created = await api.orders.create({
-        full_name: address.name, phone: address.phone,
-        shipping_address: needsTransport ? address : {},
-        payment_provider: pay,
-        pincode: needsTransport ? address.zip : null,
-        pickup_date: hasPickup ? pickup.date : null,
-        pickup_slot: hasPickup ? pickup.slot : null,
-      });
-      // Save this address to the buyer's book (transport orders only, when asked).
-      if (needsTransport && saveAddr && !addressInBook(savedAddresses, address)) {
-        const entry = { id: genId("addr"), label: address.city || "Address", ...pickAddr(address), is_default: savedAddresses.length === 0 };
-        const next = [...savedAddresses, entry];
-        api.auth.updateMe({ addresses: next }).then((m) => setSavedAddresses(m?.addresses || next)).catch(() => {});
+      // Reuse the still-unpaid order from a previous (failed/cancelled) attempt so
+      // we don't create duplicate pending orders — the cart is preserved server-side
+      // until payment actually succeeds.
+      let created = order && order.status === "pending" ? order : null;
+      if (!created) {
+        created = await api.orders.create({
+          full_name: address.name, phone: address.phone,
+          shipping_address: needsTransport ? address : {},
+          payment_provider: pay,
+          pincode: needsTransport ? address.zip : null,
+          pickup_date: hasPickup ? pickup.date : null,
+          pickup_slot: hasPickup ? pickup.slot : null,
+        });
+        // Save this address to the buyer's book (transport orders only, when asked).
+        if (needsTransport && saveAddr && !addressInBook(savedAddresses, address)) {
+          const entry = { id: genId("addr"), label: address.city || "Address", ...pickAddr(address), is_default: savedAddresses.length === 0 };
+          const next = [...savedAddresses, entry];
+          api.auth.updateMe({ addresses: next }).then((m) => setSavedAddresses(m?.addresses || next)).catch(() => {});
+        }
+        setOrder(created);
       }
-      setOrder(created);
       // Real Razorpay checkout when keys are configured (backend returns a
       // razorpay_order_id); otherwise the built-in demo overlay.
       if (created.razorpay_order_id) {
@@ -173,6 +181,7 @@ export default function Checkout() {
             razorpay_signature: resp.razorpay_signature,
           });
           setOrder(paid);
+          setPayNotice("");
           const d = await api.deliveries.byOrder(created.id).catch(() => null);
           setDelivery(d);
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -180,8 +189,19 @@ export default function Checkout() {
           alert(e.message);
         }
       },
+      // Buyer closed the Razorpay window without paying — keep their cart & order
+      // so they can simply hit "Place Order" again.
+      modal: {
+        ondismiss: () =>
+          setPayNotice("Payment cancelled — your items are still in your cart. You can try again whenever you're ready."),
+      },
     });
-    rzp.on("payment.failed", (r) => alert(r.error?.description || "Payment failed. Please try again."));
+    rzp.on("payment.failed", (r) =>
+      setPayNotice(
+        (r.error?.description ? `${r.error.description} ` : "Payment failed. ") +
+          "Your items are saved in your cart — please try again.",
+      ),
+    );
     rzp.open();
   };
 
@@ -482,10 +502,15 @@ export default function Checkout() {
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#fff" }}>TOTAL</span>
               <span className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(grandTotal)}</span>
             </div>
+            {payNotice && (
+              <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 10, background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.4)", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#fbbf24", lineHeight: 1.6 }}>
+                {payNotice}
+              </div>
+            )}
             <motion.button onClick={placeOrder} disabled={submitting}
               whileHover={formValid ? { scale: 1.02 } : {}} whileTap={formValid ? { scale: 0.98 } : {}}
               style={{ width: "100%", padding: "16px", background: formValid ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(212,175,55,0.25)", color: formValid ? "#111" : "rgba(255,255,255,0.5)", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.2em", border: "none", borderRadius: 999, cursor: submitting ? "wait" : "pointer" }}>
-              {submitting ? "PLACING…" : "PLACE ORDER →"}
+              {submitting ? "PLACING…" : (order && order.status === "pending") ? "TRY PAYMENT AGAIN →" : "PLACE ORDER →"}
             </motion.button>
             {touched && !formValid && <div style={{ marginTop: 10, fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#ff8a8a", textAlign: "center" }}>{needsTransport ? "Please complete the delivery address" : "Please choose a pickup date"}</div>}
           </div>

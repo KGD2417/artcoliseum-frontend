@@ -7,6 +7,7 @@ import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import MediaUploader from "../components/ui/MediaUploader";
 import ArtworkForm from "../components/ArtworkForm";
 import { isThreeD, composeDims } from "../utils/dimensions";
+import { dimsToCm, toCm } from "../utils/units";
 import { api } from "../utils/api";
 
 const gold = "#D4AF37";
@@ -52,11 +53,28 @@ const btn = {
 };
 const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 
-function Field({ l, children }) {
+const fieldErr = {
+  fontFamily: "'Raleway',sans-serif",
+  fontSize: 12,
+  color: "#f87171",
+  marginTop: -8,
+  marginBottom: 12,
+  display: "flex",
+  alignItems: "center",
+  gap: 5,
+};
+
+function Field({ l, children, error }) {
   return (
     <div>
       <span style={label}>{l}</span>
       {children}
+      {error && (
+        <div style={fieldErr}>
+          <span aria-hidden>⚠</span>
+          {error}
+        </div>
+      )}
     </div>
   );
 }
@@ -302,7 +320,18 @@ function KycForm({ onApplied }) {
   });
   const [avatar, setAvatar] = useState(null);
   const [busy, setBusy] = useState(false);
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState("");
+  const set = (k) => (e) => {
+    setF((p) => ({ ...p, [k]: e.target.value }));
+    // Clear a field's error as soon as the user starts correcting it.
+    setErrors((p) => (p[k] ? { ...p, [k]: "" } : p));
+  };
+  // Highlight an input's border when its field has an error.
+  const errInput = (k) =>
+    errors[k]
+      ? { ...inputStyle, borderColor: "#f87171", background: "rgba(248,113,113,0.06)" }
+      : inputStyle;
   // You're already a user — prefill name (and location) from your profile.
   useEffect(() => {
     api.auth
@@ -320,14 +349,28 @@ function KycForm({ onApplied }) {
       )
       .catch(() => {});
   }, []);
-  const submit = async () => {
-    if (!f.name.trim()) return alert("Your name is required.");
+  const validate = () => {
+    const errs = {};
+    if (!f.name.trim()) errs.name = "Your name is required.";
     if (!f.art_type.trim())
-      return alert("Tell us what kind of artist you are.");
-    const ageErr = f.age ? intRange(16, 100, "Age")(f.age) : "";
-    if (ageErr) return alert(ageErr);
-    const aboutErr = minLen(20, "About you")(f.about);
-    if (aboutErr) return alert(aboutErr);
+      errs.art_type = "Tell us what kind of artist you are.";
+    if (f.age) {
+      const ageErr = intRange(16, 100, "Age")(f.age);
+      if (ageErr) errs.age = ageErr;
+    }
+    errs.about = !f.about.trim()
+      ? "Tell us a bit about yourself."
+      : minLen(20, "About you")(f.about);
+    if (!errs.about) delete errs.about;
+    return errs;
+  };
+  const submit = async () => {
+    setFormError("");
+    const errs = validate();
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
     setBusy(true);
     try {
       const s = await api.artist.apply({
@@ -337,7 +380,7 @@ function KycForm({ onApplied }) {
       });
       onApplied(s);
     } catch (e) {
-      alert(e.message);
+      setFormError(e.message || "Something went wrong. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -357,8 +400,23 @@ function KycForm({ onApplied }) {
         <strong style={{ color: gold }}>approved</strong>, your studio unlocks
         and you can publish work for sale.
       </p>
-      <Field l="FULL NAME">
-        <input style={inputStyle} value={f.name} onChange={set("name")} />
+      {formError && (
+        <div
+          style={{
+            marginBottom: 18,
+            padding: "12px 16px",
+            borderRadius: 10,
+            background: "rgba(248,113,113,0.08)",
+            border: "1px solid rgba(248,113,113,0.35)",
+            fontFamily: "'Raleway',sans-serif",
+            fontSize: 13,
+            color: "#fca5a5",
+          }}>
+          {formError}
+        </div>
+      )}
+      <Field l="FULL NAME" error={errors.name}>
+        <input style={errInput("name")} value={f.name} onChange={set("name")} />
       </Field>
       <div
         style={{
@@ -366,9 +424,9 @@ function KycForm({ onApplied }) {
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: 12,
         }}>
-        <Field l="AGE">
+        <Field l="AGE" error={errors.age}>
           <input
-            style={inputStyle}
+            style={errInput("age")}
             type="number"
             value={f.age}
             onChange={set("age")}
@@ -390,17 +448,17 @@ function KycForm({ onApplied }) {
           />
         </Field>
       </div>
-      <Field l="WHAT KIND OF ARTIST ARE YOU?">
+      <Field l="WHAT KIND OF ARTIST ARE YOU?" error={errors.art_type}>
         <input
-          style={inputStyle}
+          style={errInput("art_type")}
           value={f.art_type}
           onChange={set("art_type")}
           placeholder="e.g. Oil painter, Sculptor"
         />
       </Field>
-      <Field l="ABOUT YOU">
+      <Field l="ABOUT YOU" error={errors.about}>
         <textarea
-          style={{ ...inputStyle, minHeight: 90 }}
+          style={{ ...errInput("about"), minHeight: 90 }}
           value={f.about}
           onChange={set("about")}
         />
@@ -624,7 +682,8 @@ function ArtistOrderCard({ order: o, pickupSet, onChanged }) {
   const a = o.shipping_address || {};
   const isPickup = o.fulfillment === "self_pickup";
 
-  const dims = [o.custom_width, o.custom_height, o.custom_depth].filter(Boolean).join(" × ");
+  // Fulfillment is a legal/shipping doc — always show the buyer's size in cm.
+  const dims = dimsToCm([o.custom_width, o.custom_height, o.custom_depth], o.custom_unit);
   const opts = o.options || {};
 
   const dispatch = async () => {
@@ -660,7 +719,7 @@ function ArtistOrderCard({ order: o, pickupSet, onChanged }) {
             <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 8, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.25)" }}>
               <span style={{ ...label, marginBottom: 8 }}>BUYER'S CUSTOM SPEC</span>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.85)" }}>
-                {dims && <span>Size: <strong style={{ color: "#fff" }}>{dims} {o.custom_unit || "cm"}</strong></span>}
+                {dims && <span>Size: <strong style={{ color: "#fff" }}>{dims}</strong></span>}
                 {opts.frame && <span>Frame: <strong style={{ color: "#fff" }}>{opts.frame}</strong></span>}
                 {opts.finish && <span>Finish: <strong style={{ color: "#fff" }}>{opts.finish}</strong></span>}
                 {opts.palette && <span>Palette: <strong style={{ color: "#fff" }}>{opts.palette}</strong></span>}
@@ -1013,9 +1072,10 @@ function EditArtwork({ artwork, onClose, onSaved }) {
       await api.artist.updateArtwork(artwork.id, {
         title: f.title,
         medium: f.medium,
-        width: f.width !== "" ? Number(f.width) : null,
-        height: f.height !== "" ? Number(f.height) : null,
-        depth: is3D && f.depth !== "" ? Number(f.depth) : null,
+        // Dimensions stored canonically in cm (the artist may edit in cm/in/ft).
+        width: toCm(f.width, f.dim_unit),
+        height: toCm(f.height, f.dim_unit),
+        depth: is3D ? toCm(f.depth, f.dim_unit) : null,
         customizable: f.customizable,
         in_stock: f.in_stock,
         price: f.price !== "" ? Number(f.price) : null,

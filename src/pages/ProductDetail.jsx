@@ -12,6 +12,7 @@ import {
 import { SkeletonDetail } from "../components/ui/Skeleton";
 import { ZoomIcon, SparkIcon } from "../components/Icons";
 import { api } from "../utils/api";
+import { convertDimsString } from "../utils/units";
 import { useAuth } from "../context/Auth";
 import { useLocale } from "../context/Locale";
 import i4 from "../assets/i4.png";
@@ -45,6 +46,9 @@ export default function ProductDetail() {
   const { formatPrice } = useLocale();
   const [chatOpen, setChatOpen] = useState(false);
   const [ctaBusy, setCtaBusy] = useState(false);
+  const [wishlisted, setWishlisted] = useState(false);
+  const [wishBusy, setWishBusy] = useState(false);
+  const [dimUnit, setDimUnit] = useState("cm"); // cm | inch | feet — viewer's choice
   // Predefined (fixed-price) works show their price; customizable works price
   // instantly from the buyer's chosen W×H — both are buyable directly.
   const isPredefined = !customizable;
@@ -79,6 +83,34 @@ export default function ProductDetail() {
       return;
     }
     bringHome();
+  };
+
+  // Is this piece already on the buyer's wishlist? (only meaningful when signed in)
+  useEffect(() => {
+    if (!user || !id) return;
+    let cancelled = false;
+    api.wishlist
+      .ids()
+      .then((ids) => { if (!cancelled) setWishlisted((ids || []).includes(id)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user, id]);
+
+  // Save / unsave (heart) — optimistic, reverts on error.
+  const toggleWishlist = async () => {
+    if (!user) { navigate("/signin"); return; }
+    if (wishBusy) return;
+    const next = !wishlisted;
+    setWishlisted(next);
+    setWishBusy(true);
+    try {
+      if (next) await api.wishlist.add(id);
+      else await api.wishlist.remove(id);
+    } catch {
+      setWishlisted(!next);   // revert on failure
+    } finally {
+      setWishBusy(false);
+    }
   };
 
   // Optional — ask the team a question; opens the chat thread (and records a light enquiry).
@@ -134,6 +166,7 @@ export default function ProductDetail() {
           year: a.year,
           price: a.price,
           images: a.images?.length ? a.images : [i4],
+          videos: a.videos || [],
           medium: a.medium,
           dimensions: a.base_dimensions,
           description: a.description || a.narrative,
@@ -191,6 +224,25 @@ export default function ProductDetail() {
         paletteOptions: matched.paletteOptions || null,
       }
     : null;
+
+  // Dimensions shown in the spec row: a chosen variant's own size wins over the
+  // artwork's base size, so the figure always matches what the buyer is buying.
+  const shownDims =
+    selectedSize && (selectedSize.width || selectedSize.height)
+      ? `${[selectedSize.width, selectedSize.height].filter(Boolean).join(" × ")} ${selectedSize.unit || "cm"}`
+      : productData?.dimensions;
+
+  // Unified media gallery: images first, then videos. `activeImg` indexes into it,
+  // so a video plays right in the main viewer when its thumbnail is tapped.
+  const media = productData
+    ? [
+        ...(productData.images || []).map((src) => ({ type: "image", src })),
+        ...(productData.videos || []).map((src) => ({ type: "video", src })),
+      ]
+    : [];
+  const activeMedia = media[activeImg] || media[0];
+  // Zoom / AR always operate on a still image (never a video frame).
+  const activeImageSrc = (productData?.images || [])[activeImg] || (productData?.images || [])[0];
 
   const UPCHARGES = {
     frame: {
@@ -403,12 +455,23 @@ export default function ProductDetail() {
               background: "rgba(255,255,255,0.03)",
               border: "1px solid rgba(212,175,55,0.15)",
             }}>
-            <SafeImage
-              src={productData.images[activeImg]}
-              alt={productData.title}
-              fallbackIndex={activeImg}
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
-            />
+            {activeMedia?.type === "video" ? (
+              <video
+                key={activeMedia.src}
+                src={activeMedia.src}
+                controls
+                playsInline
+                preload="metadata"
+                style={{ width: "100%", height: "100%", objectFit: "contain", background: "#000" }}
+              />
+            ) : (
+              <SafeImage
+                src={activeMedia?.src || activeImageSrc}
+                alt={productData.title}
+                fallbackIndex={activeImg}
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              />
+            )}
             <div
               style={{
                 position: "absolute",
@@ -417,13 +480,30 @@ export default function ProductDetail() {
                 display: "flex",
                 gap: 10,
               }}>
-              <CircleBtn onClick={() => setZoomOpen(true)} title="Zoom in">
-                <ZoomIcon size={16} />
+              <CircleBtn
+                onClick={toggleWishlist}
+                title={wishlisted ? "Saved — remove from wishlist" : "Save for later"}>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill={wishlisted ? "#D4AF37" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
               </CircleBtn>
+              {activeMedia?.type !== "video" && (
+                <CircleBtn onClick={() => setZoomOpen(true)} title="Zoom in">
+                  <ZoomIcon size={16} />
+                </CircleBtn>
+              )}
             </div>
           </div>
-          {/* Thumbnail strip — small, fixed-size, horizontally scrollable (only when >1 image) */}
-          {productData.images.length > 1 && (
+          {/* Thumbnail strip — images + videos; tap a video thumb to play it above. */}
+          {media.length > 1 && (
             <div
               style={{
                 display: "flex",
@@ -433,11 +513,12 @@ export default function ProductDetail() {
                 paddingBottom: 4,
                 scrollbarWidth: "thin",
               }}>
-              {productData.images.map((img, i) => (
+              {media.map((m, i) => (
                 <div
                   key={i}
                   onClick={() => setActiveImg(i)}
                   style={{
+                    position: "relative",
                     flex: "0 0 auto",
                     width: 68,
                     height: 68,
@@ -450,17 +531,49 @@ export default function ProductDetail() {
                     cursor: "pointer",
                     opacity: activeImg === i ? 1 : 0.6,
                     transition: "opacity 0.2s",
+                    background: "#000",
                   }}>
-                  <SafeImage
-                    src={img}
-                    alt=""
-                    fallbackIndex={i}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
+                  {m.type === "video" ? (
+                    <>
+                      <video
+                        src={m.src}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                      <span
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "rgba(0,0,0,0.25)",
+                        }}>
+                        <span
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: "50%",
+                            background: "rgba(0,0,0,0.55)",
+                            border: "1px solid rgba(212,175,55,0.7)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}>
+                          <span style={{ marginLeft: 2, borderStyle: "solid", borderWidth: "5px 0 5px 8px", borderColor: "transparent transparent transparent #D4AF37" }} />
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <SafeImage
+                      src={m.src}
+                      alt=""
+                      fallbackIndex={i}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -553,7 +666,38 @@ export default function ProductDetail() {
               borderTop: "1px solid rgba(212,175,55,0.18)",
             }}>
             <Meta label="MEDIUM" value={productData.medium} />
-            <Meta label="DIMENSIONS" value={productData.dimensions} />
+            <Meta
+              label="DIMENSIONS"
+              value={
+                shownDims ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span>{convertDimsString(shownDims, dimUnit)}</span>
+                    <span style={{ display: "inline-flex", gap: 4 }}>
+                      {["cm", "inch", "feet"].map((u) => (
+                        <button
+                          key={u}
+                          onClick={() => setDimUnit(u)}
+                          style={{
+                            padding: "2px 7px",
+                            borderRadius: 999,
+                            cursor: "pointer",
+                            fontFamily: "'Cinzel',serif",
+                            fontSize: 8,
+                            letterSpacing: "0.1em",
+                            background: dimUnit === u ? "rgba(212,175,55,0.18)" : "transparent",
+                            border: `1px solid ${dimUnit === u ? "#D4AF37" : "rgba(212,175,55,0.25)"}`,
+                            color: dimUnit === u ? "#D4AF37" : "rgba(200,191,160,0.6)",
+                          }}>
+                          {u === "inch" ? "in" : u === "feet" ? "ft" : "cm"}
+                        </button>
+                      ))}
+                    </span>
+                  </span>
+                ) : (
+                  shownDims || "—"
+                )
+              }
+            />
             <Meta
               label="AVAILABILITY"
               value={
@@ -916,7 +1060,7 @@ export default function ProductDetail() {
                       color: "#D4AF37",
                       marginBottom: 12,
                     }}>
-                    SELECT SIZE
+                    SELECT A VARIANT
                   </div>
                   <div
                     style={{
@@ -1160,7 +1304,7 @@ export default function ProductDetail() {
             initial={{ scale: 0.92 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            src={productData.images[activeImg]}
+            src={activeImageSrc}
             alt={productData.title}
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -1220,7 +1364,7 @@ export default function ProductDetail() {
           </div>
           <iframe
             title="Art Coliseum AR"
-            src={`/ar-launcher.html?image=${encodeURIComponent(productData.images[activeImg])}&type=${encodeURIComponent(arType)}`}
+            src={`/ar-launcher.html?image=${encodeURIComponent(activeImageSrc)}&type=${encodeURIComponent(arType)}`}
             allow="camera; xr-spatial-tracking; accelerometer; gyroscope; magnetometer"
             style={{ flex: 1, width: "100%", border: "none" }}
           />

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
+import { conversationTitle, senderLabel, enquiryArtworkId } from "../utils/chatLabels";
 
 export default function AdminInbox() {
   const { user, role, loading: authLoading } = useAuth();
@@ -13,7 +14,12 @@ export default function AdminInbox() {
   const [thread, setThread] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
+  const [names, setNames] = useState({});   // userId -> display name
+  const [titles, setTitles] = useState({}); // artworkId -> title (enquiry threads)
   const scrollRef = useRef(null);
+
+  const convLabel = (key) => conversationTitle(key, { titles, names, meId: user?.id });
+  const userLabel = (uid) => names[uid] || `user ${String(uid).slice(0, 8)}`;
 
   useEffect(() => {
     if (authLoading) return;
@@ -55,6 +61,19 @@ export default function AdminInbox() {
     }
     return [...map.values()].sort((a, b) => new Date(b.last_at) - new Date(a.last_at));
   }, [rows]);
+
+  // Resolve readable labels: customer names (by user_id) + artwork titles (enquiry).
+  useEffect(() => {
+    const uids = [...new Set(rows.map(r => r.user_id).filter(Boolean))].filter(id => !(id in names));
+    const aids = [...new Set(rows.map(r => enquiryArtworkId(r.conversation_key)).filter(id => id && !(id in titles)))];
+    if (uids.length) {
+      api.chat.names(uids).then(map => setNames(prev => ({ ...prev, ...map }))).catch(() => {});
+    }
+    if (aids.length) {
+      Promise.all(aids.map(id => api.catalog.artwork(id).then(a => [id, a?.title || null]).catch(() => [id, null])))
+        .then(pairs => setTitles(prev => ({ ...prev, ...Object.fromEntries(pairs) })));
+    }
+  }, [rows, names, titles]);
 
   useEffect(() => {
     if (!active) { setThread([]); return; }
@@ -146,15 +165,15 @@ export default function AdminInbox() {
                     color: "#e8e0d0",
                   }}>
                   <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: "#D4AF37" }}>
-                    {c.conversation_key}
+                    {convLabel(c.conversation_key)}
                   </div>
                   <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#fff", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     <span style={{ opacity: c.last_sender === "me" ? 1 : 0.6 }}>
-                      {c.last_sender === "me" ? "" : `[${c.last_sender}] `}{c.last_text}
+                      {c.last_sender === "me" ? "" : `[${senderLabel(c.last_sender)}] `}{c.last_text}
                     </span>
                   </div>
                   <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.45)", marginTop: 4 }}>
-                    {new Date(c.last_at).toLocaleString()} · user {c.user_id.slice(0, 8)}
+                    {new Date(c.last_at).toLocaleString()} · {userLabel(c.user_id)}
                   </div>
                 </button>
               );
@@ -170,8 +189,8 @@ export default function AdminInbox() {
           ) : (
             <>
               <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(212,175,55,0.15)" }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "#D4AF37" }}>{active.conversation_key}</div>
-                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 3 }}>user {active.user_id}</div>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: "#D4AF37" }}>{convLabel(active.conversation_key)}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginTop: 3 }}>{userLabel(active.user_id)}</div>
               </div>
               <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
                 {thread.map(m => (
@@ -183,7 +202,7 @@ export default function AdminInbox() {
                       fontFamily: "'Raleway',sans-serif", fontSize: 13, lineHeight: 1.5,
                     }}>{m.text}</div>
                     <div style={{ fontSize: 10, color: "rgba(200,191,160,0.4)", marginTop: 3, textAlign: m.sender === "me" ? "left" : "right" }}>
-                      {m.sender} · {new Date(m.created_at).toLocaleTimeString()}
+                      {m.sender === "me" ? userLabel(active.user_id) : senderLabel(m.sender)} · {new Date(m.created_at).toLocaleTimeString()}
                     </div>
                   </div>
                 ))}

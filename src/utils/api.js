@@ -383,6 +383,22 @@ export const api = {
     return request("GET", "/owned");
   },
 
+  // Wishlist / Save for later — saved artworks a buyer can revisit or buy later.
+  wishlist: {
+    list() {
+      return request("GET", "/wishlist");
+    },
+    ids() {
+      return request("GET", "/wishlist/ids");
+    },
+    add(artworkId) {
+      return request("POST", "/wishlist", { body: { artwork_id: artworkId } });
+    },
+    remove(artworkId) {
+      return request("DELETE", `/wishlist/${encodeURIComponent(artworkId)}`);
+    },
+  },
+
   artist: {
     apply(body) {
       return request("POST", "/artists/apply", { body });
@@ -410,9 +426,9 @@ export const api = {
     deleteArtwork(id) {
       return request("DELETE", `/artworks/${encodeURIComponent(id)}`);
     },
-    addSubtype(label, parent_id) {
+    addSubtype(label, parent_id, extra = {}) {
       return request("POST", "/categories/subtype", {
-        body: { label, parent_id },
+        body: { label, parent_id, ...extra },
       });
     },
     // Sales dashboard

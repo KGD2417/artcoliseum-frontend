@@ -8,6 +8,7 @@ import { CheckIcon, CopyIcon } from "../components/Icons";
 import { api, realtime } from "../utils/api";
 import { STAGE_ORDER, STAGE_LABEL } from "../utils/delivery";
 import { useAuth } from "../context/Auth";
+import { conversationTitle, senderLabel, isPeerKey, peerIds, enquiryArtworkId } from "../utils/chatLabels";
 import { validateForm, isValid, required, phoneIN, pincodeIN, genId } from "../utils/validation";
 import i3 from "../assets/i3.png";
 import i6 from "../assets/i6.png";
@@ -18,6 +19,7 @@ const TABS = [
   { id: "events",   label: "My Events" },
   { id: "inbox",    label: "Messages" },
   { id: "collection", label: "My Collection" },
+  { id: "wishlist", label: "Saved" },
   { id: "help",     label: "Help Desk" },
   { id: "notifs",   label: "Notifications" },
   { id: "language", label: "Language" },
@@ -40,7 +42,10 @@ const NOTIFS = [
 export default function Profile() {
   const { lang, setLang } = useLocale();
   const navigate = useNavigate();
-  const { user: authUser, loading: authLoading, signOut } = useAuth();
+  const { user: authUser, loading: authLoading, role, artistStatus, signOut } = useAuth();
+  const isArtist = role === "artist" || artistStatus === "verified";
+  const isPendingArtist = artistStatus === "pending" || artistStatus === "unverified";
+  const [artistRole, setArtistRole] = useState("");
   const [tab, setTab] = useState("details");
   const [editing, setEditing] = useState(false);
   const [user, setUser] = useState(EMPTY_USER);
@@ -50,11 +55,17 @@ export default function Profile() {
   const [regEvents, setRegEvents] = useState([]);
   const [orders, setOrders] = useState([]);
   const [owned, setOwned] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
   const [convThread, setConvThread] = useState([]);
   const [convReply, setConvReply] = useState("");
   const [profLoading, setProfLoading] = useState(true);
+  const [chatTitles, setChatTitles] = useState({}); // artworkId -> title (enquiry threads)
+  const [chatNames, setChatNames] = useState({});   // userId -> name (peer DM threads)
+
+  const convLabel = (key) =>
+    conversationTitle(key, { titles: chatTitles, names: chatNames, meId: authUser?.id });
 
   useEffect(() => {
     if (!authLoading && !authUser) {
@@ -91,6 +102,7 @@ export default function Profile() {
       } catch { setOrders([]); }
       try { setRegEvents(await api.events.myRegistrations()); } catch { setRegEvents([]); }
       try { setOwned(await api.owned()); } catch { setOwned([]); }
+      try { setWishlist(await api.wishlist.list()); } catch { setWishlist([]); }
 
       let msgs = [], reads = [];
       try {
@@ -103,7 +115,12 @@ export default function Profile() {
         cur.last_text = m.text;
         cur.last_sender = m.sender;
         cur.last_at = m.created_at;
-        if (m.sender !== "me") {
+        // Incoming = someone else wrote it. Peer DMs are all sender="me", so use
+        // the author user_id there.
+        const incoming = isPeerKey(m.conversation_key)
+          ? String(m.user_id) !== String(authUser.id)
+          : m.sender !== "me";
+        if (incoming) {
           const lastRead = readMap.get(m.conversation_key);
           if (!lastRead || new Date(m.created_at) > lastRead) cur.unread += 1;
         }
@@ -116,13 +133,50 @@ export default function Profile() {
     })();
   }, [authUser]);
 
+  // Artists: surface their craft in the header (their full artist profile lives
+  // in the Studio — we never ask them to re-enter it here).
+  useEffect(() => {
+    if (!authUser || !isArtist) return;
+    let cancelled = false;
+    api.artist
+      .profile()
+      .then((p) => { if (!cancelled) setArtistRole(p?.art_type || p?.role || ""); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [authUser, isArtist]);
+
+  // Resolve readable labels for the inbox: artwork titles (enquiry threads) and
+  // participant names (peer DM threads). Runs whenever the conversation list grows.
+  useEffect(() => {
+    if (!authUser) return;
+    const needTitles = [...new Set(
+      conversations.map(c => enquiryArtworkId(c.conversation_key)).filter(id => id && !(id in chatTitles)),
+    )];
+    const needNames = [...new Set(
+      conversations.filter(c => isPeerKey(c.conversation_key))
+        .flatMap(c => peerIds(c.conversation_key))
+        .filter(id => id && !(id in chatNames)),
+    )];
+    if (needTitles.length) {
+      Promise.all(needTitles.map(id =>
+        api.catalog.artwork(id).then(a => [id, a?.title || null]).catch(() => [id, null]),
+      )).then(pairs => setChatTitles(prev => ({ ...prev, ...Object.fromEntries(pairs) })));
+    }
+    if (needNames.length) {
+      api.chat.names(needNames).then(map => setChatNames(prev => ({ ...prev, ...map }))).catch(() => {});
+    }
+  }, [conversations, authUser, chatTitles, chatNames]);
+
   // Realtime: append new messages to active thread + bump conversation list.
   useEffect(() => {
     if (!authUser) return;
     const sub = realtime
       .channel("*")
       .on("message", (m) => {
-          if (m.user_id !== authUser.id) return;
+          // Accept my own-thread messages and peer DMs where I'm a participant.
+          const mine = m.user_id === authUser.id;
+          const peerForMe = isPeerKey(m.conversation_key) && peerIds(m.conversation_key).includes(String(authUser.id));
+          if (!mine && !peerForMe) return;
           setConversations(prev => {
             const idx = prev.findIndex(c => c.conversation_key === m.conversation_key);
             const next = idx >= 0 ? [...prev] : [{ conversation_key: m.conversation_key, unread: 0 }, ...prev];
@@ -130,7 +184,10 @@ export default function Profile() {
             target.last_text = m.text;
             target.last_sender = m.sender;
             target.last_at = m.created_at;
-            if (m.sender !== "me" && (!activeConv || activeConv !== m.conversation_key)) {
+            const incoming = isPeerKey(m.conversation_key)
+              ? String(m.user_id) !== String(authUser.id)
+              : m.sender !== "me";
+            if (incoming && (!activeConv || activeConv !== m.conversation_key)) {
               target.unread = (target.unread || 0) + 1;
             }
             if (idx >= 0) next[idx] = target; else next[0] = target;
@@ -183,6 +240,10 @@ export default function Profile() {
     catch { /* keep optimistic value */ }
   };
   const handleSignOut = async () => { await signOut(); navigate("/"); };
+  const removeWishlist = async (artworkId) => {
+    setWishlist((prev) => prev.filter((w) => w.artwork_id !== artworkId));
+    try { await api.wishlist.remove(artworkId); } catch { /* keep optimistic removal */ }
+  };
 
   const CART = [];
   const NOTIFS = [];
@@ -223,10 +284,34 @@ export default function Profile() {
           {user.name.split(" ").map(n => n[0]).slice(0, 2).join("")}
         </div>
         <div>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37" }}>COLLECTOR PROFILE</div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37" }}>
+            {isArtist ? "ARTIST PROFILE" : isPendingArtist ? "ARTIST APPLICATION · UNDER REVIEW" : "COLLECTOR PROFILE"}
+          </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#fff", marginTop: 4 }}>{user.name}</h1>
-          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)" }}>{user.email}</div>
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)" }}>
+            {user.email}{isArtist && artistRole ? ` · ${artistRole}` : ""}
+          </div>
         </div>
+        {isArtist && (
+          <Link
+            to="/become-artist"
+            className="btn-gold-main"
+            style={{ marginLeft: "auto", padding: "12px 24px", fontSize: 11, textDecoration: "none", whiteSpace: "nowrap" }}>
+            ARTIST STUDIO →
+          </Link>
+        )}
+        {isPendingArtist && (
+          <Link
+            to="/become-artist"
+            style={{
+              marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "12px 24px", borderRadius: 999, textDecoration: "none", whiteSpace: "nowrap",
+              fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", fontWeight: 700,
+              color: "#fbbf24", background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.45)",
+            }}>
+            <span aria-hidden>⏳</span> APPLICATION UNDER REVIEW
+          </Link>
+        )}
       </motion.div>
 
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 32 }} className="profile-grid">
@@ -350,18 +435,22 @@ export default function Profile() {
                         color: "#D4AF37", padding: "6px 14px", borderRadius: 999,
                         fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer", marginBottom: 14,
                       }}>← BACK</button>
-                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 10 }}>{activeConv}</div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#D4AF37", marginBottom: 10 }}>{convLabel(activeConv)}</div>
                       <div style={{ maxHeight: 380, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, padding: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.12)", borderRadius: 8, marginBottom: 12 }}>
-                        {convThread.map(m => (
-                          <div key={m.id || m.created_at} style={{ alignSelf: m.sender === "me" ? "flex-end" : "flex-start", maxWidth: "75%" }}>
+                        {convThread.map(m => {
+                          // Peer DMs are all sender="me"; decide the side by author user_id.
+                          const own = isPeerKey(activeConv) ? String(m.user_id) === String(authUser?.id) : m.sender === "me";
+                          return (
+                          <div key={m.id || m.created_at} style={{ alignSelf: own ? "flex-end" : "flex-start", maxWidth: "75%" }}>
                             <div style={{
                               padding: "8px 12px", borderRadius: 12,
-                              background: m.sender === "me" ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(255,255,255,0.06)",
-                              color: m.sender === "me" ? "#111" : "#e8e0d0",
+                              background: own ? "linear-gradient(135deg,#D4AF37,#e8c53a)" : "rgba(255,255,255,0.06)",
+                              color: own ? "#111" : "#e8e0d0",
                               fontFamily: "'Raleway',sans-serif", fontSize: 13,
                             }}>{m.text}</div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <div style={{ display: "flex", gap: 8 }}>
                         <input
@@ -391,7 +480,7 @@ export default function Profile() {
                           }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                             <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.14em", color: "#D4AF37" }}>
-                              {c.conversation_key}
+                              {convLabel(c.conversation_key)}
                             </span>
                             {c.unread > 0 && (
                               <span style={{
@@ -401,7 +490,7 @@ export default function Profile() {
                             )}
                           </div>
                           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {c.last_sender !== "me" && c.last_sender ? `${c.last_sender}: ` : ""}{c.last_text}
+                            {c.last_sender && c.last_sender !== "me" ? `${senderLabel(c.last_sender)}: ` : ""}{c.last_text}
                           </div>
                           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", marginTop: 4 }}>
                             {c.last_at ? new Date(c.last_at).toLocaleString() : ""}
@@ -436,6 +525,40 @@ export default function Profile() {
                           <div style={{ padding: "10px 12px" }}>
                             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#f0e8d8", lineHeight: 1.2 }}>{o.title}</div>
                             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.14em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{(o.artist_name || "").toUpperCase()}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
+
+              {tab === "wishlist" && (
+                <Card title="Saved for Later">
+                  {wishlist.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: 40, color: "rgba(200,191,160,0.5)" }}>
+                      Nothing saved yet. Tap the ♥ on any artwork to save it here and pick up where you left off.
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 16 }}>
+                      {wishlist.map(w => (
+                        <div key={w.artwork_id} style={{ border: "1px solid rgba(212,175,55,0.12)", borderRadius: 10, overflow: "hidden", background: "rgba(255,255,255,0.02)", display: "flex", flexDirection: "column" }}>
+                          <div style={{ position: "relative", cursor: "pointer" }} onClick={() => navigate(`/product/${w.artwork_id}`)}>
+                            <SafeImage src={w.image} alt={w.title} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
+                            {!w.available && (
+                              <span style={{ position: "absolute", top: 8, left: 8, padding: "4px 10px", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", background: "rgba(0,0,0,0.72)", color: "#fca5a5", border: "1px solid rgba(248,113,113,0.5)" }}>UNAVAILABLE</span>
+                            )}
+                          </div>
+                          <div style={{ padding: "10px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
+                            <div onClick={() => navigate(`/product/${w.artwork_id}`)} style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#f0e8d8", lineHeight: 1.2, cursor: "pointer" }}>{w.title || "Untitled"}</div>
+                            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.14em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>{(w.artist_name || "").toUpperCase()}</div>
+                            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "#D4AF37", marginTop: 6 }}>
+                              {w.customizable ? "Customizable" : (w.price ? "₹" + Number(w.price).toLocaleString("en-IN") : "Price on request")}
+                            </div>
+                            <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 10 }}>
+                              <button onClick={() => navigate(`/product/${w.artwork_id}`)} className="btn-gold-main" style={{ flex: 1, padding: "8px 10px", fontSize: 9 }}>VIEW</button>
+                              <button onClick={() => removeWishlist(w.artwork_id)} className="btn-outline" style={{ padding: "8px 10px", fontSize: 9 }}>REMOVE</button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -734,6 +857,14 @@ function Field({ label, value, editing, onChange, type = "text", error }) {
 
 const ADDR_BLANK = { label: "", name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: "India" };
 const aErrText = { fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#ff8a8a", marginTop: 4 };
+
+// Two addresses are "the same" when their delivery fields match (label is just a
+// nickname, so it's ignored). Used to block duplicate saves.
+const _normAddr = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+const sameAddress = (a, b) =>
+  ["name", "phone", "line1", "line2", "city", "state", "zip"].every(
+    (k) => _normAddr(a[k]) === _normAddr(b[k]),
+  ) && _normAddr(a.country || "India") === _normAddr(b.country || "India");
 const aInput = (bad) => ({ width: "100%", boxSizing: "border-box", padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: `1px solid ${bad ? "rgba(255,120,120,0.7)" : "rgba(212,175,55,0.2)"}`, borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" });
 
 /** Saved-address book: list, add (validated), remove, set default. Persists via onChange. */
@@ -741,6 +872,7 @@ function AddressBook({ addresses, onChange }) {
   const [adding, setAdding] = useState(false);
   const [f, setF] = useState(ADDR_BLANK);
   const [touched, setTouched] = useState(false);
+  const [dupError, setDupError] = useState("");
 
   const errors = validateForm(f, {
     name:  [required("Name")],
@@ -750,13 +882,18 @@ function AddressBook({ addresses, onChange }) {
     state: [required("State")],
     zip:   [required("PIN code"), pincodeIN],
   });
-  const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
+  const set = (k) => (e) => { setDupError(""); setF((v) => ({ ...v, [k]: e.target.value })); };
+  const closeForm = () => { setAdding(false); setF(ADDR_BLANK); setTouched(false); setDupError(""); };
 
   const add = () => {
     if (!isValid(errors)) { setTouched(true); return; }
+    if (addresses.some((a) => sameAddress(a, f))) {
+      setDupError("This address is already saved.");
+      return;
+    }
     const entry = { id: genId("addr"), ...f, label: f.label || f.city, is_default: addresses.length === 0 };
     onChange([...addresses, entry]);
-    setF(ADDR_BLANK); setTouched(false); setAdding(false);
+    closeForm();
   };
   const remove = (id) => onChange(addresses.filter((a) => a.id !== id));
   const setDefault = (id) => onChange(addresses.map((a) => ({ ...a, is_default: a.id === id })));
@@ -801,9 +938,10 @@ function AddressBook({ addresses, onChange }) {
             <div><input placeholder="City *" value={f.city} onChange={set("city")} style={aInput(touched && errors.city)} />{touched && errors.city && <div style={aErrText}>{errors.city}</div>}</div>
             <div><input placeholder="State *" value={f.state} onChange={set("state")} style={aInput(touched && errors.state)} />{touched && errors.state && <div style={aErrText}>{errors.state}</div>}</div>
           </div>
+          {dupError && <div style={{ ...aErrText, marginTop: 10 }}>{dupError}</div>}
           <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
             <button onClick={add} className="btn-gold-main" style={{ padding: "9px 20px", fontSize: 11 }}>SAVE ADDRESS</button>
-            <button onClick={() => { setAdding(false); setF(ADDR_BLANK); setTouched(false); }} className="btn-outline" style={{ padding: "9px 20px", fontSize: 11 }}>CANCEL</button>
+            <button onClick={closeForm} className="btn-outline" style={{ padding: "9px 20px", fontSize: 11 }}>CANCEL</button>
           </div>
         </div>
       )}

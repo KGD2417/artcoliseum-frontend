@@ -12,12 +12,14 @@
  *  - successMessage      node shown after a successful submit.
  *  - topSlot             node rendered above the first field (admin artist picker).
  *  - showFeatured        admin-only "Featured on home" toggle (adds `featured`).
- *  - onAddSubtype(label, categoryId)  create a new style; defaults to the
- *                        artist endpoint (admins are authorized for it too).
+ *  - onAddSubtype(label, categoryId, extra)  create a new style (extra carries
+ *                        { image_url, description }); defaults to the artist
+ *                        endpoint (admins are authorized for it too).
  */
 import { useEffect, useState } from "react";
 import MediaUploader from "./ui/MediaUploader";
 import { isThreeD, composeDims } from "../utils/dimensions";
+import { toCm, formatDimsFromCm } from "../utils/units";
 import { api } from "../utils/api";
 
 const gold = "#D4AF37";
@@ -95,7 +97,7 @@ export default function ArtworkForm({
   successMessage = DEFAULT_SUCCESS,
   topSlot = null,
   showFeatured = false,
-  onAddSubtype = (l, cat) => api.artist.addSubtype(l, cat),
+  onAddSubtype = (l, cat, extra) => api.artist.addSubtype(l, cat, extra),
 }) {
   const [cats, setCats] = useState([]);
   const [f, setF] = useState(BLANK);
@@ -104,6 +106,9 @@ export default function ArtworkForm({
   const [model3d, setModel3d] = useState(null);
   const [predefined, setPredefined] = useState([]);
   const [newStyle, setNewStyle] = useState("");
+  const [newStyleImage, setNewStyleImage] = useState(null);
+  const [newStyleDesc, setNewStyleDesc] = useState("");
+  const [styleErr, setStyleErr] = useState("");
   const [featured, setFeatured] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -120,13 +125,19 @@ export default function ArtworkForm({
   const composedDims = composeDims(f.width, f.height, is3D ? f.depth : "", f.dim_unit);
 
   const addStyle = async () => {
-    if (!newStyle || !f.category_id) return alert("Pick a main medium first, then name the style.");
+    if (!f.category_id) return setStyleErr("Pick a main medium first.");
+    if (!newStyle.trim()) return setStyleErr("Name the style.");
+    if (!newStyleImage) return setStyleErr("Add an image for the style.");
+    setStyleErr("");
     try {
-      const c = await onAddSubtype(newStyle, f.category_id);
+      const c = await onAddSubtype(newStyle.trim(), f.category_id, {
+        image_url: newStyleImage,
+        description: newStyleDesc.trim() || undefined,
+      });
       await loadCats();
       setF((p) => ({ ...p, subtype_id: c.id }));
-      setNewStyle("");
-    } catch (e) { alert(e.message); }
+      setNewStyle(""); setNewStyleImage(null); setNewStyleDesc("");
+    } catch (e) { setStyleErr(e.message); }
   };
 
   const derivedMedium =
@@ -142,20 +153,28 @@ export default function ArtworkForm({
     if (f.customizable && !(Number(f.price_per_unit) > 0))
       return alert("Made-to-order artworks need a price per unit greater than 0.");
     if (!f.customizable && !(fixedPrice > 0))
-      return alert("Set a price: either a price for the piece, or at least one predefined size with a price.");
+      return alert("Set a price: either a price for the piece, or at least one variant with a price.");
     if (images.length === 0) return alert("Upload at least one image of your artwork.");
     setBusy(true);
     try {
+      // Dimensions are stored canonically in cm (cm is the legal unit); the artist
+      // may enter cm / inches / feet and we convert on the way in. A single artwork
+      // size only applies when there are no variants — variants carry their own.
+      const hasVariants = !f.customizable && predefined.length > 0;
+      const singleSize = !f.customizable && !hasVariants;
+      const wCm = singleSize ? toCm(f.width, f.dim_unit) : null;
+      const hCm = singleSize ? toCm(f.height, f.dim_unit) : null;
+      const dCm = singleSize && is3D ? toCm(f.depth, f.dim_unit) : null;
       const payload = {
         title: f.title,
         narrative: f.narrative,
         medium: derivedMedium,
         category_id: f.category_id,
         subtype_id: f.subtype_id || null,
-        width: !f.customizable && f.width !== "" ? Number(f.width) : null,
-        height: !f.customizable && f.height !== "" ? Number(f.height) : null,
-        depth: !f.customizable && is3D && f.depth !== "" ? Number(f.depth) : null,
-        base_dimensions: f.customizable ? null : composedDims || null,
+        width: wCm,
+        height: hCm,
+        depth: dCm,
+        base_dimensions: singleSize ? (formatDimsFromCm(wCm, hCm, dCm, "cm") || null) : null,
         customizable: f.customizable,
         ratio_locked: f.customizable && f.ratio_locked,
         price_per_unit: f.customizable && f.price_per_unit ? Number(f.price_per_unit) : null,
@@ -215,9 +234,34 @@ export default function ArtworkForm({
           </select>
         </Field>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="Add a new style (e.g. Luminism)" value={newStyle} onChange={(e) => setNewStyle(e.target.value)} />
-        <button onClick={addStyle} style={{ ...btn, padding: "11px 18px", whiteSpace: "nowrap" }}>+ STYLE</button>
+      <div style={{ marginBottom: 14, padding: 14, borderRadius: 10, border: "1px dashed rgba(212,175,55,0.3)", background: "rgba(212,175,55,0.03)" }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.75)", marginBottom: 8 }}>
+          ADD A NEW STYLE UNDER THIS MEDIUM
+        </div>
+        <input
+          style={{ ...inputStyle, marginBottom: 10 }}
+          placeholder="Style name (e.g. Luminism)"
+          value={newStyle}
+          onChange={(e) => { setNewStyle(e.target.value); setStyleErr(""); }}
+        />
+        <input
+          style={{ ...inputStyle, marginBottom: 10 }}
+          placeholder="Short description (optional)"
+          value={newStyleDesc}
+          onChange={(e) => setNewStyleDesc(e.target.value)}
+        />
+        <MediaUploader
+          kind="image"
+          hint="STYLE IMAGE"
+          value={newStyleImage}
+          onChange={(url) => { setNewStyleImage(url); setStyleErr(""); }}
+        />
+        {styleErr && (
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#f87171", marginTop: 8 }}>
+            {styleErr}
+          </div>
+        )}
+        <button onClick={addStyle} style={{ ...btn, padding: "11px 18px", whiteSpace: "nowrap", marginTop: 12 }}>+ ADD STYLE</button>
       </div>
 
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", margin: "4px 0 8px" }}>
@@ -225,7 +269,7 @@ export default function ArtworkForm({
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
         {[
-          { val: false, title: "Fixed size & price", desc: "A finished piece sold as-is. You set its size and price (one or more sizes)." },
+          { val: false, title: "Fixed size & price", desc: "A finished piece sold as-is. You set its size and price (one or more variants)." },
           { val: true, title: "Customize", desc: "Buyers choose their own size; the price is calculated from your price per unit." },
         ].map((opt) => {
           const active = f.customizable === opt.val;
@@ -281,23 +325,32 @@ export default function ArtworkForm({
         </>
       ) : (
         <>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", margin: "4px 0 8px" }}>
-            ARTWORK SIZE{is3D ? " (width × height × depth)" : " (width × height)"}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: is3D ? "1fr 1fr 1fr 0.8fr" : "1fr 1fr 0.8fr", gap: 12 }}>
-            <Field l="WIDTH"><input style={inputStyle} type="number" value={f.width} onChange={set("width")} /></Field>
-            <Field l="HEIGHT"><input style={inputStyle} type="number" value={f.height} onChange={set("height")} /></Field>
-            {is3D && <Field l="DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.depth} onChange={set("depth")} /></Field>}
-            <Field l="UNIT">
-              <select style={inputStyle} value={f.dim_unit} onChange={set("dim_unit")}>
-                <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
-              </select>
-            </Field>
-          </div>
-          {composedDims && (
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 12 }}>
-              Shown as: <span style={{ color: gold }}>{composedDims}</span>
-            </div>
+          {/* A single artwork size only applies when there are no variants — once the
+              artist adds variants, each variant carries its own size, so this is hidden. */}
+          {predefined.length === 0 && (
+            <>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.65)", margin: "4px 0 8px" }}>
+                ARTWORK SIZE{is3D ? " (width × height × depth)" : " (width × height)"}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: is3D ? "1fr 1fr 1fr 0.8fr" : "1fr 1fr 0.8fr", gap: 12 }}>
+                <Field l="WIDTH"><input style={inputStyle} type="number" value={f.width} onChange={set("width")} /></Field>
+                <Field l="HEIGHT"><input style={inputStyle} type="number" value={f.height} onChange={set("height")} /></Field>
+                {is3D && <Field l="DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.depth} onChange={set("depth")} /></Field>}
+                <Field l="UNIT">
+                  <select style={inputStyle} value={f.dim_unit} onChange={set("dim_unit")}>
+                    <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
+                  </select>
+                </Field>
+              </div>
+              {composedDims && (
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.55)", marginBottom: 12 }}>
+                  Shown as: <span style={{ color: gold }}>{composedDims}</span>
+                  {f.dim_unit !== "cm" && (
+                    <> · stored as <span style={{ color: gold }}>{formatDimsFromCm(toCm(f.width, f.dim_unit), toCm(f.height, f.dim_unit), is3D ? toCm(f.depth, f.dim_unit) : null, "cm")}</span></>
+                  )}
+                </div>
+              )}
+            </>
           )}
           {predefined.length === 0 ? (
             <Field l="PRICE FOR THIS PIECE (₹)">
@@ -305,12 +358,12 @@ export default function ArtworkForm({
             </Field>
           ) : (
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", margin: "0 0 8px", lineHeight: 1.5 }}>
-              Price comes from the sizes below — buyers pick one at checkout, and the lowest is shown as the “from” price.
+              Price comes from the variants below — buyers pick one at checkout, and the lowest is shown as the “from” price.
             </div>
           )}
           <PredefinedSizes sizes={predefined} setSizes={setPredefined} />
           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.4)", margin: "-4px 0 12px", lineHeight: 1.5 }}>
-            Offering several sizes? Add each with its own price above. Otherwise just set the single price.
+            Offering several variants? Add each with its own price above. Otherwise just set the single price.
           </div>
         </>
       )}
@@ -342,19 +395,22 @@ export default function ArtworkForm({
 function PredefinedSizes({ sizes, setSizes }) {
   const add = () => setSizes([...sizes, { label: "", width: "", height: "", unit: "cm", price: "" }]);
   const upd = (i, k, v) => setSizes(sizes.map((s, j) => (j === i ? { ...s, [k]: v } : s)));
+  const rm = (i) => setSizes(sizes.filter((_, j) => j !== i));
   return (
     <div style={{ marginBottom: 14 }}>
-      <span style={label}>PREDEFINED SIZES & PRICES</span>
+      <span style={label}>VARIANTS & PRICES (cm)</span>
       {sizes.map((s, i) => (
-        <div key={i} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
-          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="Label" value={s.label} onChange={(e) => upd(i, "label", e.target.value)} />
-          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="W" value={s.width} onChange={(e) => upd(i, "width", e.target.value)} />
-          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="H" value={s.height} onChange={(e) => upd(i, "height", e.target.value)} />
+        <div key={i} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "center" }}>
+          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="Variant (e.g. A3, Large)" value={s.label} onChange={(e) => upd(i, "label", e.target.value)} />
+          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="W (cm)" value={s.width} onChange={(e) => upd(i, "width", e.target.value)} />
+          <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="H (cm)" value={s.height} onChange={(e) => upd(i, "height", e.target.value)} />
           <input style={{ ...inputStyle, marginBottom: 0 }} placeholder="Price" value={s.price} onChange={(e) => upd(i, "price", e.target.value)} />
+          <button onClick={() => rm(i)} title="Remove variant" aria-label="Remove variant"
+            style={{ width: 34, height: 34, borderRadius: 8, cursor: "pointer", background: "transparent", border: "1px solid rgba(255,140,140,0.4)", color: "rgba(255,140,140,0.9)", fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
       ))}
       <button onClick={add} style={{ ...btn, padding: "8px 16px", background: "transparent", color: gold, border: `1px solid ${gold}` }}>
-        + ADD SIZE
+        + ADD VARIANT
       </button>
     </div>
   );

@@ -98,6 +98,22 @@ button:not(:disabled) { cursor: pointer; }
 .btn-outline:hover { border-color: #D4AF37; color: #D4AF37; box-shadow: 0 8px 24px rgba(212,175,55,0.18); }
 input:focus, textarea:focus, select:focus { box-shadow: 0 0 0 2px rgba(212,175,55,0.25); border-color: rgba(212,175,55,0.55) !important; }
 
+/* Native <select> dropdown list. On Windows the option popup defaults to a white
+   background (ignoring the dark select), which made our light option text wash out
+   into a white patch. Force the dark theme onto the options + the select itself.
+   macOS uses its own native popup and is unaffected. */
+select { color: #e8e0d0; }
+select option,
+select optgroup {
+  background-color: #16130c;
+  color: #e8e0d0;
+}
+select option:checked,
+select option:hover {
+  background-color: #2a2310;
+  color: #f0e8d8;
+}
+
 /* Reusable scroll-reveal + page-transition helpers */
 @keyframes coli-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 .coli-reveal { animation: coli-rise .7s cubic-bezier(.22,1,.36,1) both; }

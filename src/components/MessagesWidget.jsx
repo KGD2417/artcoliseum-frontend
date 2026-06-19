@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
+import { conversationTitle, isPeerKey } from "../utils/chatLabels";
 
 /**
  * Floating "Messages" launcher (bottom-left) giving signed-in users one-tap
@@ -14,31 +15,9 @@ import { useAuth } from "../context/Auth";
  */
 const gold = "#D4AF37";
 
-function titleFor(key, titles = {}, names = {}, meId = null) {
-  if (!key) return "Conversation";
-  // Enquiries are "you ↔ the Art Coliseum team about an artwork" — show the
-  // artwork's real title once resolved, not the raw id slug.
-  if (key.startsWith("enquiry:")) {
-    const id = key.slice(8);
-    return titles[id] || "Art Coliseum Team";
-  }
-  // Direct messages: show the other person's name, not a generic label.
-  if (key.startsWith("peer:")) {
-    const ids = key.split(":").slice(1, 3);
-    const meStr = meId != null ? String(meId) : null;
-    if (meStr && ids.includes(meStr)) {
-      const other = ids.find((x) => x !== meStr);
-      return names[other] || "Direct message";
-    }
-    // Admin / non-participant view: show both names when known.
-    const labels = ids.map((x) => names[x]).filter(Boolean);
-    return labels.length ? labels.join(" ↔ ") : "Direct message";
-  }
-  if (key.startsWith("artist:")) return "Artist Studio";
-  if (key.startsWith("curator:")) return "Art Coliseum Curator";
-  if (key.startsWith("support:")) return "Support Team";
-  return "Conversation";
-}
+// Conversation titles come from the shared resolver (src/utils/chatLabels.js).
+const titleFor = (key, titles = {}, names = {}, meId = null) =>
+  conversationTitle(key, { titles, names, meId });
 
 function timeAgo(iso) {
   if (!iso) return "";
@@ -173,7 +152,12 @@ export default function MessagesWidget() {
   if (!user) return null;
 
   // Which side a bubble sits on: the current account's own messages go right.
-  const ownSide = (m) => (isAdmin ? m.sender !== "me" : m.sender === "me");
+  // Peer (artist↔artist) messages are all stored sender="me", so direction must be
+  // decided by author user_id instead.
+  const ownSide = (m) => {
+    if (isPeerKey(m.conversation_key)) return String(m.user_id) === String(user?.id);
+    return isAdmin ? m.sender !== "me" : m.sender === "me";
+  };
 
   return (
     <div style={{ position: "fixed", bottom: 28, right: 100, zIndex: 9998, fontFamily: "'Raleway',sans-serif" }}>

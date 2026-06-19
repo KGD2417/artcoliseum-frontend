@@ -6,6 +6,7 @@ import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { useLocale } from "../context/Locale";
 import { useAuth } from "../context/Auth";
 import { api } from "../utils/api";
+import { dimsToCm, convertDimsString } from "../utils/units";
 
 const FULFILLMENTS = [
   { id: "transport_setup", label: "Transport + Installation", desc: "White-glove delivery and on-site setup" },
@@ -195,17 +196,16 @@ function ItemSelection({ item }) {
 
   // Dimensions: prefer the buyer's custom size; otherwise fall back to the
   // artwork's own dimensions so every cart line shows a size.
+  // cm is the canonical / legal unit — everything in the order shows in cm.
   let dims = null;
   if (item.custom_width && item.custom_height) {
-    const u = item.custom_unit || "cm";
-    dims = `${[item.custom_width, item.custom_height, item.custom_depth].filter(Boolean).join(" × ")} ${u}`;
+    dims = dimsToCm([item.custom_width, item.custom_height, item.custom_depth], item.custom_unit);
   } else if (item.size_dimensions) {
-    dims = item.size_dimensions;
+    dims = convertDimsString(item.size_dimensions, "cm");
   } else if (item.base_dimensions) {
-    dims = item.base_dimensions;
+    dims = convertDimsString(item.base_dimensions, "cm");
   } else if (item.width && item.height) {
-    const u = item.unit || "cm";
-    dims = `${[item.width, item.height, item.depth].filter(Boolean).join(" × ")} ${u}`;
+    dims = dimsToCm([item.width, item.height, item.depth], item.unit);
   }
   if (dims) chips.push(["Dimensions", dims]);
 

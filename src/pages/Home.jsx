@@ -52,7 +52,6 @@ import e1 from "../assets/events/e1.png";
 import e2 from "../assets/events/e2.png";
 import e3 from "../assets/events/e3.png";
 
-
 /* ── Flip gallery images ─────────────────────────────────────────── */
 const FLIP_IMAGES = [
   { title: "Golden Horizon", url: i1 },
@@ -517,7 +516,7 @@ function AnimatedPreservation({ navigate, images }) {
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate("/contact")}>
-            CONTACT US →
+            CONNECT PRESERVATION TEAM →
           </motion.button>
         </div>
       </motion.div>
@@ -679,8 +678,11 @@ export default function Home() {
 
   // Preservation-section images — admin-editable (Admin → Homepage).
   useEffect(() => {
-    api.site.getPreservation()
-      .then((d) => { if (d?.images?.length) setPreservationImgs(d.images); })
+    api.site
+      .getPreservation()
+      .then((d) => {
+        if (d?.images?.length) setPreservationImgs(d.images);
+      })
       .catch(() => {});
   }, []);
 
@@ -1082,148 +1084,152 @@ export default function Home() {
           LAUNCH OF NEW PRODUCT
       ═══════════════════════════════════════════════ */}
       {newLaunch.length > 0 && (
-      <section
-        className="home-sec home-inline-section"
-        style={{
-          background:
-            "linear-gradient(180deg,#080808 0%,#0d0a06 50%,#080808 100%)",
-        }}>
-        <div className="home-launch-inner">
-          {/* Left: rotating card carousel */}
-          <motion.div
-            className="home-launch-visual"
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-            <CircularTestimonials
-              imagesOnly
-              cardHeight="380px"
-              testimonials={newLaunch}
-              autoplay={true}
-              colors={{
-                arrowBackground: "#1a1612",
-                arrowForeground: "#D4AF37",
-                arrowHoverBackground: "rgba(212,175,55,0.25)",
-              }}
-            />
-          </motion.div>
+        <section
+          className="home-sec home-inline-section"
+          style={{
+            background:
+              "linear-gradient(180deg,#080808 0%,#0d0a06 50%,#080808 100%)",
+          }}>
+          <div className="home-launch-inner">
+            {/* Left: rotating card carousel */}
+            <motion.div
+              className="home-launch-visual"
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+              <CircularTestimonials
+                imagesOnly
+                cardHeight="380px"
+                testimonials={newLaunch}
+                autoplay={true}
+                colors={{
+                  arrowBackground: "#1a1612",
+                  arrowForeground: "#D4AF37",
+                  arrowHoverBackground: "rgba(212,175,55,0.25)",
+                }}
+              />
+            </motion.div>
 
-          {/* Right: text */}
-          <motion.div
-            className="home-launch-text"
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{
-              duration: 0.9,
-              delay: 0.1,
-              ease: [0.22, 1, 0.36, 1],
-            }}>
-            <h2 className="ar-heading" style={{ margin: "0 0 16px" }}>
-              Launch of <em>New Product</em>
-            </h2>
-
-            <p
-              style={{
-                fontFamily: "'Cormorant Garamond',serif",
-                fontSize: 18,
-                color: "rgba(200,191,160,0.75)",
-                lineHeight: 1.8,
-                marginBottom: 28,
+            {/* Right: text */}
+            <motion.div
+              className="home-launch-text"
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{
+                duration: 0.9,
+                delay: 0.1,
+                ease: [0.22, 1, 0.36, 1],
               }}>
-              A new chapter in art begins. Our latest curated collection brings
-              together emerging and established artists — each piece a testament
-              to the enduring power of human expression.
-            </p>
+              <h2 className="ar-heading" style={{ margin: "0 0 16px" }}>
+                Launch of <em>New Product</em>
+              </h2>
 
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: "0 0 0 0",
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}>
-              {["Verified provenance, direct from each artist's studio"].map(
-                (b, i) => (
-                  <li
-                    key={i}
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span
+              <p
+                style={{
+                  fontFamily: "'Cormorant Garamond',serif",
+                  fontSize: 18,
+                  color: "rgba(200,191,160,0.75)",
+                  lineHeight: 1.8,
+                  marginBottom: 28,
+                }}>
+                A new chapter in art begins. Our latest curated collection
+                brings together emerging and established artists — each piece a
+                testament to the enduring power of human expression.
+              </p>
+
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: "0 0 0 0",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 14,
+                }}>
+                {["Verified provenance, direct from each artist's studio"].map(
+                  (b, i) => (
+                    <li
+                      key={i}
                       style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        background: "#D4AF37",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontFamily: "'Raleway',sans-serif",
-                        fontSize: 14,
-                        color: "rgba(200,191,160,0.75)",
-                        letterSpacing: "0.03em",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
                       }}>
-                      {b}
-                    </span>
-                  </li>
-                ),
-              )}
-            </ul>
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: "#D4AF37",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontFamily: "'Raleway',sans-serif",
+                          fontSize: 14,
+                          color: "rgba(200,191,160,0.75)",
+                          letterSpacing: "0.03em",
+                        }}>
+                        {b}
+                      </span>
+                    </li>
+                  ),
+                )}
+              </ul>
 
-            <motion.button
-              className="btn-secondary"
-              style={{ marginTop: 40 }}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate("/categories")}>
-              EXPLORE COLLECTION →
-            </motion.button>
-          </motion.div>
-        </div>
-      </section>
+              <motion.button
+                className="btn-secondary"
+                style={{ marginTop: 40 }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate("/categories")}>
+                EXPLORE COLLECTION →
+              </motion.button>
+            </motion.div>
+          </div>
+        </section>
       )}
 
       {/* ═══════════════════════════════════════════════
           EVENTS
       ═══════════════════════════════════════════════ */}
       {eventsData.length > 0 && (
-      <section
-        className="home-sec"
-        style={{
-          background:
-            "linear-gradient(180deg,#080808 0%,#0d0b08 60%,#080808 100%)",
-        }}>
-        <SectionHeader
-          tag="Ongoing & Upcoming"
-          title=""
-          italic="Events"
-          sub="Immersive exhibitions and curated experiences from across the globe."
-        />
-        <div className="events-tilt-grid">
-          {eventsData.map((ev, i) => (
-            <TiltCard
-              key={ev.title}
-              event={ev}
-              index={i}
-              registered={!!ev.id && registeredIds.has(ev.id)}
-              onRegister={() => openRegister(ev)}
-            />
-          ))}
-        </div>
-        <div style={{ textAlign: "center", marginTop: 52 }}>
-          <motion.button
-            className="btn-secondary"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate("/events")}>
-            VIEW ALL EVENTS →
-          </motion.button>
-        </div>
-      </section>
+        <section
+          className="home-sec"
+          style={{
+            background:
+              "linear-gradient(180deg,#080808 0%,#0d0b08 60%,#080808 100%)",
+          }}>
+          <SectionHeader
+            tag="Ongoing & Upcoming"
+            title=""
+            italic="Events"
+            sub="Immersive exhibitions and curated experiences from across the globe."
+          />
+          <div className="events-tilt-grid">
+            {eventsData.map((ev, i) => (
+              <TiltCard
+                key={ev.title}
+                event={ev}
+                index={i}
+                registered={!!ev.id && registeredIds.has(ev.id)}
+                onRegister={() => openRegister(ev)}
+              />
+            ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: 52 }}>
+            <motion.button
+              className="btn-secondary"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/events")}>
+              VIEW ALL EVENTS →
+            </motion.button>
+          </div>
+        </section>
       )}
 
       {/* ═══════════════════════════════════════════════

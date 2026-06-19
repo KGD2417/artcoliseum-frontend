@@ -4,13 +4,40 @@ import { useNavigate } from "react-router-dom";
 import { SearchIcon } from "../components/Icons";
 import { SkeletonGrid } from "../components/ui/Skeleton";
 import ArtistAvatar from "../components/ArtistAvatar";
+import { useAuth } from "../context/Auth";
 import { api } from "../utils/api";
 
 export default function Artists() {
   const navigate = useNavigate();
+  const { role, artistStatus } = useAuth();
   const [search, setSearch] = useState("");
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Tailor the "Become an Artist" banner to where you are in the journey.
+  const isArtist = role === "artist" || artistStatus === "verified";
+  const isPending = artistStatus === "pending" || artistStatus === "unverified";
+  const cta = isArtist
+    ? {
+        eyebrow: "YOUR STUDIO",
+        title: "Welcome back to your studio.",
+        sub: "Manage your collection, orders and exhibition pieces from your Artist Portal.",
+        button: "VISIT THE DASHBOARD",
+      }
+    : isPending
+      ? {
+          eyebrow: "FOR ARTISTS",
+          title: "Your artist application is under review.",
+          sub: "Our curators are reviewing your details — we'll unlock your studio the moment you're approved.",
+          button: "APPLICATION UNDER REVIEW",
+          pending: true,
+        }
+      : {
+          eyebrow: "FOR ARTISTS",
+          title: "Showcase your work to a global community of collectors.",
+          sub: "Apply to join our curated artist network and access the Artist Portal.",
+          button: "BECOME AN ARTIST",
+        };
 
   useEffect(() => {
     let cancelled = false;
@@ -118,7 +145,7 @@ export default function Artists() {
               color: "#D4AF37",
               marginBottom: 6,
             }}>
-            FOR ARTISTS
+            {cta.eyebrow}
           </div>
           <div
             style={{
@@ -127,7 +154,7 @@ export default function Artists() {
               color: "#fff",
               fontWeight: 600,
             }}>
-            Showcase your work to a global community of collectors.
+            {cta.title}
           </div>
           <div
             style={{
@@ -136,18 +163,43 @@ export default function Artists() {
               color: "rgba(200,191,160,0.6)",
               marginTop: 6,
             }}>
-            Apply to join our curated artist network and access the Artist
-            Portal.
+            {cta.sub}
           </div>
         </div>
-        <motion.button
-          className="btn-gold-main"
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => navigate("/become-artist")}
-          style={{ padding: "14px 28px", fontSize: 12 }}>
-          BECOME AN ARTIST
-        </motion.button>
+        {cta.pending ? (
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/become-artist")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "14px 28px",
+              fontFamily: "'Cinzel',serif",
+              fontSize: 12,
+              letterSpacing: "0.16em",
+              fontWeight: 700,
+              color: "#fbbf24",
+              background: "rgba(251,191,36,0.10)",
+              border: "1px solid rgba(251,191,36,0.45)",
+              borderRadius: 999,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}>
+            <span aria-hidden>⏳</span>
+            {cta.button}
+          </motion.button>
+        ) : (
+          <motion.button
+            className="btn-gold-main"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/become-artist")}
+            style={{ padding: "14px 28px", fontSize: 12, whiteSpace: "nowrap" }}>
+            {cta.button}
+          </motion.button>
+        )}
       </motion.div>
 
       {loading ? (
