@@ -456,12 +456,54 @@ function createARStudio(THREE, opts) {
     }
     startSession();
   }
-  function isVerticalPlane(plane, frame) {
-    try {
-      const pose = frame.getPose(plane.planeSpace, s.xrRefSpace);
-      if (!pose) return false;
-      return Math.abs(pose.transform.matrix[5]) < 0.25; // near-horizontal normal → wall
-    } catch { return false; }
+  // ── Surface-normal helpers ────────────────────────────────────────────────
+  const WORLD_UP = new THREE.Vector3(0, 1, 0);
+
+  // If the aimed-at point lies on a detected (near-vertical) wall plane, return
+  // that plane's clean normal — far steadier than the per-hit estimate. We only
+  // trust a plane when the hit sits within ~12 cm of it, so we never snap to a
+  // different wall behind the one the user is pointing at.
+  function planeNormalAt(frame, hitPos) {
+    if (!frame.detectedPlanes || !frame.detectedPlanes.size) return null;
+    let best = null;
+    let bestPerp = 0.12;
+    frame.detectedPlanes.forEach((plane) => {
+      let pose;
+      try { pose = frame.getPose(plane.planeSpace, s.xrRefSpace); } catch { return; }
+      if (!pose) return;
+      const m = pose.transform.matrix;
+      const n = new THREE.Vector3(m[4], m[5], m[6]).normalize(); // planeSpace +Y = normal
+      if (Math.abs(n.y) > 0.5) return; // skip floors / ceilings — we want walls
+      const c = new THREE.Vector3(m[12], m[13], m[14]);
+      const perp = Math.abs(hitPos.clone().sub(c).dot(n));
+      if (perp < bestPerp) { bestPerp = perp; best = n; }
+    });
+    return best;
+  }
+
+  // Build an upright orientation that sits flush on the surface: the artwork's
+  // face (+Z) points out along `normal`; +Y stays world-up (projected onto the
+  // wall) so the piece hangs level rather than tilted.
+  function orientationFor(normal, isWall, camPos, hitPos) {
+    let forward, up;
+    if (isWall) {
+      forward = normal.clone();
+      up = WORLD_UP.clone().addScaledVector(forward, -WORLD_UP.dot(forward));
+      if (up.lengthSq() < 1e-4) up.set(0, 1, 0);
+      up.normalize();
+    } else {
+      // Floor / table-top: stand the piece upright, facing the viewer.
+      forward = camPos ? camPos.clone().sub(hitPos) : new THREE.Vector3(0, 0, 1);
+      forward.y = 0;
+      if (forward.lengthSq() < 1e-4) forward.set(0, 0, 1);
+      forward.normalize();
+      up = WORLD_UP.clone();
+    }
+    const right = new THREE.Vector3().crossVectors(up, forward).normalize();
+    up = new THREE.Vector3().crossVectors(forward, right).normalize(); // re-orthonormalise
+    return new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(right, up, forward),
+    );
   }
   async function startSession() {
     try {
@@ -494,6 +536,7 @@ function createARStudio(THREE, opts) {
       onNotSupported("Couldn't start AR: " + (e?.message || e));
     }
   }
+  const _reticleScale = new THREE.Vector3(1, 1, 1);
   function onXRFrame(time, frame) {
     if (!s.xrSession) return;
     s.xrSession.requestAnimationFrame(onXRFrame);
@@ -506,47 +549,79 @@ function createARStudio(THREE, opts) {
       if (pose) { a.mesh.matrixAutoUpdate = false; a.mesh.matrix.fromArray(pose.transform.matrix); }
     }
 
-    let wallPose = null;
-    if (frame.detectedPlanes && frame.detectedPlanes.size) {
-      frame.detectedPlanes.forEach((plane) => {
-        if (wallPose) return;
-        if (isVerticalPlane(plane, frame)) { const p = frame.getPose(plane.planeSpace, s.xrRefSpace); if (p) wallPose = p; }
-      });
-    }
+    // The hit-test ray (screen centre) gives the exact point the user is aiming
+    // at *plus* an estimated surface normal. This — not a plane's floating
+    // centre — is what we anchor the reticle and artwork to.
     let hitPose = null;
     const hits = frame.getHitTestResults(s.xrHitTestSource);
     if (hits.length) hitPose = hits[0].getPose(s.xrRefSpace);
 
-    const best = wallPose || hitPose;
-    s.onWall = !!wallPose;
+    const viewerPose = frame.getViewerPose(s.xrRefSpace);
+    const camPos = viewerPose
+      ? new THREE.Vector3(
+          viewerPose.transform.position.x,
+          viewerPose.transform.position.y,
+          viewerPose.transform.position.z,
+        )
+      : null;
+
     const r = s.reticleMesh;
-    if (best && r) {
-      r.visible = true; r.matrix.fromArray(best.transform.matrix);
-      r.material.color.setHex(s.onWall ? 0xc9a84c : 0x888888);
-      if (instructionEl) instructionEl.textContent = s.onWall ? "Wall found — tap to hang the artwork" : "Surface found — aim at a wall, or tap to place";
+    if (hitPose && r) {
+      const m = hitPose.transform.matrix;
+      const hitPos = new THREE.Vector3(m[12], m[13], m[14]);
+      const normal = new THREE.Vector3(m[4], m[5], m[6]).normalize(); // hit pose +Y = surface normal
+
+      // Snap to a clean wall-plane normal when the aimed point lies on one.
+      const pn = planeNormalAt(frame, hitPos);
+      if (pn) normal.copy(pn);
+
+      // Always face the art into the room (toward the camera).
+      if (camPos && normal.dot(camPos.clone().sub(hitPos)) < 0) normal.multiplyScalar(-1);
+
+      const isWall = Math.abs(normal.y) < 0.5; // normal ~horizontal → vertical surface
+      s.onWall = isWall;
+      s.reticlePos = hitPos;
+      s.reticleNormal = normal;
+      s.reticleQuat = orientationFor(normal, isWall, camPos, hitPos);
+
+      r.visible = true;
+      r.matrixAutoUpdate = false;
+      r.matrix.compose(hitPos, s.reticleQuat, _reticleScale); // ring lies flat on the surface
+      r.material.color.setHex(isWall ? 0xc9a84c : 0x6f8a9a);
+      if (instructionEl) instructionEl.textContent = isWall
+        ? "Wall found — tap to hang the artwork"
+        : "Surface found — aim at a wall to hang it";
       if (placeBtnEl) placeBtnEl.disabled = false;
     } else if (r) {
       r.visible = false;
+      s.reticlePos = null;
       if (instructionEl) instructionEl.textContent = "Move your phone slowly to scan the room";
       if (placeBtnEl) placeBtnEl.disabled = true;
     }
     renderer.render(scene, camera);
   }
   function placeArtwork() {
-    if (!s.isARActive || !s.reticleMesh?.visible) return;
+    if (!s.isARActive || !s.reticleMesh?.visible || !s.reticlePos) return;
+    // A single tap can fire both the XR `select` event and the button's click —
+    // a short cooldown stops it placing two copies on top of each other.
+    const now = performance.now();
+    if (now - (s.lastPlace || 0) < 350) return;
+    s.lastPlace = now;
+
     const mesh = buildArtworkMesh();
-    mesh.position.setFromMatrixPosition(s.reticleMesh.matrix);
-    mesh.quaternion.setFromRotationMatrix(s.reticleMesh.matrix);
-    mesh.rotation.x = 0; if (s.onWall) mesh.rotation.z = 0;
-    if (s.onWall) { const f = new THREE.Vector3(0, 0, 0.006).applyQuaternion(mesh.quaternion); mesh.position.add(f); }
+    // Sit the frame's back a hair off the surface so it doesn't z-fight the wall.
+    const pos = s.reticlePos.clone().addScaledVector(s.reticleNormal, 0.012);
+    mesh.position.copy(pos);
+    mesh.quaternion.copy(s.reticleQuat);
     mesh.updateMatrixWorld(true);
     scene.add(mesh); s.placedMeshes.push(mesh);
 
+    // Anchor to the world so it stays put on the wall as the user walks around.
     const frame = s.xrFrame;
     if (frame && frame.createAnchor && typeof XRRigidTransform !== "undefined") {
       try {
-        const p = mesh.position, q = mesh.quaternion;
-        const pose = new XRRigidTransform({ x: p.x, y: p.y, z: p.z }, { x: q.x, y: q.y, z: q.z, w: q.w });
+        const q = mesh.quaternion;
+        const pose = new XRRigidTransform({ x: pos.x, y: pos.y, z: pos.z }, { x: q.x, y: q.y, z: q.z, w: q.w });
         frame.createAnchor(pose, s.xrRefSpace).then((anchor) => s.anchoredMeshes.push({ mesh, anchor })).catch(() => {});
       } catch { /* fixed placement is fine */ }
     }
