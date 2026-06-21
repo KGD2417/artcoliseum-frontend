@@ -1,11 +1,12 @@
 import { Routes, Route } from 'react-router-dom';
 import LaunchGate from './components/LaunchGate';
 import Layout from './components/Layout';
+import VisitTracker from './components/VisitTracker';
 import Home from './pages/Home';
+import NewLaunch from './pages/NewLaunch';
 import Artists from './pages/Artists';
 import ArtistProfile from './pages/ArtistProfile';
 import ArtistPortal from './pages/ArtistPortal';
-import ARView from './pages/ARView';
 import Categories from './pages/Categories';
 import ArtTypeDescription from './pages/ArtTypeDescription';
 import SubTypeDetail from './pages/SubTypeDetail';
@@ -35,10 +36,13 @@ import Compare from './pages/Compare';
 function App() {
   return (
     <LaunchGate>
+    <VisitTracker />
     <Routes>
-      <Route path="/ar-view" element={<ARView />} />
+      {/* Immersive AR route renders chrome-less (no site navbar/footer/widgets). */}
+      <Route path="/ar" element={<AR />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
+        <Route path="new-launch" element={<NewLaunch />} />
         <Route path="artists" element={<Artists />} />
         <Route path="artists/:id" element={<ArtistProfile />} />
         <Route path="become-artist" element={<ArtistPortal />} />
@@ -53,7 +57,6 @@ function App() {
         <Route path="contact" element={<Contact />} />
         <Route path="signin" element={<SignIn />} />
         <Route path="profile" element={<Profile />} />
-        <Route path="ar" element={<AR />} />
         <Route path="privacy" element={<PrivacyPolicy />} />
         <Route path="refund" element={<Refund />} />
         <Route path="help" element={<HelpDesk />} />

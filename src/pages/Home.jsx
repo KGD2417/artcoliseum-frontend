@@ -192,6 +192,17 @@ function CylinderCarousel({ items, navigate }) {
   const startX = useRef(0);
   const startRot = useRef(0);
 
+  // Where a card leads: an admin-set link (Art of Season), else the artwork, else
+  // the collection. Internal paths route in-app; full URLs open directly.
+  const go = (item) => {
+    if (item.link) {
+      if (/^https?:\/\//.test(item.link)) window.location.assign(item.link);
+      else navigate(item.link);
+      return;
+    }
+    navigate(item.id ? `/product/${item.id}` : "/categories");
+  };
+
   useEffect(() => {
     const recompute = () => {
       const vw = window.innerWidth;
@@ -263,9 +274,7 @@ function CylinderCarousel({ items, navigate }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.06 }}
-              onClick={() =>
-                navigate(item.id ? `/product/${item.id}` : "/categories")
-              }
+              onClick={() => go(item)}
               style={{
                 flex: "0 0 200px",
                 height: 270,
@@ -379,7 +388,7 @@ function CylinderCarousel({ items, navigate }) {
               cursor: item.id ? "pointer" : "grab",
             }}
             onClick={() => {
-              if (!isDragging && item.id) navigate(`/product/${item.id}`);
+              if (!isDragging && (item.id || item.link)) go(item);
             }}>
             <img
               src={item.img}
@@ -393,7 +402,7 @@ function CylinderCarousel({ items, navigate }) {
                 className="carousel-glass-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(item.id ? `/product/${item.id}` : "/categories");
+                  go(item);
                 }}>
                 View Artwork ›
               </button>
@@ -686,6 +695,27 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
+  // "Art of Seasons" — admin selects existing artworks (Admin → Art of Season).
+  // When some are selected they drive the carousel; otherwise the featured-artwork
+  // fallback above stays in place.
+  useEffect(() => {
+    api.catalog
+      .artworks({ art_of_season: true })
+      .then((arts) => {
+        const withImg = (arts || []).filter((a) => a.images && a.images.length);
+        if (withImg.length)
+          setCarouselItems(
+            withImg.map((a) => ({
+              img: a.images[0],
+              title: a.title,
+              medium: a.medium || "",
+              id: a.id,
+            })),
+          );
+      })
+      .catch(() => {});
+  }, []);
+
   // Artist of the Month spotlight — a real artist from the catalog (prefers one
   // with the most works + a photo). Section hides itself when there are none.
   useEffect(() => {
@@ -705,33 +735,33 @@ export default function Home() {
     };
   }, []);
 
-  // "Launch of New Product" — the most recently added live artworks, so a new
-  // product appears here automatically the moment it goes live. Falls back to
-  // the editorial cards only when the catalog is empty.
+  // "Launch of New Product" — admin-curated new-launch works (assigned in
+  // Admin → Artworks). Falls back to the most recently added live artworks when
+  // nothing is flagged yet, so the section is never empty.
   useEffect(() => {
     let cancelled = false;
-    api.catalog
-      .artworks({})
-      .then((arts) => {
-        if (cancelled || !arts || arts.length === 0) return;
-        // Backend returns active works oldest→newest; take the most recent few.
-        const withImg = arts.filter((a) => a.images && a.images.length);
-        const newest = (withImg.length ? withImg : arts).slice(-6).reverse();
-        setNewLaunch(
-          newest.map((a) => ({
-            id: a.id,
-            src: a.images?.[0],
-            name: a.title,
-            designation: [a.artist_name, a.medium].filter(Boolean).join(" · "),
-            quote:
-              a.narrative ||
-              a.description ||
-              "A new work, fresh from the studio.",
-            tag: "NEW",
-          })),
-        );
-      })
-      .catch(() => {});
+    (async () => {
+      let arts = await api.catalog.artworks({ new_launch: true }).catch(() => []);
+      if (!arts || arts.length === 0)
+        arts = await api.catalog.artworks({}).catch(() => []);
+      if (cancelled || !arts || arts.length === 0) return;
+      // Backend returns active works oldest→newest; take the most recent few.
+      const withImg = arts.filter((a) => a.images && a.images.length);
+      const newest = (withImg.length ? withImg : arts).slice(-6).reverse();
+      setNewLaunch(
+        newest.map((a) => ({
+          id: a.id,
+          src: a.images?.[0],
+          name: a.title,
+          designation: [a.artist_name, a.medium].filter(Boolean).join(" · "),
+          quote:
+            a.narrative ||
+            a.description ||
+            "A new work, fresh from the studio.",
+          tag: "NEW",
+        })),
+      );
+    })();
     return () => {
       cancelled = true;
     };
@@ -1185,8 +1215,8 @@ export default function Home() {
                 style={{ marginTop: 40 }}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => navigate("/categories")}>
-                EXPLORE COLLECTION →
+                onClick={() => navigate("/new-launch")}>
+                VIEW NEW ARRIVALS →
               </motion.button>
             </motion.div>
           </div>

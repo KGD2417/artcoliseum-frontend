@@ -10,11 +10,11 @@ import { email as emailRule, minLen, intRange } from "../utils/validation";
 
 const gold = "#D4AF37";
 const TABS = [
-  ["overview", "Overview"], ["tally", "Price & Tally"], ["enquiries", "Enquiries"], ["orders", "Orders"],
+  ["overview", "Overview"], ["traffic", "Traffic"], ["tally", "Price & Tally"], ["enquiries", "Enquiries"], ["orders", "Orders"],
   ["artworks", "Artworks"], ["categories", "Categories"], ["exhibitions", "Exhibitions"], ["events", "Events"],
   ["artists", "Artists"], ["competition", "Competition"], ["communities", "Communities"],
   ["news", "News"], ["testimonials", "Testimonials"],
-  ["contact", "Contact"], ["support", "Support"], ["legal", "Legal"], ["homepage", "Homepage"], ["messages", "Messages"],
+  ["contact", "Contact"], ["support", "Support"], ["legal", "Legal"], ["homepage", "Homepage"], ["season", "Art of Season"], ["messages", "Messages"],
 ];
 
 const STAGES = ["order_confirmed", "curation_crating", "dispatched", "out_for_delivery", "installation", "delivered"];
@@ -72,6 +72,7 @@ export default function AdminDashboard() {
         </aside>
         <div style={{ minHeight: 400 }}>
           {tab === "overview" && <Overview stats={stats} />}
+          {tab === "traffic" && <Traffic />}
           {tab === "tally" && <Tally />}
           {tab === "enquiries" && <Enquiries />}
           {tab === "orders" && <Orders />}
@@ -88,6 +89,7 @@ export default function AdminDashboard() {
           {tab === "support" && <Support />}
           {tab === "legal" && <PrivacyEditor />}
           {tab === "homepage" && <PreservationEditor />}
+          {tab === "season" && <ArtOfSeasonEditor />}
           {tab === "messages" && <Panel title="Messages"><Link to="/admin/inbox" className="btn-gold-main" style={{ textDecoration: "none", padding: "12px 24px", fontSize: 12 }}>OPEN INBOX →</Link></Panel>}
         </div>
       </div>
@@ -391,21 +393,39 @@ function Artworks() {
   useEffect(() => { load(); }, []);
   const del = async (id) => { if (confirm("Delete this artwork?")) { await api.admin.deleteArtwork(id); load(); } };
   const feature = async (a) => { await api.admin.updateArtwork(a.id, { featured: !a.featured }); load(); };
-  const filtered = rows.filter((a) => !q.trim() || `${a.title} ${a.artist_name} ${a.category_id}`.toLowerCase().includes(q.toLowerCase()));
+  const launch = async (a) => { await api.admin.updateArtwork(a.id, { is_new_launch: !a.is_new_launch }); load(); };
+  const [onlyLaunch, setOnlyLaunch] = useState(false);
+  const launchCount = rows.filter((a) => a.is_new_launch).length;
+  const filtered = rows.filter((a) =>
+    (!onlyLaunch || a.is_new_launch) &&
+    (!q.trim() || `${a.title} ${a.artist_name} ${a.category_id}`.toLowerCase().includes(q.toLowerCase())));
   return (
     <Panel title={`Artworks (${rows.length})`}>
-      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title / artist / medium…" style={{ ...miniInput, width: "100%", marginBottom: 14 }} />
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", marginBottom: 12, lineHeight: 1.6 }}>
+        Toggle <strong style={{ color: gold }}>NEW LAUNCH</strong> to feature a work in the homepage
+        “Launch of New Product” section and the <strong>/new-launch</strong> New Arrivals page.
+        <strong> FEATURE</strong> controls the hero / Art of Seasons fallback.
+      </div>
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title / artist / medium…" style={{ ...miniInput, width: "100%", marginBottom: 10 }} />
+      <label style={{ ...ckLabel, marginBottom: 14 }}>
+        <input type="checkbox" checked={onlyLaunch} onChange={(e) => setOnlyLaunch(e.target.checked)} style={{ accentColor: gold }} />
+        Show only New Launch ({launchCount})
+      </label>
       {filtered.map((a) => (
         <Item key={a.id}>
           <img src={a.images?.[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 4 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.title}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>
+              {a.title}
+              {a.is_new_launch && <span style={{ marginLeft: 8, fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "#0e0c0a", background: gold, padding: "2px 7px", borderRadius: 999 }}>NEW LAUNCH</span>}
+            </div>
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
               {a.artist_name} · {a.customizable ? "customizable" : inr(a.price)} · {a.category_id || "—"} · {a.status}
             </div>
           </div>
           <Btn onClick={() => setViewing(a)}>VIEW</Btn>
           <Btn onClick={() => setEditing(a)}>EDIT</Btn>
+          <Btn onClick={() => launch(a)} primary={a.is_new_launch}>{a.is_new_launch ? "★ LAUNCH" : "NEW LAUNCH"}</Btn>
           <Btn onClick={() => feature(a)} primary={a.featured}>{a.featured ? "FEATURED" : "FEATURE"}</Btn>
           <Btn onClick={() => del(a.id)} ghost>DELETE</Btn>
         </Item>
@@ -1291,6 +1311,203 @@ function PreservationEditor() {
       </div>
       {done && <div style={{ marginTop: 10, color: "#4ade80", fontFamily: "'Raleway',sans-serif", fontSize: 12 }}>✓ Saved — live on the homepage.</div>}
     </Panel>
+  );
+}
+
+// Curate the homepage "Art of Seasons" showcase by SELECTING existing artworks.
+// Toggling an artwork updates its is_art_of_season flag (live immediately).
+function ArtOfSeasonEditor() {
+  const [rows, setRows] = useState(null);
+  const [q, setQ] = useState("");
+  const [onlySel, setOnlySel] = useState(false);
+  const [savingId, setSavingId] = useState(null);
+  const load = () => api.catalog.artworks().then(setRows).catch(() => setRows([]));
+  useEffect(() => { load(); }, []);
+  const toggle = async (a) => {
+    setSavingId(a.id);
+    // Optimistic flip, then persist.
+    setRows((xs) => xs.map((x) => (x.id === a.id ? { ...x, is_art_of_season: !x.is_art_of_season } : x)));
+    try {
+      await api.admin.updateArtwork(a.id, { is_art_of_season: !a.is_art_of_season });
+    } catch (e) {
+      alert(e.message);
+      load(); // revert to server truth on failure
+    } finally { setSavingId(null); }
+  };
+  if (!rows) return <Panel title="Art of Season"><Empty>Loading…</Empty></Panel>;
+  const selected = rows.filter((a) => a.is_art_of_season);
+  const filtered = rows
+    .filter((a) => (!onlySel || a.is_art_of_season) &&
+      (!q.trim() || `${a.title} ${a.artist_name} ${a.category_id}`.toLowerCase().includes(q.toLowerCase())))
+    // Selected first, then the rest.
+    .sort((a, b) => (b.is_art_of_season ? 1 : 0) - (a.is_art_of_season ? 1 : 0));
+  return (
+    <Panel title={`Art of Season (${selected.length} selected)`}>
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", marginBottom: 14, lineHeight: 1.6 }}>
+        Select existing artworks for the homepage <strong>"Art of Seasons"</strong> rotating showcase. Tap
+        <strong style={{ color: gold }}> ADD</strong> to include a work and <strong>REMOVE</strong> to drop it.
+        With none selected, the showcase falls back to featured artworks.
+      </div>
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title / artist / medium…" style={{ ...miniInput, width: "100%", marginBottom: 10 }} />
+      <label style={{ ...ckLabel, marginBottom: 14 }}>
+        <input type="checkbox" checked={onlySel} onChange={(e) => setOnlySel(e.target.checked)} style={{ accentColor: gold }} />
+        Show only selected ({selected.length})
+      </label>
+      {filtered.length === 0 && <Empty>No artworks match.</Empty>}
+      {filtered.map((a) => (
+        <Item key={a.id}>
+          <img src={a.images?.[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 4 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>
+              {a.title}
+              {a.is_art_of_season && <span style={{ marginLeft: 8, fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.14em", color: "#0e0c0a", background: gold, padding: "2px 7px", borderRadius: 999 }}>SEASON</span>}
+            </div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
+              {a.artist_name} · {a.medium || a.category_id || "—"} · {a.status}
+            </div>
+          </div>
+          <Btn onClick={() => toggle(a)} primary={a.is_art_of_season} disabled={savingId === a.id}>
+            {a.is_art_of_season ? "★ REMOVE" : "ADD"}
+          </Btn>
+        </Item>
+      ))}
+    </Panel>
+  );
+}
+
+// Visitor traffic — IP / geo / device / per-session journey tracing.
+function Traffic() {
+  const [days, setDays] = useState(30);
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
+  const [openJourney, setOpenJourney] = useState(null);
+  const [now] = useState(Date.now); // snapshot for relative timestamps
+  useEffect(() => {
+    let alive = true;
+    api.admin.traffic(days)
+      .then((d) => { if (alive) { setData(d); setErr(""); } })
+      .catch((e) => { if (alive) setErr(e.message || "Failed to load"); });
+    return () => { alive = false; };
+  }, [days]);
+
+  const ago = (iso) => {
+    if (!iso) return "";
+    const s = (now - new Date(iso).getTime()) / 1000;
+    if (s < 60) return "just now";
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    return `${Math.floor(s / 86400)}d ago`;
+  };
+  const place = (v) => [v.city, v.country].filter(Boolean).join(", ") || (v.ip ? "—" : "");
+
+  return (
+    <Panel title="Traffic & Visitors">
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {[[7, "7 days"], [30, "30 days"], [90, "90 days"]].map(([d, lbl]) => (
+          <button key={d} onClick={() => setDays(d)} style={{ padding: "6px 14px", borderRadius: 999, cursor: "pointer", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em", background: days === d ? gold : "transparent", color: days === d ? "#0e0c0a" : "rgba(200,191,160,0.6)", border: `1px solid ${days === d ? gold : "rgba(212,175,55,0.25)"}` }}>{lbl}</button>
+        ))}
+      </div>
+      {err && <div style={{ color: "#f87171", fontFamily: "'Raleway',sans-serif", fontSize: 12, marginBottom: 12 }}>{err}</div>}
+      {!data ? <Empty>Loading traffic…</Empty> : (
+        <>
+          {/* Totals */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 22 }}>
+            {[["Page Views", data.totals.visits], ["Unique IPs", data.totals.unique_ips], ["Sessions", data.totals.unique_sessions], ["Last 24h", data.totals.last_24h]].map(([lbl, val]) => (
+              <div key={lbl} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(212,175,55,0.12)" }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: gold, lineHeight: 1 }}>{val}</div>
+                <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 9, letterSpacing: "0.08em", color: "rgba(200,191,160,0.45)", marginTop: 6 }}>{lbl.toUpperCase()}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Breakdown bars */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 18, marginBottom: 24 }}>
+            <BarList title="Top Pages" rows={data.top_pages} />
+            <BarList title="Countries" rows={data.top_countries} />
+            <BarList title="Devices" rows={data.devices} />
+            <BarList title="Browsers" rows={data.browsers} />
+          </div>
+
+          {/* Journeys */}
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "6px 0 10px" }}>VISITOR JOURNEYS ({data.journeys.length})</div>
+          {data.journeys.length === 0 && <Empty>No journeys recorded yet.</Empty>}
+          {data.journeys.map((j, i) => {
+            const open = openJourney === i;
+            return (
+              <div key={i} style={{ border: "1px solid rgba(212,175,55,0.12)", borderRadius: 10, marginBottom: 8, overflow: "hidden" }}>
+                <button onClick={() => setOpenJourney(open ? null : i)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", background: open ? "rgba(212,175,55,0.06)" : "transparent", border: "none", cursor: "pointer", textAlign: "left" }}>
+                  <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#e8e0d0", flex: 1 }}>
+                    {j.user_email ? <strong style={{ color: gold }}>{j.user_email}</strong> : <span style={{ color: "rgba(200,191,160,0.6)" }}>Guest</span>}
+                    <span style={{ color: "rgba(200,191,160,0.4)" }}> · {j.ip || "—"}{place(j) ? ` · ${place(j)}` : ""}{j.device ? ` · ${j.device}` : ""}</span>
+                  </span>
+                  <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.45)" }}>{j.count} {j.count === 1 ? "page" : "pages"} · {ago(j.last_at)}</span>
+                  <span style={{ color: gold, fontSize: 11 }}>{open ? "▾" : "▸"}</span>
+                </button>
+                {open && (
+                  <div style={{ padding: "4px 16px 14px" }}>
+                    {j.pages.map((p, k) => (
+                      <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0", borderTop: k === 0 ? "none" : "1px solid rgba(212,175,55,0.06)" }}>
+                        <span style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, background: "rgba(212,175,55,0.12)", color: gold, fontFamily: "'Raleway',sans-serif", fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>{k + 1}</span>
+                        <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#cfc6b2", flex: 1, wordBreak: "break-all" }}>{p.path}</span>
+                        <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 10, color: "rgba(200,191,160,0.4)" }}>{ago(p.time)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Recent raw visits */}
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>RECENT VISITS</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Raleway',sans-serif", fontSize: 11.5 }}>
+              <thead>
+                <tr style={{ color: "rgba(200,191,160,0.45)", textAlign: "left" }}>
+                  {["Time", "Page", "IP", "Location", "Device", "Visitor"].map((h) => (
+                    <th key={h} style={{ padding: "8px 10px", fontWeight: 600, letterSpacing: "0.06em", borderBottom: "1px solid rgba(212,175,55,0.15)", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.recent.slice(0, 100).map((v) => (
+                  <tr key={v.id} style={{ color: "rgba(200,191,160,0.75)" }}>
+                    <td style={{ padding: "7px 10px", whiteSpace: "nowrap", color: "rgba(200,191,160,0.5)" }}>{ago(v.time)}</td>
+                    <td style={{ padding: "7px 10px", color: "#e8e0d0", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.path}</td>
+                    <td style={{ padding: "7px 10px", whiteSpace: "nowrap" }}>{v.ip || "—"}</td>
+                    <td style={{ padding: "7px 10px", whiteSpace: "nowrap" }}>{place(v) || "—"}</td>
+                    <td style={{ padding: "7px 10px", whiteSpace: "nowrap" }}>{[v.device, v.browser].filter(Boolean).join(" · ") || "—"}</td>
+                    <td style={{ padding: "7px 10px", whiteSpace: "nowrap", color: v.user_email ? gold : "rgba(200,191,160,0.4)" }}>{v.user_email || "Guest"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </Panel>
+  );
+}
+
+// Horizontal bar list for a labelled count breakdown.
+function BarList({ title, rows }) {
+  const max = Math.max(1, ...(rows || []).map((r) => r.count));
+  return (
+    <div>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(212,175,55,0.7)", marginBottom: 10 }}>{title.toUpperCase()}</div>
+      {(!rows || rows.length === 0) && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.35)" }}>No data</div>}
+      {(rows || []).map((r, i) => (
+        <div key={i} style={{ marginBottom: 7 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Raleway',sans-serif", fontSize: 11, marginBottom: 3 }}>
+            <span style={{ color: "rgba(200,191,160,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "78%" }}>{r.label}</span>
+            <span style={{ color: gold, fontWeight: 700 }}>{r.count}</span>
+          </div>
+          <div style={{ height: 5, borderRadius: 999, background: "rgba(255,255,255,0.05)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${(r.count / max) * 100}%`, background: "linear-gradient(90deg,#B87333,#D4AF37)", borderRadius: 999 }} />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

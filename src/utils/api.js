@@ -306,6 +306,16 @@ export const api = {
     },
   },
 
+  // Anonymous page-view tracking (IP/geo/device captured server-side).
+  track: {
+    view({ path, referrer, session_id }) {
+      // Fire-and-forget; never let tracking break navigation.
+      return request("POST", "/traffic/track", {
+        body: { path, referrer, session_id },
+      }).catch(() => {});
+    },
+  },
+
   notifications: {
     list() {
       return request("GET", "/notifications");
@@ -594,6 +604,11 @@ export const api = {
     },
     analytics() {
       return request("GET", "/admin/analytics");
+    },
+    // Visitor traffic overview — totals, top pages/countries, devices, recent
+    // visits and per-session journeys (IP/geo/device tracing).
+    traffic(days = 30) {
+      return request("GET", `/traffic/overview?days=${encodeURIComponent(days)}`);
     },
     revenue() {
       return request("GET", "/admin/revenue");

@@ -29,7 +29,6 @@ export default function ProductDetail() {
   const [customDims, setCustomDims] = useState({ w: "", h: "", unit: "cm" });
   const [enquiryMsg, setEnquiryMsg] = useState("");
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [arOpen, setArOpen] = useState(false);
   const [compareOn, setCompareOn] = useState(false);
   useEffect(() => {
     const f = () => setCompareOn(isCompared(id));
@@ -267,8 +266,12 @@ export default function ProductDetail() {
     if (m.includes("mural") || m.includes("wallpaper")) return "mural";
     return "painting";
   })();
-  const arUrl = (imgUrl) =>
-    `/ar-view?image=${encodeURIComponent(imgUrl)}&type=${arType}`;
+  // Open the native in-app AR experience (no iframe / launcher embedding) —
+  // carries the current image + medium so it loads ready to place.
+  const openAR = () =>
+    navigate(
+      `/ar?image=${encodeURIComponent(activeImageSrc || "")}&type=${arType}`,
+    );
 
   // Unit conversion to cm; art_unit is the artwork's native measurement unit.
   const _toCm = { cm: 1, inch: 2.54, inches: 2.54, feet: 30.48 };
@@ -1013,7 +1016,7 @@ export default function ProductDetail() {
                   {compareOn ? "COMPARING" : "COMPARE"}
                 </button>
                 <button
-                  onClick={() => setArOpen(true)}
+                  onClick={openAR}
                   style={secondaryBtn}>
                   <SparkIcon size={13} /> VIEW IN AR
                 </button>
@@ -1223,7 +1226,7 @@ export default function ProductDetail() {
                   {compareOn ? "COMPARING" : "COMPARE"}
                 </button>
                 <button
-                  onClick={() => setArOpen(true)}
+                  onClick={openAR}
                   style={secondaryBtn}>
                   <SparkIcon size={13} /> VIEW IN AR
                 </button>
@@ -1319,57 +1322,6 @@ export default function ProductDetail() {
         </motion.div>
       )}
 
-      {/* View in AR — in-page overlay (stays on the product page; close to return) */}
-      {arOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 10000,
-            background: "#0a0a0a",
-            display: "flex",
-            flexDirection: "column",
-          }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "12px 20px",
-              borderBottom: "1px solid rgba(212,175,55,0.18)",
-              background: "rgba(10,10,10,0.9)",
-              flexShrink: 0,
-            }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, letterSpacing: "0.08em", color: "#f0ece4" }}>
-              {productData.title} <span style={{ color: "#D4AF37" }}>· AR View</span>
-            </div>
-            <button
-              onClick={() => setArOpen(false)}
-              title="Close AR"
-              style={{
-                background: "transparent",
-                border: "1px solid rgba(212,175,55,0.3)",
-                color: "#D4AF37",
-                borderRadius: 999,
-                padding: "7px 18px",
-                fontFamily: "'Cinzel',serif",
-                fontSize: 10,
-                letterSpacing: "0.16em",
-                cursor: "pointer",
-              }}>
-              ✕ CLOSE
-            </button>
-          </div>
-          <iframe
-            title="Art Coliseum AR"
-            src={`/ar-launcher.html?image=${encodeURIComponent(activeImageSrc)}&type=${encodeURIComponent(arType)}`}
-            allow="camera; xr-spatial-tracking; accelerometer; gyroscope; magnetometer"
-            style={{ flex: 1, width: "100%", border: "none" }}
-          />
-        </motion.div>
-      )}
 
       {/* artist block */}
       <div
