@@ -398,10 +398,27 @@ function createARStudio(THREE, opts) {
     s.artworkTexture = tex; s.artworkAspect = aspect; rebuildPreview();
     onStatus(s.xrSession ? "" : "Ready — tap to enter AR"); done && done();
   }
+  // A WebGL texture needs CORS for cross-origin images. Our /uploads/* path is
+  // proxied SAME-ORIGIN (Vercel rewrite in prod, Vite proxy in dev), so loading
+  // it relative sidesteps CORS entirely. Fall back to the absolute URL with CORS.
+  function sameOriginUploads(u) {
+    try {
+      const url = new URL(u, window.location.href);
+      if (url.pathname.startsWith("/uploads/")) return url.pathname + url.search;
+    } catch { /* not a parseable URL */ }
+    return null;
+  }
   function loadArtwork(url, done) {
-    const loader = new THREE.TextureLoader(); loader.crossOrigin = "anonymous";
-    loader.load(url, (tex) => applyTexture(tex, (tex.image.width / tex.image.height) || 1, done),
-      undefined, () => { toast("Couldn't load that image"); });
+    const ok = (tex) => applyTexture(tex, (tex.image.width / tex.image.height) || 1, done);
+    const attempt = (src, cors, onFail) => {
+      const loader = new THREE.TextureLoader();
+      if (cors) loader.crossOrigin = "anonymous";
+      loader.load(src, ok, undefined, onFail);
+    };
+    const fail = () => toast("Couldn't load that image");
+    const rel = sameOriginUploads(url);
+    if (rel) attempt(rel, false, () => attempt(url, true, fail)); // same-origin first
+    else attempt(url, true, fail);
   }
   function loadArtworkFile(file, done) {
     if (!file || !file.type.startsWith("image/")) { toast("Please choose an image"); return; }
