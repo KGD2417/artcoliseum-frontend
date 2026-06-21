@@ -159,22 +159,38 @@ export default function ColiseumCarousel({ items = [] }) {
 
     /* ── pointer events ───────────────────────────────────── */
     const onDown = (e) => {
-      drag.current = { on: true, moved: false, lastX: e.clientX, lastT: performance.now() };
+      drag.current = {
+        on: true, moved: false,
+        startX: e.clientX, startY: e.clientY, startT: performance.now(),
+        lastX: e.clientX, lastT: performance.now(),
+      };
       velRef.current = 0;
       autoModeRef.current = false; // pause auto-scroll while dragging
-      stage.setPointerCapture?.(e.pointerId);
+      // NOTE: deliberately no setPointerCapture — capturing the pointer can
+      // swallow the browser's vertical page-scroll on touch screens.
       stage.style.cursor = "grabbing";
     };
 
     const onMove = (e) => {
       if (!drag.current.on) return;
+      const totalDx = e.clientX - drag.current.startX;
+      const totalDy = e.clientY - drag.current.startY;
+      // Any real travel — in *either* axis — means this is a swipe/scroll, not a
+      // tap. (The old code only watched horizontal travel, so a vertical scroll
+      // stayed "unmoved" and was mistaken for a tap → accidental navigation.)
+      if (Math.hypot(totalDx, totalDy) > 8) drag.current.moved = true;
+      // Vertical-dominant gesture = the user is scrolling the page. Hand it back
+      // to the browser and stop driving the carousel.
+      if (drag.current.moved && Math.abs(totalDy) > Math.abs(totalDx)) {
+        drag.current.on = false;
+        autoModeRef.current = true;
+        return;
+      }
+
       const dx = e.clientX - drag.current.lastX;
       const dt2 = Math.max(performance.now() - drag.current.lastT, 8);
       const di = -dx * DRAG_SENS;
-      if (Math.abs(dx) > 3) {
-        drag.current.moved = true;
-        e.preventDefault();
-      }
+      if (Math.abs(dx) > 3) e.preventDefault();
       activeRef.current = (((activeRef.current + di) % n) + n) % n;
       velRef.current = di / dt2;
       drag.current.lastX = e.clientX;
@@ -182,21 +198,28 @@ export default function ColiseumCarousel({ items = [] }) {
       render();
     };
 
-    const onUp = (e) => {
+    const onUp = () => {
       if (!drag.current.on) return;
       drag.current.on = false;
-      stage.releasePointerCapture?.(e.pointerId);
       stage.style.cursor = "grab";
 
-      // Treat as a tap/click if the pointer barely moved
-      if (!drag.current.moved) {
+      // Open the artwork only on a genuine tap: barely moved AND a quick press.
+      const dur = performance.now() - drag.current.startT;
+      if (!drag.current.moved && dur < 600) {
         const nearestI = nearestSlot(activeRef.current, n) % n;
         const item = gallery[nearestI];
-        if (item) {
-          if (item.id) navigate(`/product/${item.id}`);
-          else navigate("/categories");
-        }
+        if (item) navigate(item.id ? `/product/${item.id}` : "/categories");
       }
+    };
+
+    // Fired when the browser takes over the gesture (e.g. vertical page scroll).
+    // This must NEVER navigate — it's the root cause of the accidental opens.
+    const onCancel = () => {
+      if (!drag.current.on) return;
+      drag.current.on = false;
+      drag.current.moved = true;
+      stage.style.cursor = "grab";
+      autoModeRef.current = true; // resume the gentle auto-scroll
     };
 
     const onMouse = (e) => {
@@ -214,7 +237,7 @@ export default function ColiseumCarousel({ items = [] }) {
     stage.addEventListener("mouseleave", onLeave);
     window.addEventListener("pointermove", onMove, { passive: false });
     window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+    window.addEventListener("pointercancel", onCancel);
 
     render();
     frameRef.current = requestAnimationFrame(tick);
@@ -226,7 +249,7 @@ export default function ColiseumCarousel({ items = [] }) {
       stage.removeEventListener("mouseleave", onLeave);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("pointercancel", onCancel);
     };
   }, [gallery]);
 
