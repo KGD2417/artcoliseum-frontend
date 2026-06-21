@@ -160,11 +160,12 @@ export default function MessagesWidget() {
   };
 
   return (
-    <div style={{ position: "fixed", bottom: 28, right: 100, zIndex: 9998, fontFamily: "'Raleway',sans-serif" }}>
+    <div className="messages-widget-root" style={{ position: "fixed", bottom: 28, right: 100, zIndex: 9998, fontFamily: "'Raleway',sans-serif" }}>
       <AnimatePresence>
         {open && (
           <motion.div
             key="msg-panel"
+            className="chat-floating-panel"
             initial={{ opacity: 0, y: 24, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.95 }}

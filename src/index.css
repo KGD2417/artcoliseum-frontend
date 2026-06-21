@@ -1533,15 +1533,23 @@ a {
   top: 0;
   right: 0;
   width: 290px;
+  max-width: 86vw;
   height: 100vh;
   background: rgba(8, 6, 4, 0.97);
   backdrop-filter: blur(30px);
   border-left: 1px solid rgba(212, 175, 55, 0.2);
   z-index: 2000;
-  padding: 88px 32px 40px;
+  padding: 84px 28px calc(40px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
+  /* The full link list is taller than the viewport on small phones — let the
+     drawer scroll instead of clipping the lower items. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
+.mobile-drawer::-webkit-scrollbar { width: 0; background: transparent; }
 .mobile-nav-link {
   display: block;
   font-family: "Cinzel", serif;
@@ -1610,15 +1618,6 @@ a {
 }
 
 @media (max-width: 640px) {
-  .nav-desktop {
-    display: none !important;
-  }
-  .nav-mobile {
-    display: flex !important;
-  }
-  .hamburger {
-    display: flex;
-  }
   .nav-container {
     padding: 0 20px;
   }
@@ -1726,7 +1725,21 @@ a {
   }
 }
 
-@media (min-width: 641px) {
+/* Nav switches to the hamburger drawer through the whole tablet range — the
+   full desktop link bar (top row + Setu row) is too wide to sit comfortably
+   below ~900px. Laptop and up (≥901px) keep the inline desktop nav. */
+@media (max-width: 900px) {
+  .nav-desktop {
+    display: none !important;
+  }
+  .nav-mobile {
+    display: flex !important;
+  }
+  .hamburger {
+    display: flex;
+  }
+}
+@media (min-width: 901px) {
   .nav-mobile {
     display: none !important;
   }
@@ -4594,6 +4607,30 @@ input[type="email"] {
   flex-wrap: wrap;
 }
 
+/* On phones the decorative floating photos overflowed the viewport and pushed
+   the glass panel off-centre. Drop the floats, let the panel fill the column. */
+@media (max-width: 640px) {
+  .pres-float-section {
+    min-height: auto;
+    padding: 0;
+    overflow: visible;
+  }
+  .pres-float-img { display: none !important; }
+  .pres-float-center {
+    width: 100%;
+    max-width: 100%;
+    padding: 34px 22px;
+  }
+  .pres-float-btns .btn-primary {
+    white-space: normal;
+    width: 100%;
+    max-width: 360px;
+    padding: 15px 24px;
+    line-height: 1.35;
+    text-align: center;
+  }
+}
+
 /* ═══════════════════════════════════════════════
    EVENTS — register button
 ═══════════════════════════════════════════════ */
@@ -5323,14 +5360,35 @@ input[type="email"] {
     max-width: 340px !important;
     margin: 0 auto !important;
   }
+  /* Keep the rotating 3D image stack tidy: shorter card + clipped frame so the
+     fanned side images don't poke out past the section on a narrow screen. */
+  .home-launch-visual .ct-image-container {
+    height: 300px !important;
+    overflow: hidden;
+    border-radius: 1.25rem;
+  }
   .home-launch-text {
     flex: none !important;
     max-width: 100% !important;
     text-align: center !important;
   }
   .home-launch-text .gold-rule { justify-content: center !important; }
-  .home-launch-text ul { text-align: left !important; }
+  /* Centre the bullet block while keeping each line left-read internally. */
+  .home-launch-text ul {
+    width: fit-content !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: left !important;
+  }
   .home-launch-text .btn-secondary { margin-left: auto !important; margin-right: auto !important; display: block !important; text-align: center !important; }
+
+  /* Artist-of-the-Month portrait card (fixed 360px) → fit any phone width. */
+  .home-launch-visual > [data-glow] {
+    width: 100% !important;
+    max-width: 340px !important;
+    height: 460px !important;
+  }
 
   /* ProductDetail section padding */
   section.pd-section { padding: 80px 14px 60px !important; }
@@ -5342,6 +5400,54 @@ input[type="email"] {
   /* General overflow prevention */
   img { max-width: 100%; }
   .home-carousel-card { width: 100% !important; max-width: 340px !important; margin: 0 auto; }
+
+  /* Centre the About + "Art in Your Space" text columns so they match the rest
+     of the homepage sections (they read left-aligned on desktop). */
+  .about-col-content,
+  .home-art-space-grid > *:first-child {
+    text-align: center !important;
+  }
+  .about-col-content .gold-rule,
+  .home-art-space-grid > *:first-child .gold-rule {
+    justify-content: center !important;
+  }
+  .about-col-content .about-col-pillars,
+  .home-art-space-grid > *:first-child ul {
+    align-items: center !important;
+  }
+  /* Stack the pillar number above its label so the whole block reads centred,
+     instead of the number hanging off to the left. */
+  .about-col-content .about-col-pillar {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  .about-col-content .about-col-pillar-num { padding-top: 0 !important; }
+}
+
+/* ═══════════════════════════════════════════════
+   FLOATING CHAT / MESSAGES PANELS — mobile + drawer
+═══════════════════════════════════════════════ */
+/* The drawer (z-index 2000) must own the screen while open — hide the FABs so
+   they don't cover the drawer links and bottom icon row. */
+body.nav-drawer-open .chatbot-widget-root,
+body.nav-drawer-open .messages-widget-root {
+  display: none !important;
+}
+
+/* On phones the 380–400px panels overflowed the viewport (cut off on the left).
+   Anchor them to the viewport so they sit fully on-screen above the FABs. */
+@media (max-width: 640px) {
+  .chat-floating-panel {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 96px !important;
+    top: auto !important;
+    width: auto !important;
+    height: 520px !important;
+    max-height: calc(100vh - 120px) !important;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

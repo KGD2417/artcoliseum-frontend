@@ -168,6 +168,7 @@ export default function ChatbotWidget() {
 
   return (
     <div
+      className="chatbot-widget-root"
       style={{
         position: "fixed",
         bottom: 28,
@@ -184,6 +185,7 @@ export default function ChatbotWidget() {
         {open && (
           <motion.div
             key="chat-panel"
+            className="chat-floating-panel"
             initial={{ opacity: 0, y: 24, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.95 }}

@@ -29,7 +29,6 @@ const SETU_LINKS = [
 const ALL_LINKS = [
   ...LINKS,
   ...SETU_LINKS,
-  { label: "CHAT", to: "/chat" },
   { label: "ESTIMATE", to: "/estimate" },
   { label: "CONTACT", to: "/contact" },
   { label: "HELP DESK", to: "/help" },
@@ -476,6 +475,13 @@ export default function Navigation() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // While the mobile drawer is open, hide the floating chat/messages FABs so they
+  // don't sit on top of the drawer's own links and bottom icon row.
+  useEffect(() => {
+    document.body.classList.toggle("nav-drawer-open", menuOpen);
+    return () => document.body.classList.remove("nav-drawer-open");
+  }, [menuOpen]);
 
   return (
     <>
