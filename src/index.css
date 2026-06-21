@@ -5102,6 +5102,66 @@ input[type="email"] {
   color: #d4af37;
 }
 
+/* Empty state — shown when a tab has no events (instead of a blank void). */
+.ev-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 48px 24px 72px;
+}
+.ev-empty-icon {
+  width: 74px;
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.06);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+}
+.ev-empty-title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 25px;
+  font-weight: 600;
+  color: #f0e8d8;
+}
+.ev-empty-sub {
+  font-family: "Raleway", sans-serif;
+  font-size: 13.5px;
+  line-height: 1.7;
+  max-width: 360px;
+  color: rgba(200, 191, 160, 0.55);
+}
+
+/* Mobile: keep the three tabs on a single evenly-spaced row instead of wrapping
+   "UPCOMING" onto its own line. */
+@media (max-width: 640px) {
+  .ev-tabs {
+    gap: 0;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
+    margin: 14px auto 36px;
+    padding: 0 2px;
+  }
+  .ev-tab {
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 2px 14px;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+  }
+  .ev-tab-count {
+    font-size: 12px;
+  }
+}
+
 /* ── Launch of New Product layout ────────────────────────────────── */
 .home-launch-inner {
   display: flex;

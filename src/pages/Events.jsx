@@ -367,6 +367,16 @@ export default function Events() {
     setDone(true);
   };
 
+  const tabStatus = tab === "past" ? "PAST" : tab === "ongoing" ? "ONGOING" : "UPCOMING";
+  const visibleEvents = (tab === "past" ? past : tab === "ongoing" ? ongoing : upcoming).filter(
+    (ev) =>
+      !search.trim()
+        ? true
+        : `${ev.title} ${ev.location} ${ev.desc || ""}`
+            .toLowerCase()
+            .includes(search.trim().toLowerCase()),
+  );
+
   return (
     <div className="ev-page-root">
       <div ref={headerRef} className="ev-page-hero">
@@ -483,35 +493,42 @@ export default function Events() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-          <div
-            className="ev-page-grid"
-            style={tab === "past" ? { opacity: 0.75 } : {}}>
-            {(tab === "past" ? past : tab === "ongoing" ? ongoing : upcoming)
-              .filter((ev) =>
-                !search.trim()
-                  ? true
-                  : `${ev.title} ${ev.location} ${ev.desc || ""}`
-                      .toLowerCase()
-                      .includes(search.trim().toLowerCase()),
-              )
-              .map((ev, i) => (
+          {visibleEvents.length === 0 ? (
+            <div className="ev-empty">
+              <div className="ev-empty-icon" aria-hidden>
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="17" rx="2" />
+                  <path d="M8 2v4M16 2v4M3 10h18" />
+                </svg>
+              </div>
+              <div className="ev-empty-title">
+                {search.trim()
+                  ? "No events match your search"
+                  : `No ${tab} events right now`}
+              </div>
+              <div className="ev-empty-sub">
+                {search.trim()
+                  ? "Try a different keyword."
+                  : "New exhibitions and experiences are added regularly — check back soon."}
+              </div>
+            </div>
+          ) : (
+            <div
+              className="ev-page-grid"
+              style={tab === "past" ? { opacity: 0.75 } : {}}>
+              {visibleEvents.map((ev, i) => (
                 <EventCard
                   key={ev.title}
                   event={ev}
                   index={i}
-                  status={
-                    tab === "past"
-                      ? "PAST"
-                      : tab === "ongoing"
-                        ? "ONGOING"
-                        : "UPCOMING"
-                  }
+                  status={tabStatus}
                   registered={isRegistered(ev)}
                   onAction={open}
                   onOpenDetail={setDetailEvent}
                 />
               ))}
-          </div>
+            </div>
+          )}
         </motion.section>
       </AnimatePresence>
 

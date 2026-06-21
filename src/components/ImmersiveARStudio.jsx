@@ -180,7 +180,7 @@ export default function ImmersiveARStudio({
         flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: 46,
       }}>
         <button onClick={() => E()?.exitAR()} style={arExitBtn}>✕ Exit AR</button>
-        <div ref={instructionRef} style={arInstruction}>Move your phone to detect surfaces</div>
+        <div ref={instructionRef} style={arInstruction}>Slowly pan your phone across the wall to scan it</div>
         <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 16 }}>
           <button onClick={() => E()?.undo()} title="Undo" style={arCircleBtn}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 010 11H11" /></svg>
@@ -509,8 +509,14 @@ function createARStudio(THREE, opts) {
     try {
       const session = await navigator.xr.requestSession("immersive-ar", {
         requiredFeatures: ["hit-test"],
-        optionalFeatures: ["local-floor", "plane-detection", "anchors", "light-estimation", "dom-overlay"],
+        // depth-sensing lets ARCore return hit-tests on blank/untextured walls
+        // (it uses the depth map instead of relying on visual feature points).
+        optionalFeatures: ["local-floor", "plane-detection", "anchors", "light-estimation", "dom-overlay", "depth-sensing"],
         domOverlay: { root: overlayEl },
+        depthSensing: {
+          usagePreference: ["cpu-optimized", "gpu-optimized"],
+          dataFormatPreference: ["luminance-alpha", "float32"],
+        },
       });
       s.xrSession = session; s.isARActive = true;
       renderer.xr.enabled = true;
@@ -524,6 +530,8 @@ function createARStudio(THREE, opts) {
       const viewer = await session.requestReferenceSpace("viewer");
       s.xrHitTestSource = await session.requestHitTestSource({ space: viewer });
       s.onWall = false;
+      s.estimated = false;
+      s.lastHitTime = null;
 
       const reticle = new THREE.Mesh(new THREE.RingGeometry(0.09, 0.11, 32), new THREE.MeshBasicMaterial({ color: 0xc9a84c, side: THREE.DoubleSide }));
       reticle.matrixAutoUpdate = false; reticle.visible = false; scene.add(reticle); s.reticleMesh = reticle;
@@ -565,8 +573,12 @@ function createARStudio(THREE, opts) {
         )
       : null;
 
+    if (s.lastHitTime == null) s.lastHitTime = time;
+
     const r = s.reticleMesh;
     if (hitPose && r) {
+      s.lastHitTime = time;
+      s.estimated = false;
       const m = hitPose.transform.matrix;
       const hitPos = new THREE.Vector3(m[12], m[13], m[14]);
       const normal = new THREE.Vector3(m[4], m[5], m[6]).normalize(); // hit pose +Y = surface normal
@@ -593,10 +605,39 @@ function createARStudio(THREE, opts) {
         : "Surface found — aim at a wall to hang it";
       if (placeBtnEl) placeBtnEl.disabled = false;
     } else if (r) {
-      r.visible = false;
-      s.reticlePos = null;
-      if (instructionEl) instructionEl.textContent = "Move your phone slowly to scan the room";
-      if (placeBtnEl) placeBtnEl.disabled = true;
+      // No surface found — common on big blank / untextured walls, especially up
+      // close (ARCore needs visual features + parallax). After a short grace
+      // period, offer a manual fallback: a target floating ~1.3 m ahead, upright
+      // and facing the viewer, so the piece can still be hung, then refined by
+      // stepping back or panning the phone.
+      if (camPos && viewerPose && time - s.lastHitTime > 1200) {
+        const vm = viewerPose.transform.matrix;
+        const fwd = new THREE.Vector3(-vm[8], -vm[9], -vm[10]); // camera forward
+        fwd.y = 0;
+        if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
+        fwd.normalize();
+        const pos = camPos.clone().addScaledVector(fwd, 1.3);
+        const normal = fwd.clone().multiplyScalar(-1); // face back toward the viewer
+        s.onWall = true;
+        s.estimated = true;
+        s.reticlePos = pos;
+        s.reticleNormal = normal;
+        s.reticleQuat = orientationFor(normal, true, camPos, pos);
+
+        r.visible = true;
+        r.matrixAutoUpdate = false;
+        r.matrix.compose(pos, s.reticleQuat, _reticleScale);
+        r.material.color.setHex(0x9a7b3a); // muted gold = estimated, not a real surface
+        if (instructionEl) instructionEl.textContent =
+          "Blank wall? Step back or aim near an edge — or tap to place here";
+        if (placeBtnEl) placeBtnEl.disabled = false;
+      } else {
+        r.visible = false;
+        s.estimated = false;
+        s.reticlePos = null;
+        if (instructionEl) instructionEl.textContent = "Move your phone slowly to scan the wall";
+        if (placeBtnEl) placeBtnEl.disabled = true;
+      }
     }
     renderer.render(scene, camera);
   }
@@ -625,7 +666,7 @@ function createARStudio(THREE, opts) {
         frame.createAnchor(pose, s.xrRefSpace).then((anchor) => s.anchoredMeshes.push({ mesh, anchor })).catch(() => {});
       } catch { /* fixed placement is fine */ }
     }
-    toast(s.onWall ? "Hung on the wall" : "Placed");
+    toast(s.estimated ? "Placed — step back to line it up on the wall" : s.onWall ? "Hung on the wall" : "Placed");
   }
   function undo() {
     const last = s.placedMeshes.pop();
