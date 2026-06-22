@@ -296,7 +296,7 @@ export default function ArtworkForm({
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field l="PRICE PER UNIT (₹)">
-              <input style={inputStyle} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} />
+              <input style={inputStyle} type="number" min="0" value={f.price_per_unit} onChange={set("price_per_unit")} />
             </Field>
             <Field l="UNIT">
               <select style={inputStyle} value={f.unit} onChange={set("unit")}>
@@ -311,14 +311,14 @@ export default function ArtworkForm({
             AVAILABLE SIZE RANGE ({f.unit}) — leave blank for no limit
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field l="MIN WIDTH"><input style={inputStyle} type="number" value={f.min_width} onChange={set("min_width")} /></Field>
-            <Field l="MAX WIDTH"><input style={inputStyle} type="number" value={f.max_width} onChange={set("max_width")} /></Field>
-            <Field l="MIN HEIGHT"><input style={inputStyle} type="number" value={f.min_height} onChange={set("min_height")} /></Field>
-            <Field l="MAX HEIGHT"><input style={inputStyle} type="number" value={f.max_height} onChange={set("max_height")} /></Field>
+            <Field l="MIN WIDTH"><input style={inputStyle} type="number" min="0" value={f.min_width} onChange={set("min_width")} /></Field>
+            <Field l="MAX WIDTH"><input style={inputStyle} type="number" min="0" value={f.max_width} onChange={set("max_width")} /></Field>
+            <Field l="MIN HEIGHT"><input style={inputStyle} type="number" min="0" value={f.min_height} onChange={set("min_height")} /></Field>
+            <Field l="MAX HEIGHT"><input style={inputStyle} type="number" min="0" value={f.max_height} onChange={set("max_height")} /></Field>
             {is3D && (
               <>
-                <Field l="MIN DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.min_depth} onChange={set("min_depth")} /></Field>
-                <Field l="MAX DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.max_depth} onChange={set("max_depth")} /></Field>
+                <Field l="MIN DEPTH / LENGTH"><input style={inputStyle} type="number" min="0" value={f.min_depth} onChange={set("min_depth")} /></Field>
+                <Field l="MAX DEPTH / LENGTH"><input style={inputStyle} type="number" min="0" value={f.max_depth} onChange={set("max_depth")} /></Field>
               </>
             )}
           </div>
@@ -333,9 +333,9 @@ export default function ArtworkForm({
                 ARTWORK SIZE{is3D ? " (width × height × depth)" : " (width × height)"}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: is3D ? "1fr 1fr 1fr 0.8fr" : "1fr 1fr 0.8fr", gap: 12 }}>
-                <Field l="WIDTH"><input style={inputStyle} type="number" value={f.width} onChange={set("width")} /></Field>
-                <Field l="HEIGHT"><input style={inputStyle} type="number" value={f.height} onChange={set("height")} /></Field>
-                {is3D && <Field l="DEPTH / LENGTH"><input style={inputStyle} type="number" value={f.depth} onChange={set("depth")} /></Field>}
+                <Field l="WIDTH"><input style={inputStyle} type="number" min="0" value={f.width} onChange={set("width")} /></Field>
+                <Field l="HEIGHT"><input style={inputStyle} type="number" min="0" value={f.height} onChange={set("height")} /></Field>
+                {is3D && <Field l="DEPTH / LENGTH"><input style={inputStyle} type="number" min="0" value={f.depth} onChange={set("depth")} /></Field>}
                 <Field l="UNIT">
                   <select style={inputStyle} value={f.dim_unit} onChange={set("dim_unit")}>
                     <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
@@ -354,7 +354,7 @@ export default function ArtworkForm({
           )}
           {predefined.length === 0 ? (
             <Field l="PRICE FOR THIS PIECE (₹)">
-              <input style={inputStyle} type="number" value={f.price} onChange={set("price")} />
+              <input style={inputStyle} type="number" min="0" value={f.price} onChange={set("price")} />
             </Field>
           ) : (
             <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", margin: "0 0 8px", lineHeight: 1.5 }}>

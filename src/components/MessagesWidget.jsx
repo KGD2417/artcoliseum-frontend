@@ -135,6 +135,21 @@ export default function MessagesWidget() {
     loadUnread();
   };
 
+  // Let any page open this widget on a specific thread, e.g. the product page's
+  // "Talk to the team" button — so there's no separate chat popup.
+  const openThreadRef = useRef();
+  openThreadRef.current = openThread;
+  useEffect(() => {
+    const handler = (e) => {
+      const key = e.detail?.key;
+      if (!key) return;
+      setOpen(true);
+      openThreadRef.current?.({ key, userId: user?.id });
+    };
+    window.addEventListener("coli:open-chat", handler);
+    return () => window.removeEventListener("coli:open-chat", handler);
+  }, [user]);
+
   const send = async () => {
     const text = input.trim();
     if (!text || sending || !active) return;

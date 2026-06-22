@@ -131,6 +131,30 @@ export const api = {
       setTokens(data);
       return data;
     },
+    // Request a reset link by email. Always resolves (the server never reveals
+    // whether the address has an account).
+    forgotPassword(email) {
+      return request("POST", "/auth/forgot-password", {
+        body: { email },
+        auth: false,
+      });
+    },
+    // Set a new password using the token from the emailed link. On success the
+    // server returns fresh tokens, signing the user straight in.
+    async resetPassword({ token, password }) {
+      const data = await request("POST", "/auth/reset-password", {
+        body: { token, password },
+        auth: false,
+      });
+      setTokens(data);
+      return data;
+    },
+    // Change password while signed in (requires the current password).
+    changePassword({ current_password, new_password }) {
+      return request("POST", "/auth/change-password", {
+        body: { current_password, new_password },
+      });
+    },
     me() {
       return request("GET", "/auth/me");
     },

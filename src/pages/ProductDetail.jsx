@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import SafeImage from "../components/SafeImage";
 import ArtistAvatar from "../components/ArtistAvatar";
-import ChatModal from "../components/ChatModal";
 import {
   toggleCompare,
   isCompared,
@@ -43,7 +42,6 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { formatPrice } = useLocale();
-  const [chatOpen, setChatOpen] = useState(false);
   const [ctaBusy, setCtaBusy] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
   const [wishBusy, setWishBusy] = useState(false);
@@ -112,12 +110,14 @@ export default function ProductDetail() {
     }
   };
 
-  // Optional — ask the team a question; opens the chat thread (and records a light enquiry).
+  // Optional — ask the team a question. Records a light enquiry, seeds a greeting,
+  // then opens the right-side Messages widget on that thread (no separate popup).
   const openEnquiry = async () => {
     if (!user) {
       navigate("/signin");
       return;
     }
+    const key = `enquiry:${id}`;
     try {
       await api.enquiries.create({
         artwork_id: id,
@@ -131,7 +131,20 @@ export default function ProductDetail() {
     } catch {
       /* enquiry is best-effort */
     }
-    setChatOpen(true);
+    // Seed the team greeting once so the thread isn't empty on first open.
+    try {
+      const existing = await api.chat.conversation(key);
+      if (!existing || existing.length === 0) {
+        await api.chat.send({
+          conversation_key: key,
+          sender: "bot",
+          text: `Thanks for your interest in "${productData.title}". A curator from the Art Coliseum team will reply shortly — you can also buy it directly on the page.`,
+        });
+      }
+    } catch {
+      /* greeting is best-effort */
+    }
+    window.dispatchEvent(new CustomEvent("coli:open-chat", { detail: { key } }));
   };
 
   // Fetch the artwork from the catalog API.
@@ -798,6 +811,8 @@ export default function ProductDetail() {
                   style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
                   <input
                     type="number"
+                    min="1"
+                    step="0.1"
                     placeholder="Width"
                     value={customDims.w}
                     onChange={(e) => setDimW(e.target.value)}
@@ -805,6 +820,8 @@ export default function ProductDetail() {
                   />
                   <input
                     type="number"
+                    min="1"
+                    step="0.1"
                     placeholder="Height"
                     value={customDims.h}
                     onChange={(e) => setDimH(e.target.value)}
@@ -1254,18 +1271,6 @@ export default function ProductDetail() {
           )}
         </motion.div>
       </div>
-
-      <ChatModal
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        conversationKey={`enquiry:${id}`}
-        title={productData.title}
-        subtitle={`Enquiry · ${productData.artist}`}
-        avatar={productData.images?.[0]}
-        intro={[
-          `Thanks for your interest in "${productData.title}". A curator will reply shortly — you can also buy it directly on the page.`,
-        ]}
-      />
 
       {/* Zoom lightbox — full-screen view of the active image */}
       {zoomOpen && (

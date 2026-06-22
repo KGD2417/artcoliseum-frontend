@@ -69,8 +69,29 @@ export function AuthProvider({ children }) {
     return { error: null };
   };
 
+  // Email a reset link. Doesn't touch auth state; resolves either way.
+  const forgotPassword = async (email) => {
+    try {
+      await api.auth.forgotPassword(email);
+      return { error: null };
+    } catch (e) {
+      return { error: { message: e.message } };
+    }
+  };
+
+  // Set a new password from the emailed token, then sign the user in.
+  const resetPassword = async ({ token, password }) => {
+    try {
+      const data = await api.auth.resetPassword({ token, password });
+      applyMe({ user: data.user, role: data.role, artist_status: data.artist_status });
+      return { data, error: null };
+    } catch (e) {
+      return { data: null, error: { message: e.message } };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, role, artistStatus, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, role, artistStatus, signUp, signIn, signOut, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

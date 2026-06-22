@@ -50,6 +50,23 @@ export const positive = (label = "Value") => (v) => {
   return Number(v) > 0 ? "" : `${label} must be greater than 0`;
 };
 
+// Zero or more — rejects negatives (and non-numbers). Empty is allowed.
+export const nonNegative = (label = "Value") => (v) => {
+  if (!_s(v)) return "";
+  const n = Number(v);
+  if (Number.isNaN(n)) return `Enter a valid ${label.toLowerCase()}`;
+  return n >= 0 ? "" : `${label} cannot be negative`;
+};
+
+// Human age — whole number within a sane range. Empty is allowed (optional field).
+export const ageRule = (v) => {
+  if (!_s(v)) return "";
+  const n = Number(v);
+  if (!Number.isInteger(n)) return "Age must be a whole number";
+  if (n < 16 || n > 100) return "Age must be between 16 and 100";
+  return "";
+};
+
 // Today or later (compares ISO yyyy-mm-dd date strings).
 export const futureDate = (v) => {
   if (!_s(v)) return "";

@@ -6,15 +6,17 @@ import { validateForm, isValid, required, email as emailRule, phoneIN, minLen } 
 
 export default function SignIn() {
   const [isLogin, setIsLogin] = useState(true);
+  const [forgot, setForgot] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, forgotPassword } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,6 +41,24 @@ export default function SignIn() {
       setBusy(false);
     }
   };
+
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    setError(''); setNotice('');
+    const errs = validateForm({ email }, { email: [required('Email'), emailRule] });
+    if (!isValid(errs)) { setError(Object.values(errs)[0]); return; }
+    setBusy(true);
+    try {
+      const { error } = await forgotPassword(email);
+      if (error) setError(error.message);
+      else setNotice('If an account exists for that email, a reset link is on its way. Check your inbox.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Switch between sign-in and the forgot-password view, clearing transient state.
+  const showForgot = (on) => { setForgot(on); setError(''); setNotice(''); };
 
   const inputStyle = {
     width: '100%',
@@ -74,16 +94,16 @@ export default function SignIn() {
         }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: 26, color: '#D4AF37', letterSpacing: '0.1em' }}>
-            {isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}
+            {forgot ? 'RESET PASSWORD' : isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}
           </h2>
           <div style={{ width: 60, height: 1, background: '#D4AF37', margin: '14px auto' }} />
           <p style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: 'rgba(200,191,160,0.55)' }}>
-            {isLogin ? 'Welcome back to Art Coliseum.' : 'Join the private collector circle.'}
+            {forgot ? 'Enter your email and we\'ll send you a reset link.' : isLogin ? 'Welcome back to Art Coliseum.' : 'Join the private collector circle.'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {!isLogin && (
+        <form onSubmit={forgot ? handleForgot : handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {!isLogin && !forgot && (
             <input
               type="text"
               placeholder="Full Name"
@@ -101,7 +121,7 @@ export default function SignIn() {
             required
             style={inputStyle}
           />
-          {!isLogin && (
+          {!isLogin && !forgot && (
             <input
               type="tel"
               inputMode="tel"
@@ -111,6 +131,7 @@ export default function SignIn() {
               style={phoneInputStyle}
             />
           )}
+          {!forgot && (
           <div style={{ position: 'relative', width: '100%' }}>
             <input
               type={showPassword ? 'text' : 'password'}
@@ -153,9 +174,23 @@ export default function SignIn() {
               )}
             </button>
           </div>
+          )}
+
+          {isLogin && !forgot && (
+            <p style={{ textAlign: 'right', margin: 0 }}>
+              <span
+                onClick={() => showForgot(true)}
+                style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: 'rgba(212,175,55,0.85)', cursor: 'pointer' }}>
+                Forgot password?
+              </span>
+            </p>
+          )}
 
           {error && (
             <p style={{ color: '#ff8a8a', fontFamily: "'Raleway',sans-serif", fontSize: 12, margin: 0 }}>{error}</p>
+          )}
+          {notice && (
+            <p style={{ color: '#9fe0a8', fontFamily: "'Raleway',sans-serif", fontSize: 12, margin: 0 }}>{notice}</p>
           )}
 
           <motion.button
@@ -178,18 +213,29 @@ export default function SignIn() {
               opacity: busy ? 0.7 : 1,
               boxShadow: '0 8px 24px rgba(212,175,55,0.25)',
             }}>
-            {busy ? 'PLEASE WAIT…' : isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}
+            {busy ? 'PLEASE WAIT…' : forgot ? 'SEND RESET LINK' : isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}
           </motion.button>
         </form>
 
-        <p style={{ textAlign: 'center', fontFamily: "'Raleway',sans-serif", fontSize: 12, color: 'rgba(200,191,160,0.6)', marginTop: 22 }}>
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <span
-            onClick={() => setIsLogin(!isLogin)}
-            style={{ color: '#D4AF37', cursor: 'pointer', textDecoration: 'underline' }}>
-            {isLogin ? 'Create one' : 'Sign In'}
-          </span>
-        </p>
+        {forgot ? (
+          <p style={{ textAlign: 'center', fontFamily: "'Raleway',sans-serif", fontSize: 12, color: 'rgba(200,191,160,0.6)', marginTop: 22 }}>
+            Remembered it?{' '}
+            <span
+              onClick={() => showForgot(false)}
+              style={{ color: '#D4AF37', cursor: 'pointer', textDecoration: 'underline' }}>
+              Back to Sign In
+            </span>
+          </p>
+        ) : (
+          <p style={{ textAlign: 'center', fontFamily: "'Raleway',sans-serif", fontSize: 12, color: 'rgba(200,191,160,0.6)', marginTop: 22 }}>
+            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <span
+              onClick={() => setIsLogin(!isLogin)}
+              style={{ color: '#D4AF37', cursor: 'pointer', textDecoration: 'underline' }}>
+              {isLogin ? 'Create one' : 'Sign In'}
+            </span>
+          </p>
+        )}
       </motion.div>
     </section>
   );

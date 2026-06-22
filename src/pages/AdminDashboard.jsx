@@ -4,9 +4,10 @@ import { useAuth } from "../context/Auth";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import MediaUploader from "../components/ui/MediaUploader";
 import ArtworkForm, { Field as AField, inputStyle as aInputStyle } from "../components/ArtworkForm";
+import DateTimeField from "../components/DateTimeField";
 import { isThreeD, composeDims } from "../utils/dimensions";
 import { api, realtime } from "../utils/api";
-import { email as emailRule, minLen, intRange } from "../utils/validation";
+import { email as emailRule, minLen, intRange, todayISO } from "../utils/validation";
 
 const gold = "#D4AF37";
 const TABS = [
@@ -472,9 +473,9 @@ function EditArtworkModal({ artwork, onClose, onSaved }) {
         <L>Medium</L><input style={miniInput} value={f.medium} onChange={set("medium")} />
         <L>Artwork size{is3D ? " (W × H × D)" : " (W × H)"}{composedDims ? ` — ${composedDims}` : ""}</L>
         <div style={{ display: "grid", gridTemplateColumns: is3D ? "repeat(4, 1fr)" : "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
-          <input placeholder="W" style={{ ...miniInput, marginBottom: 0 }} type="number" value={f.width} onChange={set("width")} />
-          <input placeholder="H" style={{ ...miniInput, marginBottom: 0 }} type="number" value={f.height} onChange={set("height")} />
-          {is3D && <input placeholder="D" style={{ ...miniInput, marginBottom: 0 }} type="number" value={f.depth} onChange={set("depth")} />}
+          <input placeholder="W" style={{ ...miniInput, marginBottom: 0 }} type="number" min="0" value={f.width} onChange={set("width")} />
+          <input placeholder="H" style={{ ...miniInput, marginBottom: 0 }} type="number" min="0" value={f.height} onChange={set("height")} />
+          {is3D && <input placeholder="D" style={{ ...miniInput, marginBottom: 0 }} type="number" min="0" value={f.depth} onChange={set("depth")} />}
           <select style={{ ...miniInput, marginBottom: 0 }} value={f.dim_unit} onChange={set("dim_unit")}>
             <option value="cm">cm</option><option value="inch">inch</option><option value="feet">feet</option>
           </select>
@@ -482,8 +483,8 @@ function EditArtworkModal({ artwork, onClose, onSaved }) {
         <label style={ckLabel}><input type="checkbox" checked={f.customizable} onChange={(e) => setF({ ...f, customizable: e.target.checked })} style={{ accentColor: gold }} /> Customizable</label>
         {f.customizable && <label style={ckLabel}><input type="checkbox" checked={f.ratio_locked} onChange={(e) => setF({ ...f, ratio_locked: e.target.checked })} style={{ accentColor: gold }} /> Lock width : height ratio</label>}
         {f.customizable
-          ? (<><L>Price per unit (₹)</L><input style={miniInput} type="number" value={f.price_per_unit} onChange={set("price_per_unit")} /></>)
-          : (<><L>Price (₹)</L><input style={miniInput} type="number" value={f.price} onChange={set("price")} /></>)}
+          ? (<><L>Price per unit (₹)</L><input style={miniInput} type="number" min="0" value={f.price_per_unit} onChange={set("price_per_unit")} /></>)
+          : (<><L>Price (₹)</L><input style={miniInput} type="number" min="0" value={f.price} onChange={set("price")} /></>)}
         <L>Status</L>
         <select style={miniInput} value={f.status} onChange={set("status")}>
           <option value="active">active</option><option value="draft">draft</option><option value="sold">sold</option>
@@ -609,8 +610,8 @@ function Events() {
         <div style={{ display: "flex", alignItems: "center", fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.5)", padding: "0 4px" }}>
           Status (upcoming / ongoing / past) is set automatically from the dates.
         </div>
-        <div><L>STARTS (date & time)</L><input type="datetime-local" value={f.starts_at} onChange={(e) => setF({ ...f, starts_at: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box", colorScheme: "dark" }} /></div>
-        <div><L>ENDS (date & time)</L><input type="datetime-local" value={f.ends_at} onChange={(e) => setF({ ...f, ends_at: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box", colorScheme: "dark" }} /></div>
+        <DateTimeField label="STARTS (DATE & TIME)" value={f.starts_at} onChange={(v) => setF({ ...f, starts_at: v })} />
+        <DateTimeField label="ENDS (DATE & TIME)" value={f.ends_at} min={f.starts_at || undefined} onChange={(v) => setF({ ...f, ends_at: v })} />
         <input placeholder="Full address" value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
         <select value={f.parking} onChange={(e) => setF({ ...f, parking: e.target.value })} style={miniInput}>
           <option value="">Parking…</option>
@@ -687,7 +688,7 @@ function News() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
         <input placeholder="Headline / title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1" }} />
         <input placeholder="Link (optional — e.g. /events or https://…)" value={f.link_url} onChange={(e) => setF({ ...f, link_url: e.target.value })} style={miniInput} />
-        <div><L>DISPLAY ORDER</L><input type="number" value={f.sort_order} onChange={(e) => setF({ ...f, sort_order: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box" }} /></div>
+        <div><L>DISPLAY ORDER</L><input type="number" min="0" value={f.sort_order} onChange={(e) => setF({ ...f, sort_order: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box" }} /></div>
         <textarea placeholder="Summary / details" value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 70, resize: "vertical" }} />
       </div>
       <MediaUploader kind="image" label="NEWS IMAGE" hint="UPLOAD IMAGE" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
@@ -836,7 +837,7 @@ function Testimonials() {
         <input placeholder="Author name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={miniInput} />
         <input placeholder="Designation (e.g. Private Collector · London)" value={f.designation} onChange={(e) => setF({ ...f, designation: e.target.value })} style={miniInput} />
         <input placeholder="Tag (e.g. COLLECTOR)" value={f.tag} onChange={(e) => setF({ ...f, tag: e.target.value })} style={miniInput} />
-        <div><L>DISPLAY ORDER</L><input type="number" value={f.sort_order} onChange={(e) => setF({ ...f, sort_order: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box" }} /></div>
+        <div><L>DISPLAY ORDER</L><input type="number" min="0" value={f.sort_order} onChange={(e) => setF({ ...f, sort_order: e.target.value })} style={{ ...miniInput, width: "100%", boxSizing: "border-box" }} /></div>
         <textarea placeholder="Quote / testimonial text" value={f.quote} onChange={(e) => setF({ ...f, quote: e.target.value })} style={{ ...miniInput, gridColumn: "1 / -1", minHeight: 80, resize: "vertical" }} />
       </div>
       <MediaUploader kind="image" label="AUTHOR / ARTWORK IMAGE" hint="UPLOAD IMAGE" value={f.image_url} onChange={(url) => setF((v) => ({ ...v, image_url: url }))} />
@@ -1073,14 +1074,8 @@ function Exhibitions() {
           <div style={{ gridColumn: "1 / -1" }}>
             <ImageField label="Hero image" value={f.hero_image_url} onChange={(url) => setF((v) => ({ ...v, hero_image_url: url }))} />
           </div>
-          <div>
-            <L>Registration opens</L>
-            <input type="datetime-local" value={f.registration_starts_at} onChange={set("registration_starts_at")} style={{ ...miniInput, width: "100%", boxSizing: "border-box", colorScheme: "dark" }} />
-          </div>
-          <div>
-            <L>Registration closes (then it goes live)</L>
-            <input type="datetime-local" value={f.registration_ends_at} onChange={set("registration_ends_at")} style={{ ...miniInput, width: "100%", boxSizing: "border-box", colorScheme: "dark" }} />
-          </div>
+          <DateTimeField label="REGISTRATION OPENS" value={f.registration_starts_at} onChange={(v) => setF((s) => ({ ...s, registration_starts_at: v }))} />
+          <DateTimeField label="REGISTRATION CLOSES (THEN IT GOES LIVE)" value={f.registration_ends_at} min={f.registration_starts_at || undefined} onChange={(v) => setF((s) => ({ ...s, registration_ends_at: v }))} />
         </div>
         <div style={{ marginTop: 12 }}>
           <Btn onClick={create} primary disabled={busy === "create" || !!running}>{busy === "create" ? "CREATING…" : "+ CREATE EXHIBITION"}</Btn>
@@ -1148,8 +1143,8 @@ function CreateCompetition({ onCreated }) {
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 10 }}>NEW COMPETITION</div>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 8 }}>
         <input placeholder="Title" value={f.title} onChange={set("title")} style={miniInput} />
-        <input type="date" value={f.event_date} onChange={set("event_date")} style={{ ...miniInput, colorScheme: "dark" }} />
-        <input type="number" placeholder="Min artists" value={f.min_artists} onChange={set("min_artists")} style={miniInput} />
+        <DateTimeField type="date" label="DATE" value={f.event_date} min={todayISO()} onChange={(v) => setF((s) => ({ ...s, event_date: v }))} />
+        <input type="number" min="0" placeholder="Min artists" value={f.min_artists} onChange={set("min_artists")} style={miniInput} />
         <input placeholder="Description" value={f.description} onChange={set("description")} style={{ ...miniInput, gridColumn: "1 / -1" }} />
       </div>
       <div style={{ marginTop: 10 }}>
@@ -1224,7 +1219,7 @@ function AddArtist({ onCreated }) {
         <AField l="LOGIN EMAIL"><input style={aInputStyle} value={f.email} onChange={set("email")} /></AField>
         <AField l="LOGIN PASSWORD"><input style={aInputStyle} type="password" value={f.password} onChange={set("password")} /></AField>
         <AField l="LOCATION"><input style={aInputStyle} value={f.location} onChange={set("location")} /></AField>
-        <AField l="AGE"><input style={aInputStyle} type="number" value={f.age} onChange={set("age")} /></AField>
+        <AField l="AGE"><input style={aInputStyle} type="number" min="16" max="100" value={f.age} onChange={set("age")} /></AField>
         <AField l="GENDER (FOR DEFAULT AVATAR)">
           <select style={aInputStyle} value={f.gender} onChange={set("gender")}>
             <option value="">Select…</option>

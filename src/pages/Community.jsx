@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton, SkeletonText } from "../components/ui/Skeleton";
+import DateTimeField from "../components/DateTimeField";
 import { api, realtime } from "../utils/api";
 import { useAuth } from "../context/Auth";
 import { useLocale } from "../context/Locale";
@@ -1695,6 +1696,9 @@ function PostCard({
             color: "rgba(200,191,160,0.82)",
             lineHeight: 1.8,
             margin: 0,
+            // Preserve line breaks, bullet lists and indentation the author typed.
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
           }}>
           {post.text}
         </p>
@@ -1945,6 +1949,8 @@ function PostCard({
                         fontSize: 15,
                         color: "rgba(200,191,160,0.78)",
                         lineHeight: 1.6,
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
                       }}>
                       {c.text}
                     </div>
@@ -2430,26 +2436,12 @@ function CreatePostModal({
                   />
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
-                  <div
-                    style={{
-                      fontFamily: "'Raleway',sans-serif",
-                      fontSize: 9,
-                      color: "rgba(200,191,160,0.38)",
-                      marginBottom: 6,
-                      letterSpacing: "0.08em",
-                    }}>
-                    ENDS AT (optional — leave blank to close manually)
-                  </div>
-                  <input
-                    type="datetime-local"
+                  <DateTimeField
+                    label="ENDS AT (OPTIONAL)"
+                    hint="Leave blank to close the auction manually."
                     value={auctionEndsAt}
-                    onChange={(e) => setAuctionEndsAt(e.target.value)}
-                    style={{
-                      ...inputStyle,
-                      fontFamily: "'Raleway',sans-serif",
-                      fontSize: 13,
-                      colorScheme: "dark",
-                    }}
+                    min={new Date().toISOString().slice(0, 16)}
+                    onChange={setAuctionEndsAt}
                   />
                 </div>
                 {Number(startingBid) <= 0 && (

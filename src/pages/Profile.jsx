@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
@@ -10,6 +10,7 @@ import { STAGE_ORDER, STAGE_LABEL } from "../utils/delivery";
 import { useAuth } from "../context/Auth";
 import { conversationTitle, senderLabel, isPeerKey, peerIds, enquiryArtworkId } from "../utils/chatLabels";
 import { validateForm, isValid, required, phoneIN, pincodeIN, genId } from "../utils/validation";
+import { countryOptions, stateOptions, cityOptions, DEFAULT_COUNTRY_CODE, countryNameFromCode } from "../utils/locations";
 import i3 from "../assets/i3.png";
 import i6 from "../assets/i6.png";
 
@@ -43,15 +44,17 @@ export default function Profile() {
   const { lang, setLang } = useLocale();
   const navigate = useNavigate();
   const { user: authUser, loading: authLoading, role, artistStatus, signOut } = useAuth();
-  const isArtist = role === "artist" || artistStatus === "verified";
-  const isPendingArtist = artistStatus === "pending" || artistStatus === "unverified";
+  const isAdmin = role === "admin";
+  // Admins manage the platform from the dashboard — never treat them as an artist
+  // here, even if their account also carries a (stale) artist status.
+  const isArtist = !isAdmin && (role === "artist" || artistStatus === "verified");
+  const isPendingArtist = !isAdmin && (artistStatus === "pending" || artistStatus === "unverified");
   const [artistRole, setArtistRole] = useState("");
   const [tab, setTab] = useState("details");
   const [editing, setEditing] = useState(false);
   const [user, setUser] = useState(EMPTY_USER);
   const [draft, setDraft] = useState(EMPTY_USER);
   const [addresses, setAddresses] = useState([]);
-  const [phoneErr, setPhoneErr] = useState("");
   const [regEvents, setRegEvents] = useState([]);
   const [orders, setOrders] = useState([]);
   const [owned, setOwned] = useState([]);
@@ -222,15 +225,14 @@ export default function Profile() {
     } catch (e) { alert(e.message); }
   };
 
-  const startEdit = () => { setDraft(user); setPhoneErr(""); setEditing(true); };
+  const startEdit = () => { setDraft(user); setEditing(true); };
   const save = async () => {
-    const pe = phoneIN(draft.phone);
-    if (pe) { setPhoneErr(pe); return; }
-    setPhoneErr("");
+    // Email and phone are locked after registration — only the name is editable
+    // here (password has its own change form).
     if (authUser) {
-      try { await api.auth.updateMe({ full_name: draft.name, phone: draft.phone }); } catch { /* ignore */ }
+      try { await api.auth.updateMe({ full_name: draft.name }); } catch { /* ignore */ }
     }
-    setUser(draft);
+    setUser((u) => ({ ...u, name: draft.name }));
     setEditing(false);
   };
   // Persist the saved-address book (also drives the checkout picker).
@@ -285,7 +287,7 @@ export default function Profile() {
         </div>
         <div>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37" }}>
-            {isArtist ? "ARTIST PROFILE" : isPendingArtist ? "ARTIST APPLICATION · UNDER REVIEW" : "COLLECTOR PROFILE"}
+            {isAdmin ? "ADMINISTRATOR" : isArtist ? "ARTIST PROFILE" : isPendingArtist ? "ARTIST APPLICATION · UNDER REVIEW" : "COLLECTOR PROFILE"}
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 38, fontWeight: 700, color: "#fff", marginTop: 4 }}>{user.name}</h1>
           <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.6)" }}>
@@ -363,10 +365,13 @@ export default function Profile() {
                     ? <button onClick={save} className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11 }}>SAVE</button>
                     : <button onClick={startEdit} className="btn-outline" style={{ padding: "10px 22px", fontSize: 11 }}>EDIT</button>
                 }>
-                  <Field label="Name"     value={editing ? draft.name     : user.name}     editing={editing} onChange={v => setDraft({ ...draft, name: v })} />
-                  <Field label="Email"    value={editing ? draft.email    : user.email}    editing={editing} onChange={v => setDraft({ ...draft, email: v })} type="email" />
-                  <Field label="Phone"    value={editing ? draft.phone    : user.phone}    editing={editing} onChange={v => setDraft({ ...draft, phone: v })} type="tel" error={phoneErr} />
-                  <Field label="Password" value={editing ? draft.password : user.password} editing={editing} onChange={v => setDraft({ ...draft, password: v })} type="password" />
+                  <Field label="Name"  value={editing ? draft.name : user.name} editing={editing} onChange={v => setDraft({ ...draft, name: v })} />
+                  {/* Email and phone are fixed once the account is created. */}
+                  <Field label="Email" value={user.email} editing={false} locked />
+                  <Field label="Phone" value={user.phone} editing={false} locked />
+                  {editing
+                    ? <ChangePassword />
+                    : <Field label="Password" value={user.password} editing={false} />}
                   <div style={{ height: 1, background: "rgba(212,175,55,0.14)", margin: "8px 0 20px" }} />
                   <AddressBook addresses={addresses} onChange={saveAddresses} />
                   <button onClick={handleSignOut} className="btn-outline" style={{ marginTop: 8, padding: "10px 22px", fontSize: 11 }}>SIGN OUT</button>
@@ -828,11 +833,18 @@ function Card({ title, action, children }) {
   );
 }
 
-function Field({ label, value, editing, onChange, type = "text", error }) {
+function Field({ label, value, editing, onChange, type = "text", error, locked = false }) {
   return (
     <div style={{ marginBottom: 18 }}>
-      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>{label.toUpperCase()}</div>
-      {editing ? (
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37" }}>{label.toUpperCase()}</div>
+        {locked && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "'Raleway',sans-serif", fontSize: 9.5, color: "rgba(200,191,160,0.45)" }}>
+            <LockIcon /> Can't be changed
+          </span>
+        )}
+      </div>
+      {editing && !locked ? (
         <input
           type={type}
           value={value}
@@ -848,14 +860,106 @@ function Field({ label, value, editing, onChange, type = "text", error }) {
           }}
         />
       ) : (
-        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 15, color: "#f0e8d8", padding: "8px 0" }}>{value}</div>
+        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 15, color: locked ? "rgba(200,191,160,0.75)" : "#f0e8d8", padding: "8px 0" }}>{value}</div>
       )}
       {editing && error && <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#ff8a8a", marginTop: 5 }}>{error}</div>}
     </div>
   );
 }
 
-const ADDR_BLANK = { label: "", name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: "India" };
+function LockIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function EyeIcon({ off }) {
+  return off ? (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  ) : (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+/** Single password input with a show/hide eye toggle. */
+function PasswordInput({ value, onChange, placeholder, show, setShow }) {
+  return (
+    <div style={{ position: "relative", width: "100%", marginBottom: 10 }}>
+      <input
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={placeholder?.toLowerCase().includes("current") ? "current-password" : "new-password"}
+        style={{
+          width: "100%", boxSizing: "border-box",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(212,175,55,0.2)",
+          padding: "12px 44px 12px 14px",
+          color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 14,
+          borderRadius: 6, outline: "none",
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => setShow(v => !v)}
+        title={show ? "Hide password" : "Show password"}
+        aria-label={show ? "Hide password" : "Show password"}
+        style={{ position: "absolute", top: "50%", right: 10, transform: "translateY(-50%)", background: "transparent", border: "none", padding: 4, cursor: "pointer", color: "rgba(212,175,55,0.75)", display: "flex" }}>
+        <EyeIcon off={show} />
+      </button>
+    </div>
+  );
+}
+
+/** In-place change-password form (current + new) shown while editing the profile. */
+function ChangePassword() {
+  const [cur, setCur] = useState("");
+  const [next, setNext] = useState("");
+  const [show, setShow] = useState(false);
+  const [msg, setMsg] = useState(null); // { ok: bool, text }
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setMsg(null);
+    if (!cur || !next) { setMsg({ ok: false, text: "Enter your current and new password." }); return; }
+    if (next.length < 6) { setMsg({ ok: false, text: "New password must be at least 6 characters." }); return; }
+    setBusy(true);
+    try {
+      await api.auth.changePassword({ current_password: cur, new_password: next });
+      setMsg({ ok: true, text: "Password updated." });
+      setCur(""); setNext("");
+    } catch (e) {
+      setMsg({ ok: false, text: e.message });
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>CHANGE PASSWORD</div>
+      <PasswordInput value={cur} onChange={setCur} placeholder="Current password" show={show} setShow={setShow} />
+      <PasswordInput value={next} onChange={setNext} placeholder="New password (min 6 characters)" show={show} setShow={setShow} />
+      <button onClick={submit} disabled={busy} className="btn-outline" style={{ padding: "9px 20px", fontSize: 10, opacity: busy ? 0.6 : 1, cursor: busy ? "wait" : "pointer" }}>
+        {busy ? "UPDATING…" : "UPDATE PASSWORD"}
+      </button>
+      {msg && (
+        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, marginTop: 8, color: msg.ok ? "#9fe0a8" : "#ff8a8a" }}>{msg.text}</div>
+      )}
+    </div>
+  );
+}
+
+const ADDR_BLANK = { label: "", name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: countryNameFromCode(DEFAULT_COUNTRY_CODE), countryCode: DEFAULT_COUNTRY_CODE, stateCode: "" };
+const aSelect = (bad) => ({ ...aInput(bad), appearance: "none", WebkitAppearance: "none", colorScheme: "dark", cursor: "pointer" });
 const aErrText = { fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "#ff8a8a", marginTop: 4 };
 
 // Two addresses are "the same" when their delivery fields match (label is just a
@@ -884,6 +988,22 @@ function AddressBook({ addresses, onChange }) {
   });
   const set = (k) => (e) => { setDupError(""); setF((v) => ({ ...v, [k]: e.target.value })); };
   const closeForm = () => { setAdding(false); setF(ADDR_BLANK); setTouched(false); setDupError(""); };
+
+  // Cascading country → state → city dropdowns (data from country-state-city).
+  const countryOpts = useMemo(() => countryOptions(), []);
+  const stateOpts = useMemo(() => stateOptions(f.countryCode), [f.countryCode]);
+  const cityOpts = useMemo(() => cityOptions(f.countryCode, f.stateCode), [f.countryCode, f.stateCode]);
+  const onCountry = (e) => {
+    const code = e.target.value;
+    setDupError("");
+    setF((v) => ({ ...v, countryCode: code, country: countryNameFromCode(code), stateCode: "", state: "", city: "" }));
+  };
+  const onState = (e) => {
+    const code = e.target.value;
+    setDupError("");
+    setF((v) => ({ ...v, stateCode: code, state: stateOpts.find((o) => o.value === code)?.label || "", city: "" }));
+  };
+  const setCity = (val) => { setDupError(""); setF((v) => ({ ...v, city: val })); };
 
   const add = () => {
     if (!isValid(errors)) { setTouched(true); return; }
@@ -933,10 +1053,36 @@ function AddressBook({ addresses, onChange }) {
             <div><input placeholder="Full name *" value={f.name} onChange={set("name")} style={aInput(touched && errors.name)} />{touched && errors.name && <div style={aErrText}>{errors.name}</div>}</div>
             <div><input placeholder="Phone *" value={f.phone} onChange={set("phone")} inputMode="numeric" maxLength={10} style={aInput(touched && errors.phone)} />{touched && errors.phone && <div style={aErrText}>{errors.phone}</div>}</div>
             <div><input placeholder="PIN code *" value={f.zip} onChange={set("zip")} inputMode="numeric" maxLength={6} style={aInput(touched && errors.zip)} />{touched && errors.zip && <div style={aErrText}>{errors.zip}</div>}</div>
+            <div>
+              <select value={f.countryCode} onChange={onCountry} style={aSelect(false)}>
+                {countryOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              {stateOpts.length > 0 ? (
+                <select value={f.stateCode} onChange={onState} style={aSelect(touched && errors.state)}>
+                  <option value="">State *</option>
+                  {stateOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : (
+                <input placeholder="State *" value={f.state} onChange={set("state")} style={aInput(touched && errors.state)} />
+              )}
+              {touched && errors.state && <div style={aErrText}>{errors.state}</div>}
+            </div>
+            <div>
+              {cityOpts.length > 0 ? (
+                <select value={f.city} onChange={(e) => setCity(e.target.value)} style={aSelect(touched && errors.city)}>
+                  <option value="">City *</option>
+                  {cityOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : (
+                <input placeholder="City *" value={f.city} onChange={set("city")} style={aInput(touched && errors.city)} />
+              )}
+              {touched && errors.city && <div style={aErrText}>{errors.city}</div>}
+            </div>
+            <div />
             <div style={{ gridColumn: "1 / -1" }}><input placeholder="Address line 1 *" value={f.line1} onChange={set("line1")} style={aInput(touched && errors.line1)} />{touched && errors.line1 && <div style={aErrText}>{errors.line1}</div>}</div>
             <div style={{ gridColumn: "1 / -1" }}><input placeholder="Address line 2" value={f.line2} onChange={set("line2")} style={aInput(false)} /></div>
-            <div><input placeholder="City *" value={f.city} onChange={set("city")} style={aInput(touched && errors.city)} />{touched && errors.city && <div style={aErrText}>{errors.city}</div>}</div>
-            <div><input placeholder="State *" value={f.state} onChange={set("state")} style={aInput(touched && errors.state)} />{touched && errors.state && <div style={aErrText}>{errors.state}</div>}</div>
           </div>
           {dupError && <div style={{ ...aErrText, marginTop: 10 }}>{dupError}</div>}
           <div style={{ display: "flex", gap: 10, marginTop: 12 }}>

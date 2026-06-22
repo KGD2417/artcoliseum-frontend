@@ -741,7 +741,9 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let arts = await api.catalog.artworks({ new_launch: true }).catch(() => []);
+      let arts = await api.catalog
+        .artworks({ new_launch: true })
+        .catch(() => []);
       if (!arts || arts.length === 0)
         arts = await api.catalog.artworks({}).catch(() => []);
       if (cancelled || !arts || arts.length === 0) return;
@@ -1721,7 +1723,7 @@ export default function Home() {
           }}>
           <SectionHeader
             tag="In Their Words"
-            title="What Collectors"
+            title="What Collectors & Artists"
             italic="Say"
             sub="Voices from the patrons, designers and collectors who have made Art Coliseum part of their world."
           />

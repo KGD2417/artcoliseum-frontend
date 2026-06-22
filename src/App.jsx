@@ -16,6 +16,7 @@ import Checkout from './pages/Checkout';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import SignIn from './pages/Signin';
+import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 import AR from './pages/AR';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -56,6 +57,7 @@ function App() {
         <Route path="about" element={<About />} />
         <Route path="contact" element={<Contact />} />
         <Route path="signin" element={<SignIn />} />
+        <Route path="reset-password" element={<ResetPassword />} />
         <Route path="profile" element={<Profile />} />
         <Route path="privacy" element={<PrivacyPolicy />} />
         <Route path="refund" element={<Refund />} />

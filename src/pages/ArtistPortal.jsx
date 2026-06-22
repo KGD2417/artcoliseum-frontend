@@ -428,6 +428,8 @@ function KycForm({ onApplied }) {
           <input
             style={errInput("age")}
             type="number"
+            min="16"
+            max="100"
             value={f.age}
             onChange={set("age")}
           />
@@ -1151,6 +1153,7 @@ function EditArtwork({ artwork, onClose, onSaved }) {
             <input
               style={inputStyle}
               type="number"
+              min="0"
               value={f.width}
               onChange={set("width")}
             />
@@ -1159,6 +1162,7 @@ function EditArtwork({ artwork, onClose, onSaved }) {
             <input
               style={inputStyle}
               type="number"
+              min="0"
               value={f.height}
               onChange={set("height")}
             />
@@ -1168,6 +1172,7 @@ function EditArtwork({ artwork, onClose, onSaved }) {
               <input
                 style={inputStyle}
                 type="number"
+                min="0"
                 value={f.depth}
                 onChange={set("depth")}
               />
@@ -1219,6 +1224,7 @@ function EditArtwork({ artwork, onClose, onSaved }) {
             <input
               style={inputStyle}
               type="number"
+              min="0"
               value={f.price_per_unit}
               onChange={set("price_per_unit")}
             />
@@ -1228,6 +1234,7 @@ function EditArtwork({ artwork, onClose, onSaved }) {
             <input
               style={inputStyle}
               type="number"
+              min="0"
               value={f.price}
               onChange={set("price")}
             />
@@ -1508,6 +1515,7 @@ function ArtistExhibitionPanel() {
             <input
               style={inputStyle}
               type="number"
+              min="0"
               value={f.price}
               onChange={set("price")}
             />
@@ -1533,6 +1541,7 @@ function ArtistExhibitionPanel() {
               <input
                 style={inputStyle}
                 type="number"
+                min="0"
                 value={f.width}
                 onChange={set("width")}
               />
@@ -1541,6 +1550,7 @@ function ArtistExhibitionPanel() {
               <input
                 style={inputStyle}
                 type="number"
+                min="0"
                 value={f.height}
                 onChange={set("height")}
               />
@@ -1550,6 +1560,7 @@ function ArtistExhibitionPanel() {
                 <input
                   style={inputStyle}
                   type="number"
+                  min="0"
                   value={f.depth}
                   onChange={set("depth")}
                 />
