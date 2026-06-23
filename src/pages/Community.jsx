@@ -800,6 +800,8 @@ function PostCard({
   onChat,
   onBid,
   onCloseAuction,
+  saved,
+  onToggleSave,
   isOwn,
   meId,
 }) {
@@ -808,7 +810,6 @@ function PostCard({
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState(post.commentsList);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [bidding, setBidding] = useState(false);
   const [bidAmount, setBidAmount] = useState("");
   const [showBids, setShowBids] = useState(false);
@@ -1814,7 +1815,7 @@ function PostCard({
           <>
             <div style={{ flex: 1 }} />
             <button
-              onClick={() => setSaved((v) => !v)}
+              onClick={() => onToggleSave(post.id, !saved)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -3089,6 +3090,7 @@ function DirectChat({ user, onClose }) {
 export default function Community() {
   const { user, role } = useAuth();
   const [posts, setPosts] = useState([]);
+  const [savedIds, setSavedIds] = useState(new Set());
   const [feedLoading, setFeedLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
@@ -3127,6 +3129,18 @@ export default function Community() {
       })
       .catch(() => {});
   }, []);
+
+  // Which listings the signed-in buyer has already saved for later.
+  useEffect(() => {
+    if (!user) {
+      setSavedIds(new Set());
+      return;
+    }
+    api.wishlist
+      .listingIds()
+      .then((ids) => setSavedIds(new Set(ids || [])))
+      .catch(() => {});
+  }, [user]);
 
   // Load the real feed — marketplace pulls listings, community pulls discussions.
   useEffect(() => {
@@ -3196,6 +3210,33 @@ export default function Community() {
       const updated = await api.community.like(id);
       setPosts((prev) => prev.map((p) => (p.id === id ? mapPost(updated) : p)));
     } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  // Save-for-later for marketplace listings — appears in Profile → Saved.
+  const handleToggleSave = async (id, next) => {
+    if (!user) {
+      alert("Please sign in to save listings.");
+      return;
+    }
+    setSavedIds((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(id);
+      else s.delete(id);
+      return s;
+    });
+    try {
+      if (next) await api.wishlist.saveListing(id);
+      else await api.wishlist.removeListing(id);
+    } catch (e) {
+      // Revert on failure.
+      setSavedIds((prev) => {
+        const s = new Set(prev);
+        if (next) s.delete(id);
+        else s.add(id);
+        return s;
+      });
       alert(e.message);
     }
   };
@@ -3909,6 +3950,8 @@ export default function Community() {
                     onChat={openChat}
                     onBid={handleBid}
                     onCloseAuction={handleCloseAuction}
+                    saved={savedIds.has(post.id)}
+                    onToggleSave={handleToggleSave}
                     isOwn={!!user && post.userId === user.id}
                     meId={user?.id}
                   />

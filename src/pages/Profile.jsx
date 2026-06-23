@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import SafeImage from "../components/SafeImage";
+import MediaUploader from "../components/ui/MediaUploader";
 import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import { useLocale, LANGS } from "../context/Locale";
 import { CheckIcon, CopyIcon } from "../components/Icons";
@@ -26,7 +27,7 @@ const TABS = [
   { id: "language", label: "Language" },
 ];
 
-const EMPTY_USER = { name: "", email: "", phone: "", address: "", password: "••••••••••" };
+const EMPTY_USER = { name: "", email: "", phone: "", address: "", password: "••••••••••", avatar_url: "" };
 
 const CART = [
   { id: "p-101", title: "Fragmented Memory",  artist: "Soren Klein", price: 8400, img: i6 },
@@ -59,6 +60,7 @@ export default function Profile() {
   const [orders, setOrders] = useState([]);
   const [owned, setOwned] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+  const [savedListings, setSavedListings] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
   const [convThread, setConvThread] = useState([]);
@@ -87,6 +89,7 @@ export default function Profile() {
         phone: prof?.phone || "",
         address: "",
         password: "••••••••••",
+        avatar_url: prof?.avatar_url || "",
       };
       setUser(next);
       setDraft(next);
@@ -106,6 +109,7 @@ export default function Profile() {
       try { setRegEvents(await api.events.myRegistrations()); } catch { setRegEvents([]); }
       try { setOwned(await api.owned()); } catch { setOwned([]); }
       try { setWishlist(await api.wishlist.list()); } catch { setWishlist([]); }
+      try { setSavedListings(await api.wishlist.listings()); } catch { setSavedListings([]); }
 
       let msgs = [], reads = [];
       try {
@@ -241,10 +245,20 @@ export default function Profile() {
     try { const m = await api.auth.updateMe({ addresses: next }); setAddresses(m?.addresses || next); }
     catch { /* keep optimistic value */ }
   };
+  // Profile picture — persists immediately on upload/change (no Edit mode needed).
+  const saveAvatar = async (url) => {
+    setUser((u) => ({ ...u, avatar_url: url }));
+    setDraft((d) => ({ ...d, avatar_url: url }));
+    try { await api.auth.updateMe({ avatar_url: url }); } catch { /* keep optimistic value */ }
+  };
   const handleSignOut = async () => { await signOut(); navigate("/"); };
   const removeWishlist = async (artworkId) => {
     setWishlist((prev) => prev.filter((w) => w.artwork_id !== artworkId));
     try { await api.wishlist.remove(artworkId); } catch { /* keep optimistic removal */ }
+  };
+  const removeSavedListing = async (postId) => {
+    setSavedListings((prev) => prev.filter((l) => l.post_id !== postId));
+    try { await api.wishlist.removeListing(postId); } catch { /* keep optimistic removal */ }
   };
 
   const CART = [];
@@ -365,6 +379,17 @@ export default function Profile() {
                     ? <button onClick={save} className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11 }}>SAVE</button>
                     : <button onClick={startEdit} className="btn-outline" style={{ padding: "10px 22px", fontSize: 11 }}>EDIT</button>
                 }>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(212,175,55,0.3)" }} />
+                    ) : (
+                      <div style={{ width: 72, height: 72, borderRadius: "50%", border: "1px dashed rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(212,175,55,0.4)", fontSize: 22 }}>✦</div>
+                    )}
+                    <div>
+                      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginBottom: 6 }}>PROFILE PHOTO</div>
+                      <MediaUploader kind="image" preview={false} hint="CHANGE PHOTO" value={user.avatar_url} onChange={saveAvatar} />
+                    </div>
+                  </div>
                   <Field label="Name"  value={editing ? draft.name : user.name} editing={editing} onChange={v => setDraft({ ...draft, name: v })} />
                   {/* Email and phone are fixed once the account is created. */}
                   <Field label="Email" value={user.email} editing={false} locked />
@@ -540,9 +565,9 @@ export default function Profile() {
 
               {tab === "wishlist" && (
                 <Card title="Saved for Later">
-                  {wishlist.length === 0 ? (
+                  {wishlist.length === 0 && savedListings.length === 0 ? (
                     <div style={{ textAlign: "center", padding: 40, color: "rgba(200,191,160,0.5)" }}>
-                      Nothing saved yet. Tap the ♥ on any artwork to save it here and pick up where you left off.
+                      Nothing saved yet. Tap the ♥ on any artwork — or Save on a marketplace listing — to keep it here and pick up where you left off.
                     </div>
                   ) : (
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 16 }}>
@@ -563,6 +588,28 @@ export default function Profile() {
                             <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 10 }}>
                               <button onClick={() => navigate(`/product/${w.artwork_id}`)} className="btn-gold-main" style={{ flex: 1, padding: "8px 10px", fontSize: 9 }}>VIEW</button>
                               <button onClick={() => removeWishlist(w.artwork_id)} className="btn-outline" style={{ padding: "8px 10px", fontSize: 9 }}>REMOVE</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {savedListings.map(l => (
+                        <div key={l.post_id} style={{ border: "1px solid rgba(212,175,55,0.12)", borderRadius: 10, overflow: "hidden", background: "rgba(255,255,255,0.02)", display: "flex", flexDirection: "column" }}>
+                          <div style={{ position: "relative", cursor: "pointer" }} onClick={() => navigate("/community")}>
+                            <SafeImage src={l.image} alt={l.title} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
+                            <span style={{ position: "absolute", top: 8, left: 8, padding: "4px 10px", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", background: "rgba(0,0,0,0.72)", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.5)" }}>{l.is_auction ? "AUCTION" : "LISTING"}</span>
+                            {!l.available && (
+                              <span style={{ position: "absolute", top: 8, right: 8, padding: "4px 10px", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", background: "rgba(0,0,0,0.72)", color: "#fca5a5", border: "1px solid rgba(248,113,113,0.5)" }}>CLOSED</span>
+                            )}
+                          </div>
+                          <div style={{ padding: "10px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
+                            <div onClick={() => navigate("/community")} style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#f0e8d8", lineHeight: 1.2, cursor: "pointer" }}>{l.title || "Untitled listing"}</div>
+                            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.14em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>MARKETPLACE</div>
+                            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "#D4AF37", marginTop: 6 }}>
+                              {l.price ? (l.is_auction ? "Current bid ₹" : "₹") + Number(l.price).toLocaleString("en-IN") : (l.is_auction ? "No bids yet" : "See listing")}
+                            </div>
+                            <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 10 }}>
+                              <button onClick={() => navigate("/community")} className="btn-gold-main" style={{ flex: 1, padding: "8px 10px", fontSize: 9 }}>VIEW</button>
+                              <button onClick={() => removeSavedListing(l.post_id)} className="btn-outline" style={{ padding: "8px 10px", fontSize: 9 }}>REMOVE</button>
                             </div>
                           </div>
                         </div>

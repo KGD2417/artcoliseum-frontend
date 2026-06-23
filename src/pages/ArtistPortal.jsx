@@ -322,6 +322,8 @@ function KycForm({ onApplied }) {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
+  // "form" → fill in details, "review" → confirm before submitting.
+  const [step, setStep] = useState("form");
   const set = (k) => (e) => {
     setF((p) => ({ ...p, [k]: e.target.value }));
     // Clear a field's error as soon as the user starts correcting it.
@@ -364,11 +366,22 @@ function KycForm({ onApplied }) {
     if (!errs.about) delete errs.about;
     return errs;
   };
+  // Validate, then move to the review step instead of submitting straight away.
+  const goReview = () => {
+    setFormError("");
+    const errs = validate();
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
+    setStep("review");
+  };
   const submit = async () => {
     setFormError("");
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
+      setStep("form");
       return;
     }
     setBusy(true);
@@ -415,70 +428,157 @@ function KycForm({ onApplied }) {
           {formError}
         </div>
       )}
-      <Field l="FULL NAME" error={errors.name}>
-        <input style={errInput("name")} value={f.name} onChange={set("name")} />
-      </Field>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 12,
-        }}>
-        <Field l="AGE" error={errors.age}>
-          <input
-            style={errInput("age")}
-            type="number"
-            min="16"
-            max="100"
-            value={f.age}
-            onChange={set("age")}
-          />
-        </Field>
-        <Field l="GENDER">
-          <select style={inputStyle} value={f.gender} onChange={set("gender")}>
-            <option value="">Prefer not to say</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </Field>
-        <Field l="WHERE YOU LIVE">
-          <input
-            style={inputStyle}
-            value={f.location}
-            onChange={set("location")}
-          />
-        </Field>
-      </div>
-      <Field l="WHAT KIND OF ARTIST ARE YOU?" error={errors.art_type}>
-        <input
-          style={errInput("art_type")}
-          value={f.art_type}
-          onChange={set("art_type")}
-          placeholder="e.g. Oil painter, Sculptor"
-        />
-      </Field>
-      <Field l="ABOUT YOU" error={errors.about}>
-        <textarea
-          style={{ ...errInput("about"), minHeight: 90 }}
-          value={f.about}
-          onChange={set("about")}
-        />
-      </Field>
-      <Field l="PROFILE PHOTO (OPTIONAL)">
-        <MediaUploader
-          kind="image"
-          hint="UPLOAD PHOTO"
-          value={avatar}
-          onChange={setAvatar}
-        />
-      </Field>
-      <button
-        style={{ ...btn, opacity: busy ? 0.7 : 1 }}
-        disabled={busy}
-        onClick={submit}>
-        {busy ? "SUBMITTING…" : "APPLY AS ARTIST"}
-      </button>
+      {step === "form" ? (
+        <>
+          <Field l="FULL NAME" error={errors.name}>
+            <input style={errInput("name")} value={f.name} onChange={set("name")} />
+          </Field>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 12,
+            }}>
+            <Field l="AGE" error={errors.age}>
+              <input
+                style={errInput("age")}
+                type="number"
+                min="16"
+                max="100"
+                value={f.age}
+                onChange={set("age")}
+              />
+            </Field>
+            <Field l="GENDER">
+              <select style={inputStyle} value={f.gender} onChange={set("gender")}>
+                <option value="">Prefer not to say</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </Field>
+            <Field l="WHERE YOU LIVE">
+              <input
+                style={inputStyle}
+                value={f.location}
+                onChange={set("location")}
+              />
+            </Field>
+          </div>
+          <Field l="WHAT KIND OF ARTIST ARE YOU?" error={errors.art_type}>
+            <input
+              style={errInput("art_type")}
+              value={f.art_type}
+              onChange={set("art_type")}
+              placeholder="e.g. Oil painter, Sculptor"
+            />
+          </Field>
+          <Field l="ABOUT YOU" error={errors.about}>
+            <textarea
+              style={{ ...errInput("about"), minHeight: 90 }}
+              value={f.about}
+              onChange={set("about")}
+            />
+          </Field>
+          <Field l="PROFILE PHOTO (OPTIONAL)">
+            <MediaUploader
+              kind="image"
+              hint="UPLOAD PHOTO"
+              value={avatar}
+              onChange={setAvatar}
+            />
+          </Field>
+          <button style={btn} onClick={goReview}>
+            REVIEW DETAILS →
+          </button>
+        </>
+      ) : (
+        <>
+          <p
+            style={{
+              fontFamily: "'Raleway',sans-serif",
+              fontSize: 13,
+              color: gold,
+              marginBottom: 14,
+            }}>
+            Please review your details. Go back to edit anything, or submit when
+            it all looks right.
+          </p>
+          {avatar && (
+            <img
+              src={avatar}
+              alt=""
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                objectFit: "cover",
+                border: "1px solid rgba(212,175,55,0.3)",
+                marginBottom: 14,
+              }}
+            />
+          )}
+          {[
+            ["Full name", f.name],
+            ["Age", f.age || "—"],
+            ["Gender", f.gender || "—"],
+            ["Where you live", f.location || "—"],
+            ["Kind of artist", f.art_type],
+            ["About you", f.about],
+          ].map(([k, v]) => (
+            <div
+              key={k}
+              style={{
+                display: "flex",
+                gap: 12,
+                padding: "10px 0",
+                borderBottom: "1px solid rgba(212,175,55,0.1)",
+              }}>
+              <div
+                style={{
+                  flex: "0 0 130px",
+                  fontFamily: "'Cinzel',serif",
+                  fontSize: 9,
+                  letterSpacing: "0.14em",
+                  color: "rgba(200,191,160,0.55)",
+                  textTransform: "uppercase",
+                }}>
+                {k}
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  fontFamily: "'Raleway',sans-serif",
+                  fontSize: 13,
+                  color: "#f0e8d8",
+                  whiteSpace: "pre-wrap",
+                }}>
+                {v || "—"}
+              </div>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+            <button
+              style={{
+                ...btn,
+                flex: "0 0 auto",
+                background: "transparent",
+                border: "1px solid rgba(212,175,55,0.4)",
+                color: gold,
+              }}
+              disabled={busy}
+              onClick={() => setStep("form")}>
+              ← BACK / EDIT
+            </button>
+            <button
+              style={{ ...btn, flex: 1, opacity: busy ? 0.7 : 1 }}
+              disabled={busy}
+              onClick={submit}>
+              {busy ? "SUBMITTING…" : "CONFIRM & SUBMIT"}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1705,6 +1805,7 @@ function ProfilePanel() {
       .then((p) =>
         setF({
           name: p.name || "",
+          real_name: p.real_name || "",
           bio: p.bio || "",
           image_url: p.image_url || "",
           location: p.location || "",
@@ -1716,6 +1817,7 @@ function ProfilePanel() {
       .catch(() =>
         setF({
           name: "",
+          real_name: "",
           bio: "",
           image_url: "",
           location: "",
@@ -1802,9 +1904,14 @@ function ProfilePanel() {
           onChange={(url) => setF((v) => ({ ...v, image_url: url }))}
         />
       </div>
-      <Field l="DISPLAY NAME">
-        <input style={inputStyle} value={f.name} onChange={set("name")} />
-      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field l="ARTIST NAME (SHOWN PUBLICLY)">
+          <input style={inputStyle} value={f.name} onChange={set("name")} placeholder="Your stage / artist name" />
+        </Field>
+        <Field l="REAL NAME (KEPT PRIVATE)">
+          <input style={inputStyle} value={f.real_name} onChange={set("real_name")} placeholder="Your legal name" />
+        </Field>
+      </div>
       <Field l="BIO">
         <textarea
           style={{ ...inputStyle, minHeight: 100 }}

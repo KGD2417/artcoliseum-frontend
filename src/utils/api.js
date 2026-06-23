@@ -431,6 +431,19 @@ export const api = {
     remove(artworkId) {
       return request("DELETE", `/wishlist/${encodeURIComponent(artworkId)}`);
     },
+    // Saved community marketplace listings — shown in the same "Saved for Later".
+    listings() {
+      return request("GET", "/wishlist/posts");
+    },
+    listingIds() {
+      return request("GET", "/wishlist/posts/ids");
+    },
+    saveListing(postId) {
+      return request("POST", "/wishlist/posts", { body: { post_id: postId } });
+    },
+    removeListing(postId) {
+      return request("DELETE", `/wishlist/posts/${encodeURIComponent(postId)}`);
+    },
   },
 
   artist: {
