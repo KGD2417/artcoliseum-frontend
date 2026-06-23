@@ -600,7 +600,11 @@ export default function Navigation() {
               className="nav-icon-btn"
               whileHover={{ scale: 1.15, color: "#D4AF37" }}
               whileTap={{ scale: 0.92 }}>
-              <ProfileIcon />
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(212,175,55,0.5)" }} />
+              ) : (
+                <ProfileIcon />
+              )}
             </motion.button>
           </div>
 
@@ -684,7 +688,11 @@ export default function Navigation() {
                   navigate(profileTo);
                   setMenuOpen(false);
                 }}>
-                <ProfileIcon />
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(212,175,55,0.5)" }} />
+                ) : (
+                  <ProfileIcon />
+                )}
               </motion.button>
             </motion.div>
           </motion.div>

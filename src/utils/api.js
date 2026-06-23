@@ -205,6 +205,11 @@ export const api = {
       const qs = Array.isArray(ids) ? ids.join(",") : ids;
       return request("GET", `/chat/names?ids=${encodeURIComponent(qs)}`);
     },
+    // Resolve user IDs → profile-picture URLs (to show photos in DM threads).
+    avatars(ids) {
+      const qs = Array.isArray(ids) ? ids.join(",") : ids;
+      return request("GET", `/chat/avatars?ids=${encodeURIComponent(qs)}`);
+    },
   },
 
   uploads: {

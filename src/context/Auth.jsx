@@ -10,10 +10,20 @@ export function AuthProvider({ children }) {
   const [artistStatus, setArtistStatus] = useState('none');
 
   const applyMe = useCallback((me) => {
-    setUser(me?.user ?? null);
+    // Merge avatar / full name (from /auth/me) onto the user so the whole app
+    // can show the signed-in user's profile picture. Token responses omit them.
+    const u = me?.user
+      ? { ...me.user, avatar_url: me.avatar_url ?? null, full_name: me.full_name ?? null }
+      : null;
+    setUser(u);
     setRole(me?.role || 'user');
     setArtistStatus(me?.artist_status || 'none');
   }, []);
+
+  // Re-pull the full profile (used after a DP change so the avatar updates everywhere).
+  const refreshUser = useCallback(async () => {
+    try { applyMe(await api.auth.me()); } catch { /* ignore */ }
+  }, [applyMe]);
 
   // Restore session on mount (if we have a refresh token).
   useEffect(() => {
@@ -47,6 +57,7 @@ export function AuthProvider({ children }) {
     try {
       const data = await api.auth.register({ email, password, full_name: fullName, phone });
       applyMe({ user: data.user, role: data.role, artist_status: data.artist_status });
+      refreshUser();  // pull avatar / full name not present in the token response
       return { data, error: null };
     } catch (e) {
       return { data: null, error: { message: e.message } };
@@ -57,6 +68,7 @@ export function AuthProvider({ children }) {
     try {
       const data = await api.auth.login({ email, password });
       applyMe({ user: data.user, role: data.role, artist_status: data.artist_status });
+      refreshUser();  // pull avatar / full name not present in the token response
       return { data, error: null };
     } catch (e) {
       return { data: null, error: { message: e.message } };
@@ -91,7 +103,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, role, artistStatus, signUp, signIn, signOut, forgotPassword, resetPassword }}>
+    <AuthContext.Provider value={{ user, loading, role, artistStatus, refreshUser, signUp, signIn, signOut, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

@@ -107,6 +107,7 @@ function mapPost(p) {
     author: p.author || "Member",
     avatar: initialsOf(p.author),
     avatarColor: colorFor(p.author),
+    avatarUrl: p.author_avatar || null,
     time: timeAgo(p.created_at),
     text: p.text,
     images: p.images && p.images.length ? p.images : null,
@@ -136,7 +137,23 @@ function mapPost(p) {
 }
 
 // ─── Avatar ────────────────────────────────────────────────────────────────────
-function Avatar({ initials, color, size = 40 }) {
+function Avatar({ initials, color, size = 40, src }) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={initials}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          objectFit: "cover",
+          border: "1.5px solid rgba(212,175,55,0.25)",
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
   return (
     <div
       style={{
@@ -947,7 +964,7 @@ function PostCard({
                 userId: post.userId,
               })
             }>
-            <Avatar initials={post.avatar} color={post.avatarColor} />
+            <Avatar initials={post.avatar} color={post.avatarColor} src={post.avatarUrl} />
             <div>
               <div
                 style={{

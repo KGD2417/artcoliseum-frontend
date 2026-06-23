@@ -41,6 +41,7 @@ export default function MessagesWidget() {
   const [sending, setSending] = useState(false);
   const [titles, setTitles] = useState({}); // artworkId -> title, for enquiry tab names
   const [names, setNames] = useState({});   // userId -> display name, for DM thread titles
+  const [avatars, setAvatars] = useState({}); // userId -> profile picture url
   const scrollRef = useRef(null);
   const titlesRef = useRef({});
   titlesRef.current = titles;
@@ -103,8 +104,20 @@ export default function MessagesWidget() {
         const map = await api.chat.names([...peerIds]);
         setNames((prev) => ({ ...prev, ...map }));
       } catch { /* ignore */ }
+      try {
+        const amap = await api.chat.avatars([...peerIds]);
+        setAvatars((prev) => ({ ...prev, ...amap }));
+      } catch { /* ignore */ }
     }
   }, [user, isAdmin]);
+
+  // The other participant's photo for a "peer:a:b" conversation, if we have it.
+  const peerAvatarFor = (key) => {
+    if (!key || !key.startsWith("peer:")) return null;
+    const ids = key.split(":").slice(1, 3);
+    const other = ids.find((id) => String(id) !== String(user?.id)) || ids[0];
+    return avatars[other] || null;
+  };
 
   useEffect(() => { if (user) loadUnread(); }, [user, loadUnread]);
   useEffect(() => { if (open && view === "list") loadConvos(); }, [open, view, loadConvos]);
@@ -221,9 +234,13 @@ export default function MessagesWidget() {
                 {convos.map((c) => (
                   <button key={`${c.key}__${c.userId}`} onClick={() => openThread(c)}
                     style={{ display: "flex", gap: 12, alignItems: "center", width: "100%", textAlign: "left", padding: "14px 16px", background: "transparent", border: "none", borderBottom: "1px solid rgba(212,175,55,0.08)", cursor: "pointer" }}>
-                    <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#D4AF37,#a8892a)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 11, color: "#080808", fontWeight: 700 }}>
-                      {(titleFor(c.key, titles, names, user?.id)[0] || "C").toUpperCase()}
-                    </div>
+                    {peerAvatarFor(c.key) ? (
+                      <img src={peerAvatarFor(c.key)} alt="" style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid rgba(212,175,55,0.3)" }} />
+                    ) : (
+                      <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#D4AF37,#a8892a)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 11, color: "#080808", fontWeight: 700 }}>
+                        {(titleFor(c.key, titles, names, user?.id)[0] || "C").toUpperCase()}
+                      </div>
+                    )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                         <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600, color: "#f0e8d8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titleFor(c.key, titles, names, user?.id)}</span>

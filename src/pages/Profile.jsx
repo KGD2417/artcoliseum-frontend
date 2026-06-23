@@ -44,7 +44,7 @@ const NOTIFS = [
 export default function Profile() {
   const { lang, setLang } = useLocale();
   const navigate = useNavigate();
-  const { user: authUser, loading: authLoading, role, artistStatus, signOut } = useAuth();
+  const { user: authUser, loading: authLoading, role, artistStatus, signOut, refreshUser } = useAuth();
   const isAdmin = role === "admin";
   // Admins manage the platform from the dashboard — never treat them as an artist
   // here, even if their account also carries a (stale) artist status.
@@ -249,7 +249,10 @@ export default function Profile() {
   const saveAvatar = async (url) => {
     setUser((u) => ({ ...u, avatar_url: url }));
     setDraft((d) => ({ ...d, avatar_url: url }));
-    try { await api.auth.updateMe({ avatar_url: url }); } catch { /* keep optimistic value */ }
+    try {
+      await api.auth.updateMe({ avatar_url: url });
+      refreshUser();  // propagate the new photo to the nav and everywhere else
+    } catch { /* keep optimistic value */ }
   };
   const handleSignOut = async () => { await signOut(); navigate("/"); };
   const removeWishlist = async (artworkId) => {
@@ -289,16 +292,23 @@ export default function Profile() {
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
         style={{ display: "flex", alignItems: "center", gap: 22, marginBottom: 40, flexWrap: "wrap" }}>
-        <div style={{
-          width: 78, height: 78, borderRadius: "50%",
-          background: "linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))",
-          border: "2px solid #D4AF37",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 700, color: "#D4AF37",
-          boxShadow: "0 0 28px rgba(212,175,55,0.18)",
-        }}>
-          {user.name.split(" ").map(n => n[0]).slice(0, 2).join("")}
-        </div>
+        {user.avatar_url ? (
+          <img src={user.avatar_url} alt="" style={{
+            width: 78, height: 78, borderRadius: "50%", objectFit: "cover",
+            border: "2px solid #D4AF37", boxShadow: "0 0 28px rgba(212,175,55,0.18)",
+          }} />
+        ) : (
+          <div style={{
+            width: 78, height: 78, borderRadius: "50%",
+            background: "linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05))",
+            border: "2px solid #D4AF37",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 700, color: "#D4AF37",
+            boxShadow: "0 0 28px rgba(212,175,55,0.18)",
+          }}>
+            {user.name.split(" ").map(n => n[0]).slice(0, 2).join("")}
+          </div>
+        )}
         <div>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.2em", color: "#D4AF37" }}>
             {isAdmin ? "ADMINISTRATOR" : isArtist ? "ARTIST PROFILE" : isPendingArtist ? "ARTIST APPLICATION · UNDER REVIEW" : "COLLECTOR PROFILE"}
