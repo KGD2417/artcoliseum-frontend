@@ -290,10 +290,11 @@ function createARStudio(THREE, opts) {
     placedMeshes: [], anchoredMeshes: [], xrSession: null, xrRefSpace: null,
     xrHitTestSource: null, xrFrame: null, reticleMesh: null, previewMesh: null,
     isARActive: false, onWall: false, rafId: 0, disposed: false,
+    hasSmooth: false, lightProbe: null, onBeforeSelect: null,
   };
 
   // ── Renderer / scene / camera ──
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -306,7 +307,8 @@ function createARStudio(THREE, opts) {
   const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
   camera.position.set(0, 0, 1.4);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+  scene.add(ambient);
   const key = new THREE.DirectionalLight(0xfff8f0, 2.1);
   key.position.set(2, 3, 3); key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024); key.shadow.radius = 4; scene.add(key);
@@ -393,8 +395,25 @@ function createARStudio(THREE, opts) {
     const W = s.artworkScale / 100;
     radius = Math.max(W, W / s.artworkAspect) * 1.8 + 0.4; updateCam();
   }
+  // Phones choke on 4–8K photo textures (upload stalls + GPU memory pressure);
+  // 2K is indistinguishable at wall-art viewing distances.
+  const MAX_TEX = 2048;
+  function capTextureSize(tex) {
+    const img = tex.image;
+    if (!img || Math.max(img.width, img.height) <= MAX_TEX) return tex;
+    const k = MAX_TEX / Math.max(img.width, img.height);
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * k);
+    c.height = Math.round(img.height * k);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    tex.dispose();
+    return new THREE.CanvasTexture(c);
+  }
   function applyTexture(tex, aspect, done) {
+    tex = capTextureSize(tex);
     if ("colorSpace" in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); // stays sharp at oblique wall angles
+    s.artworkTexture?.dispose();
     s.artworkTexture = tex; s.artworkAspect = aspect; rebuildPreview();
     onStatus(s.xrSession ? "" : "Ready — tap to enter AR"); done && done();
   }
@@ -459,51 +478,59 @@ function createARStudio(THREE, opts) {
   // ── Surface-normal helpers ────────────────────────────────────────────────
   const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
-  // If the aimed-at point lies on a detected (near-vertical) wall plane, return
-  // that plane's clean normal — far steadier than the per-hit estimate. We only
-  // trust a plane when the hit sits within ~12 cm of it, so we never snap to a
-  // different wall behind the one the user is pointing at.
-  function planeNormalAt(frame, hitPos) {
-    if (!frame.detectedPlanes || !frame.detectedPlanes.size) return null;
-    let best = null;
-    let bestPerp = 0.12;
+  // Scratch objects reused every XR frame — allocating per frame causes GC
+  // hitches on phones.
+  const _pN = new THREE.Vector3(), _pC = new THREE.Vector3();
+  const _bestN = new THREE.Vector3(), _bestC = new THREE.Vector3();
+  const _hitPos = new THREE.Vector3(), _normal = new THREE.Vector3();
+  const _camPos = new THREE.Vector3(), _dir = new THREE.Vector3();
+  const _fwd = new THREE.Vector3(), _upv = new THREE.Vector3(), _right = new THREE.Vector3();
+  const _m4 = new THREE.Matrix4(), _targetQ = new THREE.Quaternion();
+  const _retPos = new THREE.Vector3(), _retN = new THREE.Vector3();
+  const _smoothPos = new THREE.Vector3(), _smoothQuat = new THREE.Quaternion();
+
+  // If the aimed-at point lies on a detected (near-vertical) wall plane, use
+  // that plane's clean normal — far steadier than the per-hit estimate. Fills
+  // _bestN/_bestC and returns true. We only trust a plane when the hit sits
+  // within ~12 cm of it, so we never snap to a different wall behind the one
+  // the user is pointing at.
+  function wallPlaneAt(frame, hitPos) {
+    if (!frame.detectedPlanes || !frame.detectedPlanes.size) return false;
+    let found = false, bestPerp = 0.12;
     frame.detectedPlanes.forEach((plane) => {
       let pose;
       try { pose = frame.getPose(plane.planeSpace, s.xrRefSpace); } catch { return; }
       if (!pose) return;
       const m = pose.transform.matrix;
-      const n = new THREE.Vector3(m[4], m[5], m[6]).normalize(); // planeSpace +Y = normal
-      if (Math.abs(n.y) > 0.5) return; // skip floors / ceilings — we want walls
-      const c = new THREE.Vector3(m[12], m[13], m[14]);
-      const perp = Math.abs(hitPos.clone().sub(c).dot(n));
-      if (perp < bestPerp) { bestPerp = perp; best = n; }
+      _pN.set(m[4], m[5], m[6]).normalize(); // planeSpace +Y = normal
+      if (Math.abs(_pN.y) > 0.5) return; // skip floors / ceilings — we want walls
+      _pC.set(m[12], m[13], m[14]);
+      const perp = Math.abs((hitPos.x - _pC.x) * _pN.x + (hitPos.y - _pC.y) * _pN.y + (hitPos.z - _pC.z) * _pN.z);
+      if (perp < bestPerp) { bestPerp = perp; _bestN.copy(_pN); _bestC.copy(_pC); found = true; }
     });
-    return best;
+    return found;
   }
 
   // Build an upright orientation that sits flush on the surface: the artwork's
   // face (+Z) points out along `normal`; +Y stays world-up (projected onto the
-  // wall) so the piece hangs level rather than tilted.
-  function orientationFor(normal, isWall, camPos, hitPos) {
-    let forward, up;
+  // wall) so the piece hangs level rather than tilted. Writes into `target`.
+  function orientationFor(target, normal, isWall, camPos, hitPos) {
     if (isWall) {
-      forward = normal.clone();
-      up = WORLD_UP.clone().addScaledVector(forward, -WORLD_UP.dot(forward));
-      if (up.lengthSq() < 1e-4) up.set(0, 1, 0);
-      up.normalize();
+      _fwd.copy(normal);
+      _upv.copy(WORLD_UP).addScaledVector(_fwd, -WORLD_UP.dot(_fwd));
+      if (_upv.lengthSq() < 1e-4) _upv.set(0, 1, 0);
+      _upv.normalize();
     } else {
       // Floor / table-top: stand the piece upright, facing the viewer.
-      forward = camPos ? camPos.clone().sub(hitPos) : new THREE.Vector3(0, 0, 1);
-      forward.y = 0;
-      if (forward.lengthSq() < 1e-4) forward.set(0, 0, 1);
-      forward.normalize();
-      up = WORLD_UP.clone();
+      if (camPos) _fwd.copy(camPos).sub(hitPos); else _fwd.set(0, 0, 1);
+      _fwd.y = 0;
+      if (_fwd.lengthSq() < 1e-4) _fwd.set(0, 0, 1);
+      _fwd.normalize();
+      _upv.copy(WORLD_UP);
     }
-    const right = new THREE.Vector3().crossVectors(up, forward).normalize();
-    up = new THREE.Vector3().crossVectors(forward, right).normalize(); // re-orthonormalise
-    return new THREE.Quaternion().setFromRotationMatrix(
-      new THREE.Matrix4().makeBasis(right, up, forward),
-    );
+    _right.crossVectors(_upv, _fwd).normalize();
+    _upv.crossVectors(_fwd, _right).normalize(); // re-orthonormalise
+    return target.setFromRotationMatrix(_m4.makeBasis(_right, _upv, _fwd));
   }
   async function startSession() {
     try {
@@ -522,6 +549,23 @@ function createARStudio(THREE, opts) {
       renderer.xr.enabled = true;
       scene.background = null; renderer.setClearColor(0x000000, 0); renderer.setClearAlpha(0);
       await renderer.xr.setSession(session);
+      renderer.xr.setFoveation?.(1); // cheaper peripheral shading — big GPU win on phones
+
+      // The desktop-preview props must not leak into the real world: without
+      // this a ghost copy of the artwork floats at the session origin (the
+      // user's feet) and the shadow plane draws a dark patch mid-air.
+      if (s.previewMesh) { scene.remove(s.previewMesh); s.previewMesh = null; }
+      floor.visible = false;
+      key.castShadow = false; // nothing receives shadows in AR — skip the whole shadow pass
+
+      // Match the virtual lights to the real room (ARCore light estimation).
+      s.lightProbe = null;
+      try { s.lightProbe = await session.requestLightProbe(); } catch { /* not supported */ }
+
+      // Taps on the overlay buttons (undo / screenshot / exit) must not also
+      // fire the XR select that places artwork.
+      s.onBeforeSelect = (e) => { if (e.target?.closest?.("button")) e.preventDefault(); };
+      overlayEl?.addEventListener("beforexrselect", s.onBeforeSelect);
 
       let refSpace;
       try { refSpace = await session.requestReferenceSpace("local-floor"); }
@@ -531,6 +575,7 @@ function createARStudio(THREE, opts) {
       s.xrHitTestSource = await session.requestHitTestSource({ space: viewer });
       s.onWall = false;
       s.estimated = false;
+      s.hasSmooth = false;
       s.lastHitTime = null;
 
       const reticle = new THREE.Mesh(new THREE.RingGeometry(0.09, 0.11, 32), new THREE.MeshBasicMaterial({ color: 0xc9a84c, side: THREE.DoubleSide }));
@@ -557,87 +602,135 @@ function createARStudio(THREE, opts) {
       if (pose) { a.mesh.matrixAutoUpdate = false; a.mesh.matrix.fromArray(pose.transform.matrix); }
     }
 
-    // The hit-test ray (screen centre) gives the exact point the user is aiming
-    // at *plus* an estimated surface normal. This — not a plane's floating
-    // centre — is what we anchor the reticle and artwork to.
-    let hitPose = null;
-    const hits = frame.getHitTestResults(s.xrHitTestSource);
-    if (hits.length) hitPose = hits[0].getPose(s.xrRefSpace);
+    // Light the piece like the room it's in.
+    if (s.lightProbe && frame.getLightEstimate) {
+      const est = frame.getLightEstimate(s.lightProbe);
+      if (est) {
+        const pi = est.primaryLightIntensity, pd = est.primaryLightDirection;
+        key.intensity = Math.min(3, Math.max(0.4, Math.max(pi.x, pi.y, pi.z)));
+        key.position.set(pd.x, pd.y, pd.z).multiplyScalar(3);
+        const sh = est.sphericalHarmonicsCoefficients;
+        if (sh && sh.length >= 3) ambient.intensity = Math.min(1.6, Math.max(0.15, (sh[0] + sh[1] + sh[2]) / 3));
+      }
+    }
 
     const viewerPose = frame.getViewerPose(s.xrRefSpace);
-    const camPos = viewerPose
-      ? new THREE.Vector3(
-          viewerPose.transform.position.x,
-          viewerPose.transform.position.y,
-          viewerPose.transform.position.z,
-        )
-      : null;
+    let camPos = null;
+    if (viewerPose) {
+      const p = viewerPose.transform.position;
+      camPos = _camPos.set(p.x, p.y, p.z);
+    }
+
+    // The hit-test ray (screen centre) gives the exact point the user is aiming
+    // at *plus* an estimated surface normal. Prefer the nearest WALL hit so
+    // aiming above a sofa doesn't grab the sofa or floor edge in front of it.
+    let hitPose = null;
+    const hits = frame.getHitTestResults(s.xrHitTestSource);
+    for (let i = 0; i < hits.length && i < 5; i++) {
+      const pose = hits[i].getPose(s.xrRefSpace);
+      if (!pose) continue;
+      if (!hitPose) hitPose = pose;
+      if (Math.abs(pose.transform.matrix[5]) < 0.5) { hitPose = pose; break; } // |normal.y| small → wall
+    }
 
     if (s.lastHitTime == null) s.lastHitTime = time;
 
     const r = s.reticleMesh;
-    if (hitPose && r) {
-      s.lastHitTime = time;
-      s.estimated = false;
-      const m = hitPose.transform.matrix;
-      const hitPos = new THREE.Vector3(m[12], m[13], m[14]);
-      const normal = new THREE.Vector3(m[4], m[5], m[6]).normalize(); // hit pose +Y = surface normal
+    let targetValid = false, isWall = false, estimated = false;
 
-      // Snap to a clean wall-plane normal when the aimed point lies on one.
-      const pn = planeNormalAt(frame, hitPos);
-      if (pn) normal.copy(pn);
+    if (hitPose) {
+      s.lastHitTime = time;
+      const m = hitPose.transform.matrix;
+      _hitPos.set(m[12], m[13], m[14]);
+      _normal.set(m[4], m[5], m[6]).normalize(); // hit pose +Y = surface normal
+
+      // Snap to a clean wall-plane normal and project the hit onto that plane —
+      // removes both angular jitter and the few-cm depth error that makes
+      // pieces float off (or sink into) the wall.
+      if (wallPlaneAt(frame, _hitPos)) {
+        _normal.copy(_bestN);
+        const d = (_hitPos.x - _bestC.x) * _bestN.x + (_hitPos.y - _bestC.y) * _bestN.y + (_hitPos.z - _bestC.z) * _bestN.z;
+        _hitPos.addScaledVector(_bestN, -d);
+      }
 
       // Always face the art into the room (toward the camera).
-      if (camPos && normal.dot(camPos.clone().sub(hitPos)) < 0) normal.multiplyScalar(-1);
+      if (camPos) {
+        const facing = _normal.x * (camPos.x - _hitPos.x) + _normal.y * (camPos.y - _hitPos.y) + _normal.z * (camPos.z - _hitPos.z);
+        if (facing < 0) _normal.multiplyScalar(-1);
+      }
 
-      const isWall = Math.abs(normal.y) < 0.5; // normal ~horizontal → vertical surface
+      // Hysteresis: once locked onto a wall it takes a clearly horizontal
+      // surface to switch away, so the reticle doesn't flicker wall↔floor
+      // along skirting boards and furniture edges.
+      isWall = Math.abs(_normal.y) < (s.onWall ? 0.65 : 0.5);
+      targetValid = true;
+    } else if (camPos && viewerPose && time - s.lastHitTime > 600) {
+      // No hit-test result — common on big blank / untextured walls (ARCore's
+      // hit-test needs visual features). Fall back to the depth API: ARCore's
+      // neural depth model *does* see blank walls, so place the target at the
+      // real measured distance straight ahead. Only if depth is unavailable
+      // too, use a fixed 1.3 m guess after a longer grace period.
+      let dist = 0;
+      if (frame.getDepthInformation) {
+        try {
+          const depth = frame.getDepthInformation(viewerPose.views[0]);
+          if (depth) {
+            const d = depth.getDepthInMeters(0.5, 0.5);
+            if (d > 0.25 && d < 8) dist = d;
+          }
+        } catch { /* CPU depth not available this frame */ }
+      }
+      if (dist || time - s.lastHitTime > 1400) {
+        const vm = viewerPose.transform.matrix;
+        _dir.set(-vm[8], -vm[9], -vm[10]).normalize(); // true camera forward
+        _hitPos.copy(camPos).addScaledVector(_dir, dist || 1.3);
+        _normal.set(vm[8], vm[9], vm[10]); // back toward the viewer
+        _normal.y = 0;
+        if (_normal.lengthSq() < 1e-4) _normal.set(0, 0, 1);
+        _normal.normalize();
+        isWall = true;
+        estimated = true;
+        targetValid = true;
+      }
+    }
+
+    if (r && targetValid) {
+      orientationFor(_targetQ, _normal, isWall, camPos, _hitPos);
+
+      // Temporal smoothing — raw poses jitter a few cm frame to frame, and
+      // placement inherits whatever pose the reticle shows. Snap on big jumps
+      // (new surface), glide on small ones (sensor noise).
+      if (!s.hasSmooth || estimated !== s.estimated || _smoothPos.distanceToSquared(_hitPos) > 0.09) {
+        _smoothPos.copy(_hitPos); _smoothQuat.copy(_targetQ); s.hasSmooth = true;
+      } else {
+        _smoothPos.lerp(_hitPos, 0.25);
+        _smoothQuat.slerp(_targetQ, 0.25);
+      }
       s.onWall = isWall;
-      s.reticlePos = hitPos;
-      s.reticleNormal = normal;
-      s.reticleQuat = orientationFor(normal, isWall, camPos, hitPos);
+      s.estimated = estimated;
+      s.reticlePos = _retPos.copy(_smoothPos);
+      s.reticleNormal = _retN.copy(_normal);
+      s.reticleQuat = _smoothQuat;
 
       r.visible = true;
       r.matrixAutoUpdate = false;
-      r.matrix.compose(hitPos, s.reticleQuat, _reticleScale); // ring lies flat on the surface
-      r.material.color.setHex(isWall ? 0xc9a84c : 0x6f8a9a);
-      if (instructionEl) instructionEl.textContent = isWall
+      r.matrix.compose(_smoothPos, _smoothQuat, _reticleScale); // ring lies flat on the surface
+      r.material.color.setHex(estimated ? 0x9a7b3a : isWall ? 0xc9a84c : 0x6f8a9a);
+      if (instructionEl) instructionEl.textContent = estimated
+        ? "Blank wall detected — tap to place, or step back to refine"
+        : isWall
         ? "Wall found — tap to hang the artwork"
         : "Surface found — aim at a wall to hang it";
       if (placeBtnEl) placeBtnEl.disabled = false;
+    } else if (r && s.hasSmooth && time - s.lastHitTime < 250) {
+      // Brief tracking dropout — hold the last good pose instead of flickering.
     } else if (r) {
-      // No surface found — common on big blank / untextured walls, especially up
-      // close (ARCore needs visual features + parallax). After a short grace
-      // period, offer a manual fallback: a target floating ~1.3 m ahead, upright
-      // and facing the viewer, so the piece can still be hung, then refined by
-      // stepping back or panning the phone.
-      if (camPos && viewerPose && time - s.lastHitTime > 1200) {
-        const vm = viewerPose.transform.matrix;
-        const fwd = new THREE.Vector3(-vm[8], -vm[9], -vm[10]); // camera forward
-        fwd.y = 0;
-        if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
-        fwd.normalize();
-        const pos = camPos.clone().addScaledVector(fwd, 1.3);
-        const normal = fwd.clone().multiplyScalar(-1); // face back toward the viewer
-        s.onWall = true;
-        s.estimated = true;
-        s.reticlePos = pos;
-        s.reticleNormal = normal;
-        s.reticleQuat = orientationFor(normal, true, camPos, pos);
-
-        r.visible = true;
-        r.matrixAutoUpdate = false;
-        r.matrix.compose(pos, s.reticleQuat, _reticleScale);
-        r.material.color.setHex(0x9a7b3a); // muted gold = estimated, not a real surface
-        if (instructionEl) instructionEl.textContent =
-          "Blank wall? Step back or aim near an edge — or tap to place here";
-        if (placeBtnEl) placeBtnEl.disabled = false;
-      } else {
-        r.visible = false;
-        s.estimated = false;
-        s.reticlePos = null;
-        if (instructionEl) instructionEl.textContent = "Move your phone slowly to scan the wall";
-        if (placeBtnEl) placeBtnEl.disabled = true;
-      }
+      r.visible = false;
+      s.hasSmooth = false;
+      s.estimated = false;
+      s.reticlePos = null;
+      if (instructionEl) instructionEl.textContent = "Move your phone slowly to scan the wall";
+      if (placeBtnEl) placeBtnEl.disabled = true;
     }
     renderer.render(scene, camera);
   }
@@ -685,10 +778,18 @@ function createARStudio(THREE, opts) {
   function exitAR() {
     if (s.xrSession) { try { s.xrSession.end(); } catch { /* ignore */ } s.xrSession = null; }
     s.isARActive = false;
+    s.lightProbe = null;
+    s.hasSmooth = false;
+    if (s.onBeforeSelect) { overlayEl?.removeEventListener("beforexrselect", s.onBeforeSelect); s.onBeforeSelect = null; }
     if (s.reticleMesh) { scene.remove(s.reticleMesh); s.reticleMesh = null; }
     s.placedMeshes.forEach((m) => scene.remove(m)); s.placedMeshes = [];
     s.anchoredMeshes.forEach((a) => { try { a.anchor?.delete?.(); } catch { /* ignore */ } }); s.anchoredMeshes = [];
     s.xrFrame = null; renderer.xr.enabled = false;
+    // Restore the studio-preview scene and lighting that AR mode altered.
+    floor.visible = true;
+    key.castShadow = true;
+    key.intensity = 2.1; key.position.set(2, 3, 3);
+    ambient.intensity = 0.45;
     scene.background = new THREE.Color(0x0d0d0d); renderer.setClearAlpha(1);
     resize(); rebuildPreview(); previewLoop();
     onARExit();
