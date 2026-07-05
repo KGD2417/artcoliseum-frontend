@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { intRange, minLen } from "../utils/validation";
+import { useEffect, useMemo, useState } from "react";
+import { intRange, minLen, ageRule, validateForm, isValid, required, phoneIN, pincodeIN } from "../utils/validation";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/Auth";
@@ -7,6 +7,7 @@ import { Skeleton, SkeletonRows } from "../components/ui/Skeleton";
 import MediaUploader from "../components/ui/MediaUploader";
 import ArtworkForm from "../components/ArtworkForm";
 import { isThreeD, composeDims } from "../utils/dimensions";
+import { stateOptions, cityOptions, stateCodeFromName, DEFAULT_COUNTRY_CODE } from "../utils/locations";
 import { dimsToCm, toCm } from "../utils/units";
 import { api } from "../utils/api";
 
@@ -83,6 +84,7 @@ export default function ArtistPortal() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState(null); // { artist_status, role }
+  const [editing, setEditing] = useState(false); // editing a pending application
 
   useEffect(() => {
     if (loading) return;
@@ -188,7 +190,19 @@ export default function ArtistPortal() {
             <KycForm onApplied={(s) => setStatus(s)} />
           </>
         )}
-        {isWaiting && <AwaitingApproval />}
+        {isWaiting &&
+          (editing ? (
+            <KycForm
+              editing
+              onApplied={(s) => {
+                setStatus(s);
+                setEditing(false);
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          ) : (
+            <AwaitingApproval onEdit={() => setEditing(true)} />
+          ))}
       </div>
     </section>
   );
@@ -279,7 +293,7 @@ function ApplyStepper({ status }) {
   );
 }
 
-function AwaitingApproval() {
+function AwaitingApproval({ onEdit }) {
   return (
     <div style={{ ...card, textAlign: "center", padding: "48px 32px" }}>
       <div style={{ fontSize: 40, marginBottom: 10 }}>⏳</div>
@@ -305,11 +319,31 @@ function AwaitingApproval() {
         approved, your studio unlocks here and you can start uploading work for
         sale. We'll keep this page updated — check back soon.
       </p>
+      <p
+        style={{
+          fontFamily: "'Raleway',sans-serif",
+          fontSize: 13,
+          color: "rgba(200,191,160,0.5)",
+          marginTop: 22,
+          marginBottom: 14,
+        }}>
+        Need to fix something? You can still update your details while you wait.
+      </p>
+      <button
+        style={{
+          ...btn,
+          background: "transparent",
+          border: "1px solid rgba(212,175,55,0.4)",
+          color: gold,
+        }}
+        onClick={onEdit}>
+        EDIT APPLICATION DETAILS
+      </button>
     </div>
   );
 }
 
-function KycForm({ onApplied }) {
+function KycForm({ onApplied, editing = false, onCancel }) {
   const [f, setF] = useState({
     name: "",
     age: "",
@@ -334,8 +368,26 @@ function KycForm({ onApplied }) {
     errors[k]
       ? { ...inputStyle, borderColor: "#f87171", background: "rgba(248,113,113,0.06)" }
       : inputStyle;
-  // You're already a user — prefill name (and location) from your profile.
+  // Editing a pending application: prefill every field from what was submitted.
+  // First-time apply: prefill just name (and location) from the user's profile.
   useEffect(() => {
+    if (editing) {
+      api.artist
+        .profile()
+        .then((a) => {
+          setF({
+            name: a?.name || "",
+            age: a?.age != null ? String(a.age) : "",
+            art_type: a?.art_type || "",
+            location: a?.location || "",
+            about: a?.bio || "",
+            gender: a?.gender || "",
+          });
+          if (a?.image_url) setAvatar(a.image_url);
+        })
+        .catch(() => {});
+      return;
+    }
     api.auth
       .me()
       .then((m) =>
@@ -350,7 +402,7 @@ function KycForm({ onApplied }) {
         })),
       )
       .catch(() => {});
-  }, []);
+  }, [editing]);
   const validate = () => {
     const errs = {};
     if (!f.name.trim()) errs.name = "Your name is required.";
@@ -408,10 +460,20 @@ function KycForm({ onApplied }) {
           lineHeight: 1.7,
           marginBottom: 20,
         }}>
-        Tell us about yourself and your practice. Once you apply, an Art
-        Coliseum curator reviews your details. After you're{" "}
-        <strong style={{ color: gold }}>approved</strong>, your studio unlocks
-        and you can publish work for sale.
+        {editing ? (
+          <>
+            Update your application details below. Your application stays{" "}
+            <strong style={{ color: gold }}>under review</strong> after you save
+            — this just refreshes what our curators see.
+          </>
+        ) : (
+          <>
+            Tell us about yourself and your practice. Once you apply, an Art
+            Coliseum curator reviews your details. After you're{" "}
+            <strong style={{ color: gold }}>approved</strong>, your studio
+            unlocks and you can publish work for sale.
+          </>
+        )}
       </p>
       {formError && (
         <div
@@ -488,9 +550,26 @@ function KycForm({ onApplied }) {
               onChange={setAvatar}
             />
           </Field>
-          <button style={btn} onClick={goReview}>
-            REVIEW DETAILS →
-          </button>
+          <div style={{ display: "flex", gap: 12 }}>
+            {editing && (
+              <button
+                style={{
+                  ...btn,
+                  flex: "0 0 auto",
+                  background: "transparent",
+                  border: "1px solid rgba(212,175,55,0.4)",
+                  color: gold,
+                }}
+                onClick={onCancel}>
+                CANCEL
+              </button>
+            )}
+            <button
+              style={{ ...btn, flex: "0 0 auto" }}
+              onClick={goReview}>
+              REVIEW DETAILS →
+            </button>
+          </div>
         </>
       ) : (
         <>
@@ -574,7 +653,13 @@ function KycForm({ onApplied }) {
               style={{ ...btn, flex: 1, opacity: busy ? 0.7 : 1 }}
               disabled={busy}
               onClick={submit}>
-              {busy ? "SUBMITTING…" : "CONFIRM & SUBMIT"}
+              {busy
+                ? editing
+                  ? "SAVING…"
+                  : "SUBMITTING…"
+                : editing
+                  ? "SAVE CHANGES"
+                  : "CONFIRM & SUBMIT"}
             </button>
           </div>
         </>
@@ -718,14 +803,38 @@ function ArtistOrders() {
 
 function PickupAddressCard({ pickup, pickupSet, onSaved }) {
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: "India" });
+  const [f, setF] = useState({ name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: "India", stateCode: "" });
   const [busy, setBusy] = useState(false);
+  const [touched, setTouched] = useState(false);
 
   useEffect(() => {
-    if (pickup) setF((p) => ({ ...p, ...pickup }));
+    if (pickup) {
+      // A saved state that isn't a real Indian state (legacy free-text) is cleared
+      // so the dropdown forces a proper re-selection.
+      const code = stateCodeFromName(DEFAULT_COUNTRY_CODE, pickup.state || "");
+      setF((p) => ({ ...p, ...pickup, stateCode: code, state: code ? pickup.state : "" }));
+    }
   }, [pickup]);
 
+  const errors = validateForm(f, {
+    name: [required("Full name")],
+    phone: [required("Phone"), phoneIN],
+    line1: [required("Address line 1")],
+    state: [required("State")],
+    city: [required("City")],
+    zip: [required("PIN code"), pincodeIN],
+  });
+
+  // Cascading state → city dropdowns (same dataset as the profile address book).
+  const stateOpts = useMemo(() => stateOptions(DEFAULT_COUNTRY_CODE), []);
+  const cityOpts = useMemo(() => cityOptions(DEFAULT_COUNTRY_CODE, f.stateCode), [f.stateCode]);
+  const onState = (e) => {
+    const code = e.target.value;
+    setF((v) => ({ ...v, stateCode: code, state: stateOpts.find((o) => o.value === code)?.label || "", city: "" }));
+  };
+
   const save = async () => {
+    if (!isValid(errors)) { setTouched(true); return; }
     setBusy(true);
     try {
       const saved = await api.artist.setPickupAddress({
@@ -734,6 +843,7 @@ function PickupAddressCard({ pickup, pickupSet, onSaved }) {
       });
       onSaved(saved);
       setOpen(false);
+      setTouched(false);
     } catch (e) {
       alert(e.message);
     } finally {
@@ -760,17 +870,31 @@ function PickupAddressCard({ pickup, pickupSet, onSaved }) {
       {open && (
         <div style={{ marginTop: 18 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field l="FULL NAME"><input style={inputStyle} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-            <Field l="PHONE"><input style={inputStyle} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></Field>
+            <Field l="FULL NAME" error={touched && errors.name}><input style={inputStyle} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
+            <Field l="PHONE" error={touched && errors.phone}><input style={inputStyle} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="numeric" maxLength={10} /></Field>
           </div>
-          <Field l="ADDRESS LINE 1"><input style={inputStyle} value={f.line1} onChange={(e) => setF({ ...f, line1: e.target.value })} /></Field>
+          <Field l="ADDRESS LINE 1" error={touched && errors.line1}><input style={inputStyle} value={f.line1} onChange={(e) => setF({ ...f, line1: e.target.value })} /></Field>
           <Field l="ADDRESS LINE 2 (OPTIONAL)"><input style={inputStyle} value={f.line2} onChange={(e) => setF({ ...f, line2: e.target.value })} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-            <Field l="CITY"><input style={inputStyle} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} /></Field>
-            <Field l="STATE"><input style={inputStyle} value={f.state} onChange={(e) => setF({ ...f, state: e.target.value })} /></Field>
-            <Field l="PIN CODE"><input style={inputStyle} value={f.zip} onChange={(e) => setF({ ...f, zip: e.target.value })} inputMode="numeric" maxLength={6} /></Field>
+            <Field l="STATE" error={touched && errors.state}>
+              <select style={{ ...inputStyle, cursor: "pointer", colorScheme: "dark" }} value={f.stateCode} onChange={onState}>
+                <option value="">Select state…</option>
+                {stateOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </Field>
+            <Field l="CITY" error={touched && errors.city}>
+              {cityOpts.length > 0 ? (
+                <select style={{ ...inputStyle, cursor: "pointer", colorScheme: "dark" }} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })}>
+                  <option value="">Select city…</option>
+                  {cityOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : (
+                <input style={inputStyle} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} placeholder={f.stateCode ? "" : "Select a state first"} />
+              )}
+            </Field>
+            <Field l="PIN CODE" error={touched && errors.zip}><input style={inputStyle} value={f.zip} onChange={(e) => setF({ ...f, zip: e.target.value })} inputMode="numeric" maxLength={6} /></Field>
           </div>
-          <button onClick={save} disabled={busy || !(f.line1 && f.city && f.zip && f.phone)} style={{ ...btn, opacity: busy || !(f.line1 && f.city && f.zip && f.phone) ? 0.5 : 1 }}>
+          <button onClick={save} disabled={busy} style={{ ...btn, opacity: busy ? 0.5 : 1 }}>
             {busy ? "SAVING…" : "SAVE ADDRESS"}
           </button>
         </div>
@@ -1799,6 +1923,7 @@ function ProfilePanel() {
   const [f, setF] = useState(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [ageError, setAgeError] = useState("");
   useEffect(() => {
     api.artist
       .profile()
@@ -1833,8 +1958,13 @@ function ProfilePanel() {
         <Skeleton height={200} radius={10} />
       </div>
     );
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const set = (k) => (e) => {
+    if (k === "age") setAgeError("");
+    setF({ ...f, [k]: e.target.value });
+  };
   const save = async () => {
+    const ageErr = ageRule(f.age);
+    if (ageErr) { setAgeError(ageErr); return; }
     setBusy(true);
     setSaved(false);
     try {
@@ -1940,10 +2070,12 @@ function ProfilePanel() {
             onChange={set("location")}
           />
         </Field>
-        <Field l="AGE">
+        <Field l="AGE" error={ageError}>
           <input
-            style={inputStyle}
+            style={ageError ? { ...inputStyle, borderColor: "#f87171", background: "rgba(248,113,113,0.06)" } : inputStyle}
             type="number"
+            min={16}
+            max={100}
             value={f.age}
             onChange={set("age")}
           />

@@ -40,6 +40,9 @@ export default function Checkout() {
   const [address, setAddress] = useState({ name: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "", country: "India" });
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [saveAddr, setSaveAddr] = useState(true);
+  const [savedGstProfiles, setSavedGstProfiles] = useState([]);
+  const [gst, setGst] = useState({ billing_name: "", billing_address: "", pan: "", gstin: "" });
+  const [saveGst, setSaveGst] = useState(true);
   const [vault, setVault] = useState(VAULT_FALLBACK);
   const [pickup, setPickup] = useState({ date: "", slot: "" });
   const [touched, setTouched] = useState(false);   // show errors only after a submit attempt
@@ -68,6 +71,7 @@ export default function Checkout() {
     api.auth.me().then((m) => {
       const addrs = m?.addresses || [];
       setSavedAddresses(addrs);
+      setSavedGstProfiles(m?.gst_profiles || []);
       const def = addrs.find((a) => a.is_default) || addrs[0];
       setAddress((prev) => ({
         ...prev,
@@ -120,6 +124,22 @@ export default function Checkout() {
 
   const applySaved = (a) => setAddress((prev) => ({ ...prev, ...pickAddr(a) }));
 
+  // Typing (or picking from the dropdown) a billing name that matches a saved GST
+  // profile auto-fills the address / PAN / GSTIN; otherwise just track what's typed.
+  const onBillingName = (v) => {
+    const match = savedGstProfiles.find(
+      (g) => (g.billing_name || "").trim().toLowerCase() === v.trim().toLowerCase(),
+    );
+    if (match)
+      setGst({
+        billing_name: match.billing_name || "",
+        billing_address: match.billing_address || "",
+        pan: match.pan || "",
+        gstin: match.gstin || "",
+      });
+    else setGst((prev) => ({ ...prev, billing_name: v }));
+  };
+
   const placeOrder = async () => {
     if (!items.length || submitting) return;
     if (!formValid) { setTouched(true); return; }
@@ -134,6 +154,9 @@ export default function Checkout() {
         created = await api.orders.create({
           full_name: address.name, phone: address.phone,
           shipping_address: needsTransport ? address : {},
+          billing_details: gstFilled(gst)
+            ? { billing_name: gst.billing_name.trim(), billing_address: gst.billing_address.trim(), pan: gst.pan.trim(), gstin: gst.gstin.trim() }
+            : null,
           payment_provider: pay,
           pincode: needsTransport ? address.zip : null,
           pickup_date: hasPickup ? pickup.date : null,
@@ -144,6 +167,18 @@ export default function Checkout() {
           const entry = { id: genId("addr"), label: address.city || "Address", ...pickAddr(address), is_default: savedAddresses.length === 0 };
           const next = [...savedAddresses, entry];
           api.auth.updateMe({ addresses: next }).then((m) => setSavedAddresses(m?.addresses || next)).catch(() => {});
+        }
+        // Save the GST/billing profile for reuse (when asked, filled, and new).
+        if (saveGst && gstFilled(gst) && !gstInBook(savedGstProfiles, gst)) {
+          const entry = {
+            id: genId("gst"),
+            billing_name: gst.billing_name.trim(),
+            billing_address: gst.billing_address.trim(),
+            pan: gst.pan.trim(),
+            gstin: gst.gstin.trim(),
+          };
+          const next = [...savedGstProfiles, entry];
+          api.auth.updateMe({ gst_profiles: next }).then((m) => setSavedGstProfiles(m?.gst_profiles || next)).catch(() => {});
         }
         setOrder(created);
       }
@@ -353,6 +388,22 @@ export default function Checkout() {
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.16em", color: "#fff" }}>TOTAL PAID</span>
               <span className="num-value" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#D4AF37" }}>{formatPrice(order.total)}</span>
             </div>
+            {order.billing_details?.billing_name && (
+              <div style={{ marginBottom: 22, padding: "14px 16px", borderRadius: 10, background: "rgba(212,175,55,0.05)", border: "1px solid rgba(212,175,55,0.2)" }}>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 8 }}>GST INVOICE · BILL TO</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{order.billing_details.billing_name}</div>
+                {order.billing_details.billing_address && (
+                  <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.7)", marginTop: 4, lineHeight: 1.5 }}>{order.billing_details.billing_address}</div>
+                )}
+                {(order.billing_details.gstin || order.billing_details.pan) && (
+                  <div className="num-value" style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.85)", marginTop: 6, letterSpacing: "0.05em" }}>
+                    {order.billing_details.gstin && <>GSTIN · {order.billing_details.gstin}</>}
+                    {order.billing_details.gstin && order.billing_details.pan && <span style={{ color: "rgba(212,175,55,0.4)" }}>{"  ·  "}</span>}
+                    {order.billing_details.pan && <>PAN · {order.billing_details.pan}</>}
+                  </div>
+                )}
+              </div>
+            )}
             <button onClick={() => navigate("/profile")}
               style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg,#D4AF37,#e8c53a)", color: "#111", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.18em", border: "none", borderRadius: 999, cursor: "pointer" }}>
               VIEW IN MY PROFILE →
@@ -447,6 +498,26 @@ export default function Checkout() {
                   </label>
                 </>
               )}
+            </div>
+
+            <SectionLabel>GST / BILLING DETAILS (OPTIONAL)</SectionLabel>
+            <div style={addrBox}>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.6)", marginBottom: 14, lineHeight: 1.6 }}>
+                Need a GST invoice? Start typing a billing name to reuse a saved profile — the billing address, PAN and GST number fill in automatically.
+              </div>
+              <Input label="Billing Name" value={gst.billing_name} onChange={onBillingName} placeholder="Registered billing name" list="gst-billing-names" />
+              <datalist id="gst-billing-names">
+                {savedGstProfiles.map((g) => <option key={g.id} value={g.billing_name} />)}
+              </datalist>
+              <Input label="Billing Address" value={gst.billing_address} onChange={(v) => setGst({ ...gst, billing_address: v })} placeholder="Registered billing address" />
+              <div style={twoCol}>
+                <Input label="PAN Card Details" value={gst.pan} onChange={(v) => setGst({ ...gst, pan: v.toUpperCase() })} placeholder="ABCDE1234F" maxLength={10} />
+                <Input label="GST Number" value={gst.gstin} onChange={(v) => setGst({ ...gst, gstin: v.toUpperCase() })} placeholder="22ABCDE1234F1Z5" maxLength={15} />
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, cursor: "pointer", fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)" }}>
+                <input type="checkbox" checked={saveGst} onChange={(e) => setSaveGst(e.target.checked)} style={{ accentColor: "#D4AF37" }} />
+                Save these GST details to my account
+              </label>
             </div>
 
             {hasPickup && (
@@ -563,11 +634,11 @@ function Row({ label, value }) {
     </div>
   );
 }
-function Input({ label, value, onChange, type = "text", placeholder, error, inputMode, maxLength }) {
+function Input({ label, value, onChange, type = "text", placeholder, error, inputMode, maxLength, list }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginBottom: 5 }}>{label}</div>
-      <input type={type} value={value} placeholder={placeholder} inputMode={inputMode} maxLength={maxLength}
+      <input type={type} value={value} placeholder={placeholder} inputMode={inputMode} maxLength={maxLength} list={list}
         onChange={(e) => onChange(e.target.value)}
         style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", background: "rgba(255,255,255,0.04)", border: `1px solid ${error ? "rgba(255,120,120,0.7)" : "rgba(212,175,55,0.2)"}`, borderRadius: 6, color: "#e8e0d0", fontFamily: "'Raleway',sans-serif", fontSize: 13, outline: "none" }} />
       {error && <div style={errText}>{error}</div>}
@@ -590,4 +661,14 @@ function pickAddr(a) {
 /** True when an equivalent address is already saved (avoid duplicates). */
 function addressInBook(book, a) {
   return book.some((x) => (x.line1 || "") === (a.line1 || "") && (x.zip || "") === (a.zip || "") && (x.city || "") === (a.city || ""));
+}
+/** A GST profile is worth saving once it has a billing name plus any identifier. */
+function gstFilled(g) {
+  return !!g.billing_name.trim() && !!(g.gstin.trim() || g.pan.trim() || g.billing_address.trim());
+}
+/** True when an equivalent GST profile is already saved (match on name + GSTIN). */
+function gstInBook(book, g) {
+  const name = (g.billing_name || "").trim().toLowerCase();
+  const gstin = (g.gstin || "").trim().toLowerCase();
+  return book.some((x) => (x.billing_name || "").trim().toLowerCase() === name && (x.gstin || "").trim().toLowerCase() === gstin);
 }

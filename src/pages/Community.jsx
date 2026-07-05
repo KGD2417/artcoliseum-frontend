@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton, SkeletonText } from "../components/ui/Skeleton";
 import DateTimeField from "../components/DateTimeField";
@@ -821,6 +822,7 @@ function PostCard({
   onToggleSave,
   isOwn,
   meId,
+  highlight,
 }) {
   const { formatPrice } = useLocale();
   const [showComments, setShowComments] = useState(false);
@@ -905,13 +907,16 @@ function PostCard({
   return (
     <motion.div
       layout
+      id={`post-${post.id}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.38 }}
       style={{
         background: "rgba(255,255,255,0.022)",
-        border: `1px solid ${isListing ? "rgba(184,115,51,0.22)" : "rgba(212,175,55,0.1)"}`,
+        border: `1px solid ${highlight ? "#D4AF37" : isListing ? "rgba(184,115,51,0.22)" : "rgba(212,175,55,0.1)"}`,
+        boxShadow: highlight ? "0 0 0 2px rgba(212,175,55,0.35)" : "none",
+        transition: "box-shadow 0.4s ease, border-color 0.4s ease",
         borderRadius: 14,
         overflow: "hidden",
         marginBottom: 18,
@@ -3120,6 +3125,32 @@ export default function Community() {
   const [mode, setMode] = useState("community");
   // Marketplace listing filter: all | auction | buy | ending.
   const [mktFilter, setMktFilter] = useState("all");
+  // Deep link from "Saved" → open a specific listing (?post=<id>).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const targetPost = searchParams.get("post");
+  const [highlightId, setHighlightId] = useState(null);
+
+  // A ?post= link always points at a marketplace listing — switch there and clear
+  // any filter so the target can't be hidden.
+  useEffect(() => {
+    if (!targetPost) return;
+    setMode("marketplace");
+    setMktFilter("all");
+  }, [targetPost]);
+
+  // Once the marketplace feed is loaded, scroll the target listing into view,
+  // highlight it briefly, then drop the ?post= param so it doesn't re-trigger.
+  useEffect(() => {
+    if (!targetPost || feedLoading || mode !== "marketplace") return;
+    if (!posts.some((p) => p.id === targetPost)) return;
+    const el = document.getElementById(`post-${targetPost}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightId(targetPost);
+      setTimeout(() => setHighlightId(null), 2400);
+    }
+    setSearchParams({}, { replace: true });
+  }, [targetPost, feedLoading, mode, posts]);
 
   // Load the admin-managed community list (replaces the in-place defaults).
   useEffect(() => {
@@ -3971,6 +4002,7 @@ export default function Community() {
                     onToggleSave={handleToggleSave}
                     isOwn={!!user && post.userId === user.id}
                     meId={user?.id}
+                    highlight={highlightId === post.id}
                   />
                 ))}
               </AnimatePresence>

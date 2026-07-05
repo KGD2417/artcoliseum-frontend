@@ -16,7 +16,7 @@ import i3 from "../assets/i3.png";
 import i6 from "../assets/i6.png";
 
 const TABS = [
-  { id: "details",  label: "Account Details" },
+  { id: "details",  label: "Profile Details" },
   { id: "orders",   label: "Order Tracking" },
   { id: "events",   label: "My Events" },
   { id: "inbox",    label: "Messages" },
@@ -56,6 +56,7 @@ export default function Profile() {
   const [user, setUser] = useState(EMPTY_USER);
   const [draft, setDraft] = useState(EMPTY_USER);
   const [addresses, setAddresses] = useState([]);
+  const [bankDetails, setBankDetails] = useState(null);
   const [regEvents, setRegEvents] = useState([]);
   const [orders, setOrders] = useState([]);
   const [owned, setOwned] = useState([]);
@@ -94,6 +95,7 @@ export default function Profile() {
       setUser(next);
       setDraft(next);
       setAddresses(prof?.addresses || []);
+      setBankDetails(prof?.bank_details || null);
 
       try {
         const ords = await api.orders.mine();
@@ -245,6 +247,12 @@ export default function Profile() {
     try { const m = await api.auth.updateMe({ addresses: next }); setAddresses(m?.addresses || next); }
     catch { /* keep optimistic value */ }
   };
+  // Persist the buyer/artist bank payout details.
+  const saveBankDetails = async (next) => {
+    setBankDetails(next);
+    try { const m = await api.auth.updateMe({ bank_details: next }); setBankDetails(m?.bank_details ?? next); }
+    catch { /* keep optimistic value */ }
+  };
   // Profile picture — persists immediately on upload/change (no Edit mode needed).
   const saveAvatar = async (url) => {
     setUser((u) => ({ ...u, avatar_url: url }));
@@ -384,7 +392,7 @@ export default function Profile() {
               transition={{ duration: 0.3 }}>
 
               {tab === "details" && (
-                <Card title="Account Details" action={
+                <Card title="Profile Details" action={
                   editing
                     ? <button onClick={save} className="btn-gold-main" style={{ padding: "10px 22px", fontSize: 11 }}>SAVE</button>
                     : <button onClick={startEdit} className="btn-outline" style={{ padding: "10px 22px", fontSize: 11 }}>EDIT</button>
@@ -409,6 +417,8 @@ export default function Profile() {
                     : <Field label="Password" value={user.password} editing={false} />}
                   <div style={{ height: 1, background: "rgba(212,175,55,0.14)", margin: "8px 0 20px" }} />
                   <AddressBook addresses={addresses} onChange={saveAddresses} />
+                  <div style={{ height: 1, background: "rgba(212,175,55,0.14)", margin: "8px 0 20px" }} />
+                  <BankDetails details={bankDetails} onChange={saveBankDetails} />
                   <button onClick={handleSignOut} className="btn-outline" style={{ marginTop: 8, padding: "10px 22px", fontSize: 11 }}>SIGN OUT</button>
                 </Card>
               )}
@@ -604,7 +614,7 @@ export default function Profile() {
                       ))}
                       {savedListings.map(l => (
                         <div key={l.post_id} style={{ border: "1px solid rgba(212,175,55,0.12)", borderRadius: 10, overflow: "hidden", background: "rgba(255,255,255,0.02)", display: "flex", flexDirection: "column" }}>
-                          <div style={{ position: "relative", cursor: "pointer" }} onClick={() => navigate("/community")}>
+                          <div style={{ position: "relative", cursor: "pointer" }} onClick={() => navigate(`/community?post=${l.post_id}`)}>
                             <SafeImage src={l.image} alt={l.title} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
                             <span style={{ position: "absolute", top: 8, left: 8, padding: "4px 10px", borderRadius: 999, fontFamily: "'Cinzel',serif", fontSize: 8, letterSpacing: "0.12em", background: "rgba(0,0,0,0.72)", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.5)" }}>{l.is_auction ? "AUCTION" : "LISTING"}</span>
                             {!l.available && (
@@ -612,13 +622,13 @@ export default function Profile() {
                             )}
                           </div>
                           <div style={{ padding: "10px 12px", flex: 1, display: "flex", flexDirection: "column" }}>
-                            <div onClick={() => navigate("/community")} style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#f0e8d8", lineHeight: 1.2, cursor: "pointer" }}>{l.title || "Untitled listing"}</div>
+                            <div onClick={() => navigate(`/community?post=${l.post_id}`)} style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#f0e8d8", lineHeight: 1.2, cursor: "pointer" }}>{l.title || "Untitled listing"}</div>
                             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8.5, letterSpacing: "0.14em", color: "rgba(200,191,160,0.55)", marginTop: 4 }}>MARKETPLACE</div>
                             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 15, color: "#D4AF37", marginTop: 6 }}>
                               {l.price ? (l.is_auction ? "Current bid ₹" : "₹") + Number(l.price).toLocaleString("en-IN") : (l.is_auction ? "No bids yet" : "See listing")}
                             </div>
                             <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 10 }}>
-                              <button onClick={() => navigate("/community")} className="btn-gold-main" style={{ flex: 1, padding: "8px 10px", fontSize: 9 }}>VIEW</button>
+                              <button onClick={() => navigate(`/community?post=${l.post_id}`)} className="btn-gold-main" style={{ flex: 1, padding: "8px 10px", fontSize: 9 }}>VIEW</button>
                               <button onClick={() => removeSavedListing(l.post_id)} className="btn-outline" style={{ padding: "8px 10px", fontSize: 9 }}>REMOVE</button>
                             </div>
                           </div>
@@ -1148,6 +1158,42 @@ function AddressBook({ addresses, onChange }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+const BANK_BLANK = { account_holder: "", bank_name: "", account_number: "", ifsc: "", cheque_url: "" };
+
+/** Bank payout details: holder, bank, account no., IFSC + a cancelled-cheque upload. Persists via onChange. */
+function BankDetails({ details, onChange }) {
+  const [f, setF] = useState(details || BANK_BLANK);
+  const [saved, setSaved] = useState(false);
+  // Reflect an externally-refreshed record (e.g. after the server round-trips).
+  useEffect(() => { if (details) setF({ ...BANK_BLANK, ...details }); }, [details]);
+  const set = (k, up = false) => (e) => {
+    const val = up ? e.target.value.toUpperCase() : e.target.value;
+    setSaved(false);
+    setF((v) => ({ ...v, [k]: val }));
+  };
+  const save = () => { onChange(f); setSaved(true); };
+  const labelStyle = { fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.16em", color: "rgba(200,191,160,0.55)", marginBottom: 6 };
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.18em", color: "#D4AF37", marginBottom: 12 }}>BANK ACCOUNT DETAILS</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <input placeholder="Account holder name" value={f.account_holder} onChange={set("account_holder")} style={aInput(false)} />
+        <input placeholder="Bank name" value={f.bank_name} onChange={set("bank_name")} style={aInput(false)} />
+        <input placeholder="Account number" value={f.account_number} onChange={set("account_number")} inputMode="numeric" style={aInput(false)} />
+        <input placeholder="IFSC code" value={f.ifsc} onChange={set("ifsc", true)} style={aInput(false)} />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <div style={labelStyle}>CANCELLED CHEQUE</div>
+        <MediaUploader kind="image" hint="UPLOAD CHEQUE" value={f.cheque_url} onChange={(url) => { setSaved(false); setF((v) => ({ ...v, cheque_url: url || "" })); }} />
+      </div>
+      <div style={{ display: "flex", gap: 12, marginTop: 14, alignItems: "center" }}>
+        <button onClick={save} className="btn-gold-main" style={{ padding: "9px 20px", fontSize: 11 }}>SAVE BANK DETAILS</button>
+        {saved && <span style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "#4ade80" }}>Saved ✓</span>}
+      </div>
     </div>
   );
 }

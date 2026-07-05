@@ -11,7 +11,7 @@ import { email as emailRule, minLen, intRange, todayISO } from "../utils/validat
 
 const gold = "#D4AF37";
 const TABS = [
-  ["overview", "Overview"], ["traffic", "Traffic"], ["tally", "Price & Tally"], ["enquiries", "Enquiries"], ["orders", "Orders"],
+  ["overview", "Overview"], ["approvals", "Approvals"], ["traffic", "Traffic"], ["tally", "Price & Tally"], ["enquiries", "Enquiries"], ["orders", "Orders"],
   ["artworks", "Artworks"], ["categories", "Categories"], ["exhibitions", "Exhibitions"], ["events", "Events"],
   ["artists", "Artists"], ["competition", "Competition"], ["communities", "Communities"],
   ["news", "News"], ["testimonials", "Testimonials"],
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
       <div className="admin-grid" style={{ display: "grid", gridTemplateColumns: "230px 1fr", gap: 20 }}>
         <aside style={{ border: "1px solid rgba(212,175,55,0.18)", borderRadius: 12, background: "rgba(255,255,255,0.02)", padding: 12, height: "fit-content" }}>
           {TABS.map(([id, lbl]) => {
-            const badge = { orders: stats.pending_orders, support: stats.open_tickets, contact: stats.contact_messages, artists: (stats.pending_artists || 0) + (stats.pending_artworks || 0) }[id] || 0;
+            const badge = { orders: stats.pending_orders, support: stats.open_tickets, contact: stats.contact_messages, approvals: (stats.pending_artists || 0) + (stats.pending_artworks || 0) }[id] || 0;
             return (
               <button key={id} onClick={() => setTab(id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "10px 14px", marginBottom: 4, border: "none", background: tab === id ? "rgba(212,175,55,0.10)" : "transparent", color: tab === id ? gold : "rgba(200,191,160,0.7)", fontFamily: "'Cinzel',serif", fontSize: 11, letterSpacing: "0.12em", borderRadius: 8, cursor: "pointer" }}>
                 <span>{lbl.toUpperCase()}</span>
@@ -73,6 +73,7 @@ export default function AdminDashboard() {
         </aside>
         <div style={{ minHeight: 400 }}>
           {tab === "overview" && <Overview stats={stats} />}
+          {tab === "approvals" && <Approvals />}
           {tab === "traffic" && <Traffic />}
           {tab === "tally" && <Tally />}
           {tab === "enquiries" && <Enquiries />}
@@ -891,7 +892,8 @@ function Artists() {
     await api.admin.deleteArtist(a.user_id); load(); setTick((t) => t + 1);
   };
 
-  // Applicants awaiting a decision float to the top.
+  // New applications are reviewed in the APPROVALS tab — this list manages the
+  // decided ones (approved / declined).
   const pending = kyc.filter((a) => a.status === "pending" || a.status === "unverified");
   const decided = kyc.filter((a) => a.status === "verified" || a.status === "rejected");
 
@@ -902,13 +904,11 @@ function Artists() {
       <AddArtist onCreated={() => { load(); setTick((t) => t + 1); }} />
       <AddArtworkForArtist tick={tick} />
 
-      <ArtworkApprovalQueue />
-
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, margin: "22px 0 10px" }}>
-        ARTIST APPLICATIONS {pending.length > 0 && <span style={{ color: "#fbbf24" }}>· {pending.length} AWAITING REVIEW</span>}
+        ARTISTS {pending.length > 0 && <span style={{ color: "#fbbf24" }}>· {pending.length} NEW APPLICATION{pending.length === 1 ? "" : "S"} IN THE APPROVALS TAB</span>}
       </div>
-      {kyc.length === 0 && <Empty>No applications.</Empty>}
-      {[...pending, ...decided].map((a) => (
+      {decided.length === 0 && <Empty>No artists yet.</Empty>}
+      {decided.map((a) => (
         <Item key={a.user_id}>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.name} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {a.art_type} · {a.location}</span></div>
@@ -932,17 +932,68 @@ function Artists() {
   );
 }
 
+// ═══════════════ APPROVALS — everything awaiting an admin decision ═════════
+function Approvals() {
+  return (
+    <Panel title="Approvals">
+      <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12.5, color: "rgba(200,191,160,0.6)", lineHeight: 1.6, marginBottom: 16 }}>
+        Everything waiting on your decision — new artist applications and newly submitted artworks.
+        Click an artwork to see it in full before approving.
+      </div>
+      <ArtworkApprovalQueue />
+      <ArtistApplicationQueue />
+    </Panel>
+  );
+}
+
+// Approve / decline pending artist applications.
+function ArtistApplicationQueue() {
+  const [kyc, setKyc] = useState([]);
+  const [viewing, setViewing] = useState(null);
+  const load = () => { api.admin.artists().then(setKyc).catch(() => {}); };
+  useEffect(() => { load(); }, []);
+  const verify = async (uid) => { await api.admin.verifyArtist(uid); load(); };
+  const reject = async (uid) => {
+    const reason = window.prompt("Reason for declining (shown to the applicant so they can reapply):", "");
+    if (reason === null) return;  // cancelled
+    await api.admin.rejectArtist(uid, reason.trim()); load();
+  };
+  const pending = kyc.filter((a) => a.status === "pending" || a.status === "unverified");
+  return (
+    <div style={{ border: "1px solid rgba(212,175,55,0.25)", borderRadius: 10, padding: 16, background: "rgba(212,175,55,0.03)" }}>
+      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: "0.16em", color: gold, marginBottom: 12 }}>
+        ARTIST APPLICATIONS {pending.length > 0 && `· ${pending.length} AWAITING REVIEW`}
+      </div>
+      {pending.length === 0 ? (
+        <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)" }}>No applications waiting — all caught up.</div>
+      ) : pending.map((a) => (
+        <Item key={a.user_id}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.name} <span style={{ fontSize: 11, color: "rgba(200,191,160,0.5)" }}>· {a.art_type} · {a.location}</span></div>
+            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>{a.email}</div>
+          </div>
+          <Btn onClick={() => setViewing(a)}>VIEW</Btn>
+          <Btn onClick={() => verify(a.user_id)} primary>APPROVE</Btn>
+          <Btn onClick={() => reject(a.user_id)} ghost>DECLINE</Btn>
+        </Item>
+      ))}
+      {viewing && <DetailModal title={viewing.name} data={viewing} onClose={() => setViewing(null)} />}
+    </div>
+  );
+}
+
 // Approve / reject newly-submitted artworks before they go public.
 function ArtworkApprovalQueue() {
   const [rows, setRows] = useState([]);
   const [busy, setBusy] = useState("");
+  const [preview, setPreview] = useState(null);
   const load = () => api.admin.pendingArtworks().then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
-  const approve = async (id) => { setBusy(id); try { await api.admin.approveArtwork(id); await load(); } finally { setBusy(""); } };
+  const approve = async (id) => { setBusy(id); try { await api.admin.approveArtwork(id); setPreview(null); await load(); } finally { setBusy(""); } };
   const reject = async (id) => {
     const reason = window.prompt("Reason for rejection (shown to the artist) — optional:", "");
     if (reason === null) return;
-    setBusy(id); try { await api.admin.rejectArtwork(id, reason); await load(); } finally { setBusy(""); }
+    setBusy(id); try { await api.admin.rejectArtwork(id, reason); setPreview(null); await load(); } finally { setBusy(""); }
   };
   return (
     <div style={{ border: "1px solid rgba(251,191,36,0.3)", borderRadius: 10, padding: 16, marginBottom: 18, background: "rgba(251,191,36,0.04)" }}>
@@ -953,17 +1004,66 @@ function ArtworkApprovalQueue() {
         <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.5)" }}>Nothing waiting — all caught up.</div>
       ) : rows.map((a) => (
         <Item key={a.id}>
-          <img src={a.images?.[0]} alt="" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 6, background: "rgba(212,175,55,0.1)" }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.title}</div>
-            <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
-              {a.artist_name || "—"} · {a.category_id || "—"}{a.subtype_id ? ` / ${a.subtype_id}` : ""} · {a.customizable ? "customizable" : inr(a.price)}
+          <div onClick={() => setPreview(a)} title="Click to view this artwork" style={{ display: "flex", gap: 10, alignItems: "center", flex: 1, cursor: "pointer" }}>
+            <img src={a.images?.[0]} alt="" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 6, background: "rgba(212,175,55,0.1)" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#fff" }}>{a.title}</div>
+              <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 11, color: "rgba(200,191,160,0.55)" }}>
+                {a.artist_name || "—"} · {a.category_id || "—"}{a.subtype_id ? ` / ${a.subtype_id}` : ""} · {a.customizable ? "customizable" : inr(a.price)}
+              </div>
             </div>
           </div>
+          <Btn onClick={() => setPreview(a)}>VIEW</Btn>
           <Btn onClick={() => approve(a.id)} primary disabled={busy === a.id}>{busy === a.id ? "…" : "APPROVE"}</Btn>
           <Btn onClick={() => reject(a.id)} ghost disabled={busy === a.id}>REJECT</Btn>
         </Item>
       ))}
+      {preview && (
+        <ArtworkPreviewModal
+          artwork={preview}
+          busy={busy === preview.id}
+          onApprove={() => approve(preview.id)}
+          onReject={() => reject(preview.id)}
+          onClose={() => setPreview(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Full-size look at a submitted artwork so the admin sees what they're approving.
+function ArtworkPreviewModal({ artwork: a, busy, onApprove, onReject, onClose }) {
+  const meta = [
+    ["Artist", a.artist_name], ["Category", a.category_id && `${a.category_id}${a.subtype_id ? ` / ${a.subtype_id}` : ""}`],
+    ["Medium", a.medium], ["Year", a.year], ["Dimensions", a.base_dimensions],
+    ["Price", a.customizable ? "Customizable" : inr(a.price)],
+  ].filter(([, v]) => v);
+  return (
+    <div onClick={onClose} style={dmOverlay}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...dmBox, maxWidth: 760 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: "0.16em", color: gold }}>REVIEW ARTWORK</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(200,191,160,0.5)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+        {(a.images || []).map((src, i) => (
+          <img key={i} src={src} alt="" style={{ width: "100%", maxHeight: 420, objectFit: "contain", borderRadius: 10, background: "#000", border: "1px solid rgba(212,175,55,0.2)", marginBottom: 10 }} />
+        ))}
+        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: "#fff", marginTop: 4 }}>{a.title}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", margin: "10px 0" }}>
+          {meta.map(([k, v]) => (
+            <div key={k} style={{ fontFamily: "'Raleway',sans-serif", fontSize: 12, color: "rgba(200,191,160,0.75)" }}>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: "0.12em", color: "rgba(212,175,55,0.7)", marginRight: 6 }}>{k.toUpperCase()}</span>{v}
+            </div>
+          ))}
+        </div>
+        {(a.narrative || a.description) && (
+          <div style={{ fontFamily: "'Raleway',sans-serif", fontSize: 13, color: "rgba(200,191,160,0.75)", lineHeight: 1.7, marginBottom: 14 }}>{a.narrative || a.description}</div>
+        )}
+        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+          <Btn onClick={onApprove} primary disabled={busy}>{busy ? "…" : "APPROVE"}</Btn>
+          <Btn onClick={onReject} ghost disabled={busy}>REJECT</Btn>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1037,6 +1137,9 @@ function Exhibitions() {
   const running = rows.find((e) => e.status !== "ended");
   const set = (k) => (e) => setF((v) => ({ ...v, [k]: e.target.value }));
 
+  // datetime-local values are in the admin's local time — convert to UTC ISO so
+  // the stored instant matches what was picked (no +5:30 shift for viewers).
+  const toUTC = (v) => (v ? new Date(v).toISOString() : null);
   const create = async () => {
     if (!f.title.trim()) { alert("Exhibition title is required"); return; }
     setBusy("create");
@@ -1044,8 +1147,8 @@ function Exhibitions() {
       await api.exhibitions.create({
         title: f.title.trim(), theme: f.theme || null, description: f.description || null,
         hero_image_url: f.hero_image_url || null,
-        registration_starts_at: f.registration_starts_at || null,
-        registration_ends_at: f.registration_ends_at || null,
+        registration_starts_at: toUTC(f.registration_starts_at),
+        registration_ends_at: toUTC(f.registration_ends_at),
       });
       setF(blank); await load();
     } catch (e) { alert(e.message); } finally { setBusy(""); }
